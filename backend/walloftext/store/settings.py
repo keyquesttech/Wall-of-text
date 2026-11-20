@@ -32,16 +32,25 @@ DEFAULTS: dict[str, Any] = {
 }
 
 
-def _merge(base: Any, over: Any) -> Any:
+_UNSET = object()
+
+
+def _merge(base: Any, over: Any, default: Any = _UNSET) -> Any:
+    """Overlay `over` on `base`, keeping base's shape. `default` is the matching DEFAULTS
+    value: a key whose default is None (e.g. lat/lon) may be set back to None."""
     if isinstance(base, dict) and isinstance(over, dict):
         out = copy.deepcopy(base)
         for k, v in over.items():
             if k in base:
-                out[k] = _merge(base[k], v)
+                d = default.get(k, _UNSET) if isinstance(default, dict) else _UNSET
+                out[k] = _merge(base[k], v, d)
         return out
     if isinstance(base, list):
         return over if isinstance(over, list) else base
-    if base is None or isinstance(over, type(base)) or (isinstance(base, (int, float)) and isinstance(over, (int, float))):
+    if over is None:
+        return None if (base is None or default is None) else base
+    if base is None or default is None or isinstance(over, type(base)) or (
+            isinstance(base, (int, float)) and isinstance(over, (int, float)) and not isinstance(over, bool)):
         return over
     return base
 
@@ -59,14 +68,14 @@ class AppSettings:
             saved = json.loads(self.store.get(self.KEY, "{}") or "{}")
         except ValueError:
             saved = {}
-        return _merge(DEFAULTS, saved)
+        return _merge(DEFAULTS, saved, DEFAULTS)
 
     def get(self, group: str) -> Any:
         return self.all()[group]
 
     def patch(self, changes: dict) -> dict:
         with self._lock:
-            merged = _merge(self.all(), changes)
+            merged = _merge(self.all(), changes, DEFAULTS)
             self.store.set(self.KEY, json.dumps(merged))
         for cb in self.listeners:
             cb(merged)

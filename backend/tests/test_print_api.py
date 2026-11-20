@@ -112,3 +112,12 @@ def test_spa_fallback_and_assets_need_sign_in(c, settings, tmp_path):
     assert c.get("/").status_code == 200
     c.post("/api/auth/logout", json={})
     assert c.get("/history", follow_redirects=False).status_code == 302
+
+
+def test_settings_can_reset_nullable_fields(c):
+    c.patch("/api/settings", json={"weather": {"place": "X", "lat": 1.5, "lon": 2.5}})
+    w = c.patch("/api/settings", json={"weather": {"place": "", "lat": None, "lon": None}}).json()["weather"]
+    assert w == {"place": "", "lat": None, "lon": None, "units": "C"}
+    # non-nullable fields ignore null and wrong types
+    p = c.patch("/api/settings", json={"printer": {"darkness": None, "extra_feed": "x"}}).json()["printer"]
+    assert p["darkness"] == 120 and p["extra_feed"] == 0
