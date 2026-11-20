@@ -188,6 +188,8 @@ class NmcliClient:
         return AP_CON_NAME in out.splitlines()
 
     def ap_clients(self) -> int:
+        if not self.ap_active():  # in client mode station dump lists the router
+            return 0
         try:
             p = subprocess.run(["iw", "dev", IFACE, "station", "dump"], capture_output=True, text=True, timeout=5)
         except FileNotFoundError:

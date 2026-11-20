@@ -40,8 +40,19 @@ The Pi has no electronics attached yet, and `design-handoff/` is still on the Wi
 - Tests: 45 passing (`cd backend && ../.venv/bin/python -m pytest -q`). Smoke-tested in mock mode:
   setup → connect → sign-in → settings, both slips printed.
 
+### Installed on the Pi (`install.sh --keep-wifi`)
+- `walloftext.service` active on port 80 as user `walloftext`, enabled at boot. It saw the existing
+  Wi-Fi and went `connecting → online` in 0.1 s. `walloftext.local/` and the IP redirect to Sign in.
+  A wrong password is refused, `root` signs in, and temperature/throttle read correctly. Printer shows
+  `offline` (none attached).
+- polkit rule confirmed: changing the setup Wi-Fi password from the site re-keys `wot-setup-ap`
+  with no permission errors.
+- Fixed: `iw station dump` in client mode lists the router, so `ap_clients()` now returns 0 unless
+  the AP is up.
+
 ### Not done yet / next
-- Install on the Pi and check the Phase 1 "done when" list (needs Ethernet or `--force`, plus a phone).
+- Phase 1 "done when" checks that need a phone or an Ethernet cable: factory state, phone joins
+  `WallOfText-Setup`, captive page, power cycle with the router off.
 - Phase 0 hardware answers (printer, button, LED, phones).
 - Copy `design-handoff/` from the PC into the repo (needed for Phase 2 UI work).
 - Clone handling (new SSH host keys and machine ID on first boot) is in Phase 9.
