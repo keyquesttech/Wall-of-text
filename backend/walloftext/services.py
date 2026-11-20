@@ -156,6 +156,11 @@ def build(settings: Settings | None = None, nm=None) -> Services:
     else:
         svc.button = MockButton(detector)
 
+    from .scheduler.engine import Scheduler
+    from .sources.hub import Sources
+
+    svc.extras["sources"] = Sources(svc)
+    svc.extras["scheduler"] = Scheduler(svc)
     passwords.on_gui_change.append(lambda: sessions.revoke_all())
     passwords.on_wifi_change.append(svc.on_setup_wifi_password_change)
     wifi.on_change.append(svc.on_wifi_change)

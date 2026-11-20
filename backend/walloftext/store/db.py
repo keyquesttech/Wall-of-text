@@ -45,6 +45,23 @@ MIGRATIONS: list[str] = [
     CREATE INDEX jobs_state ON jobs(state);
     CREATE INDEX jobs_source ON jobs(source);
     """,
+    # 4: schedules and routines
+    """
+    CREATE TABLE schedules (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        time TEXT,
+        days TEXT NOT NULL DEFAULT '[0,1,2,3,4,5,6]',
+        sections TEXT NOT NULL DEFAULT '[]',
+        conditions TEXT NOT NULL DEFAULT '[]',
+        icon TEXT,
+        created_at REAL NOT NULL,
+        last_due REAL,
+        last_run_at REAL,
+        last_result TEXT
+    );
+    """,
 ]
 
 

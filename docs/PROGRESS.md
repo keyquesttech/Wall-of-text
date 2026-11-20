@@ -1,5 +1,21 @@
 # Progress
 
+## Phase 4: schedules, sources, routines
+- Scheduler (`scheduler/engine.py`): local wall-clock times + zone (DST-safe), days of week, waits for
+  NTP sync ("Waiting for the clock"), missed-run policy (late within 60 min / skip / always) with
+  "Missed" History entries, quiet hours hold prints ("Held") under the same 60-minute rule, holiday
+  mode, daily limit across Schedule/Guest/Remote, conditions (rain ≥, temp < / >, has events,
+  has tasks) evaluated at run time; unavailable data never blocks a print.
+- Sources: Open-Meteo weather with geocoding and a 3 h last-good cache, iCal calendars (recurrences,
+  all-day, cancelled events dropped), Google Tasks via a token uploaded from the PC, bundled fortunes,
+  countdowns. Failures print a plain line ("Calendar “Work” unavailable").
+- Routines = schedules made of sections (date, weather, agenda, tasks, fortune, your own line,
+  countdown, shopping list, divider). No time → a routine for the button / quick actions.
+- UI: Schedules list with holiday mode, starters (Morning briefing, Umbrella alert, Daily fortune,
+  Countdown, Shopping list, Custom), editor with time/days, section builder (reorder), conditions,
+  preview and Print now. DESIGN REVIEW: built without the handoff's wizard mockups.
+
+
 ## Phase 3: queue, History, printer states, button, LED
 - History screen: filters All / Manual / Schedules / Button / Guest / Remote, thumbnails, detail sheet
   with the printed bitmap, Print again, Try again for failed jobs (with a plain reason), remove, clear.
