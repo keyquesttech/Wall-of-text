@@ -1,0 +1,5 @@
+# Thermal printer: stable name /dev/walloftext-printer, group lp.
+# Generic match for any USB printer-class node until Phase 0 records the
+# printer's idVendor/idProduct; then narrow it, e.g.
+#   SUBSYSTEMS=="usb", ATTRS{idVendor}=="xxxx", ATTRS{idProduct}=="yyyy", ...
+SUBSYSTEM=="usbmisc", KERNEL=="lp[0-9]*", GROUP="lp", MODE="0660", SYMLINK+="walloftext-printer"

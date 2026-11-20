@@ -1,0 +1,32 @@
+[Unit]
+Description=Wall of Text printer web app
+After=network.target NetworkManager.service avahi-daemon.service
+Wants=NetworkManager.service avahi-daemon.service
+
+[Service]
+Type=simple
+User=walloftext
+Group=walloftext
+SupplementaryGroups=netdev gpio lp video dialout
+Environment=WOT_HW=real
+Environment=WOT_PORT=80
+Environment=WOT_PASSWORD_FILE=/etc/walloftext/passwords.txt
+Environment=WOT_DATA_DIR=/var/lib/walloftext
+Environment=WOT_SETUP_UI=/opt/walloftext/setup-ui
+Environment=WOT_FRONTEND=/opt/walloftext/frontend/dist
+Environment=WOT_FONTS=/opt/walloftext/fonts
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/walloftext/venv/bin/python -m walloftext.app
+WorkingDirectory=/var/lib/walloftext
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/walloftext /etc/walloftext
+ProtectHome=yes
+PrivateTmp=yes
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

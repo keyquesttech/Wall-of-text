@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dev panel · Wall Printer</title>
+<link rel="stylesheet" href="/ui/setup.css">
+</head>
+<body>
+<main>
+  <div class="brand">WOT_HW=mock</div>
+  <h1>Dev panel</h1>
+  <h2>Wi-Fi state</h2>
+  <div class="glass"><pre id="state" class="mono" style="padding:14px;margin:0;font-size:13px;white-space:pre-wrap"></pre></div>
+  <h2>Simulate</h2>
+  <div class="row-gap">
+    <button class="btn" data-net='{"router_up":false}'>Router off</button>
+    <button class="btn" data-net='{"router_up":true}'>Router on</button>
+    <button class="btn" data-net='{"phones_on_ap":1}'>Phone joins setup AP</button>
+    <button class="btn" data-net='{"phones_on_ap":0}'>Phone leaves setup AP</button>
+    <button class="btn" data-net='{"printer_offline":true}'>Printer offline</button>
+    <button class="btn" data-net='{"printer_offline":false}'>Printer online</button>
+  </div>
+  <h2>Button</h2>
+  <div class="row-gap">
+    <button class="btn" data-btn="single">Single press</button>
+    <button class="btn" data-btn="double">Double press</button>
+    <button class="btn" data-btn="long">Long press</button>
+    <button class="btn btn-danger" data-btn="reset">Hold 10 s (Wi-Fi reset)</button>
+  </div>
+  <p class="dim" style="margin-top:16px">Mock networks: <span class="mono">HomeWiFi</span> / <span class="mono">correct-horse</span>. Printed slips land in <span class="mono">backend/var/mock-printer/</span>.</p>
+</main>
+<script src="/ui/common.js"></script>
+<script>
+(function () {
+  function refresh() {
+    Promise.all([WOT.api("GET", "/api/wifi/status"), WOT.api("GET", "/api/dev/net-state")]).then(function (rs) {
+      WOT.$("#state").textContent = JSON.stringify({ wifi: rs[0].data, fake_nm: rs[1].data }, null, 2);
+    });
+  }
+  var b = document.querySelectorAll("[data-net]");
+  for (var i = 0; i < b.length; i++) b[i].addEventListener("click", function (e) {
+    WOT.api("POST", "/api/dev/net-state", JSON.parse(e.currentTarget.getAttribute("data-net"))).then(refresh);
+  });
+  var g = document.querySelectorAll("[data-btn]");
+  for (var j = 0; j < g.length; j++) g[j].addEventListener("click", function (e) {
+    WOT.api("POST", "/api/dev/button", { gesture: e.currentTarget.getAttribute("data-btn") }).then(refresh);
+  });
+  refresh(); setInterval(refresh, 2000);
+})();
+</script>
+</body>
+</html>

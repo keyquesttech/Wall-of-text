@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Return the Pi to factory state (BUILD_PLAN section 2):
+# forget every home Wi-Fi, passwords back to defaults, empty history and schedules,
+# setup network ready. The service then boots straight into WallOfText-Setup.
+#
+#   sudo walloftext-factory-reset              asks first, then restarts the service
+#   sudo walloftext-factory-reset --yes        no question
+#   sudo walloftext-factory-reset --shutdown   ...and power off (ready for imaging)
+set -euo pipefail
+[[ $EUID -eq 0 ]] || { echo "Run with sudo." >&2; exit 1; }
+
+YES=0; SHUTDOWN=0
+for a in "$@"; do
+  case "$a" in
+    --yes|-y) YES=1 ;;
+    --shutdown) SHUTDOWN=1; YES=1 ;;
+    *) echo "Unknown option: $a" >&2; exit 2 ;;
+  esac
+done
+
+if [[ $YES -eq 0 ]]; then
+  echo "This forgets the home Wi-Fi, resets both passwords and deletes history and schedules."
+  echo "If you are connected over Wi-Fi, this SSH session will drop."
+  read -r -p "Type RESET to continue: " ans
+  [[ $ans == RESET ]] || { echo "Cancelled."; exit 1; }
+fi
+
+systemctl stop walloftext.service 2>/dev/null || true
+
+# Forget every Wi-Fi client profile (ours, and any made by Imager/netplan).
+while IFS=: read -r name type; do
+  [[ $type == 802-11-wireless && $name != wot-setup-ap ]] || continue
+  mode="$(nmcli -g 802-11-wireless.mode con show "$name" 2>/dev/null || true)"
+  [[ -z $mode || $mode == infrastructure ]] || continue
+  echo "Forgetting Wi-Fi profile: $name"
+  nmcli con delete "$name" >/dev/null || true
+done < <(nmcli -t -f NAME,TYPE con show)
+
+# Imager can write the Wi-Fi into netplan; NetworkManager usually removes the YAML
+# on delete, but make sure no wifis: block survives to come back on next boot.
+for f in /etc/netplan/*.yaml; do
+  [[ -f $f ]] || continue
+  if grep -q 'wifis:' "$f"; then
+    echo "Removing netplan Wi-Fi config: $f"
+    rm -f "$f"
+  fi
+done
+
+# Imager seeds cloud-init with the Wi-Fi in /boot/firmware/network-config. cloud-init
+# re-applies it whenever it thinks this is a new instance (e.g. a cloned card), so
+# replace it with an Ethernet-only config.
+NC=/boot/firmware/network-config
+if [[ -f $NC ]] && grep -q 'wifis:' "$NC"; then
+  echo "Removing Wi-Fi from $NC"
+  cat > "$NC" <<'EOF'
+# Wall of Text factory state: no home Wi-Fi. The app's setup network handles Wi-Fi.
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: true
+      optional: true
+EOF
+fi
+
+/usr/local/sbin/walloftext-reset-password --quiet
+
+rm -rf /var/lib/walloftext/*
+install -d -m 0750 -o walloftext -g walloftext /var/lib/walloftext
+
+nmcli con modify wot-setup-ap wifi-sec.psk rootroot 2>/dev/null || true
+nmcli con down wot-setup-ap >/dev/null 2>&1 || true
+
+if [[ $SHUTDOWN -eq 1 ]]; then
+  echo "Factory state. Powering off."
+  systemctl poweroff
+else
+  systemctl start walloftext.service
+  echo "Factory state. The Pi now hosts WallOfText-Setup (password rootroot)."
+fi

@@ -1,0 +1,47 @@
+# Progress
+
+## 20 Nov 2026: Phase 0 scripts and Phase 1 code (mock-tested)
+
+The Pi has no electronics attached yet, and `design-handoff/` is still on the Windows PC.
+
+### Phase 0
+- Spike scripts written: `spikes/printer_probe.py`, `button_led_test.py`, `hotspot_test.sh`
+  (safe to start over Wi-Fi SSH: it restores the home Wi-Fi by itself), `captive_probe_server.py`.
+- Answers that need no hardware are in `spikes/SPIKE_RESULTS.md`. Three of them change the plan:
+  1. **polkit rule needed** for nmcli as the service user (being in `netdev` is not enough on trixie).
+  2. **Imager's Wi-Fi is a netplan profile** (`netplan-wlan0-*`, from cloud-init `network-config`).
+     "Saved home Wi-Fi" means any infrastructure Wi-Fi profile. Reset and factory reset remove
+     them all, including the cloud-init seed.
+  3. The radio supports **AP + client on one channel**. v1 keeps one mode at a time, as planned.
+- Printer, button, LED, phone captive sheets and `.local` resolution are still open (⏳).
+
+### Phase 1 (code done, not yet installed on the Pi)
+- Backend skeleton: config, SQLite (WAL, migrations), events/SSE, mock and real hardware layers
+  (printer, button gestures incl. 10 s reset hold, LED patterns, system stats).
+- Password file (`/etc/walloftext/passwords.txt`): defaults, recreated if missing, mtime reload,
+  invalid values ignored with a warning, atomic writes, AP re-keyed on change.
+- Sign-in: server-side sessions, HttpOnly + SameSite=Lax cookie, 30-day remember, lockout
+  (5 tries → 60 s, doubling to 15 min), password change signs out other devices,
+  "Ask for password" toggle, Host/Origin/Content-Type checks on mutating routes.
+- Wi-Fi state machine (`SETUP_AP / CONNECTING / ONLINE / FALLBACK_AP`) with unit tests against a
+  fake NetworkManager: router-slower-than-Pi, no retry while a phone is on the AP, 5-minute link
+  loss, reset, a failed "Change network" returning to the old network, enterprise refusal.
+- Captive portal: probe URLs and foreign hosts → `http://10.42.0.1/setup` in AP modes only;
+  DNS catch-all and DHCP option 114 in `deploy/nm/wot-captive.conf`.
+- `setup-ui/`: setup page (network list, password sheet, Other network, connecting, error banner),
+  Sign in, Phase 1 settings placeholder (Device › Wi-Fi, Access passwords), dev panel.
+  **Flag for design review** (BUILD_PLAN 5.6). The pages use their own CSS variables with
+  fallbacks until `design-handoff/tokens.css` is in the repo.
+- Setup slip (Wi-Fi QR, no readable password) and Connected slip, 384 px 1-bit.
+- Deploy: `install.sh` (`--update`, `--keep-wifi`, refuses a factory-state install without
+  Ethernet unless `--force`), systemd unit (port 80 via CAP_NET_BIND_SERVICE, hardened),
+  polkit, udev (generic until the printer ID is known), journald cap, `walloftext-factory-reset
+  [--shutdown]`, `walloftext-reset-password`, `deploy.ps1`.
+- Tests: 45 passing (`cd backend && ../.venv/bin/python -m pytest -q`). Smoke-tested in mock mode:
+  setup → connect → sign-in → settings, both slips printed.
+
+### Not done yet / next
+- Install on the Pi and check the Phase 1 "done when" list (needs Ethernet or `--force`, plus a phone).
+- Phase 0 hardware answers (printer, button, LED, phones).
+- Copy `design-handoff/` from the PC into the repo (needed for Phase 2 UI work).
+- Clone handling (new SSH host keys and machine ID on first boot) is in Phase 9.

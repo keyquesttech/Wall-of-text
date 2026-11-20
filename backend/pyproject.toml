@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "walloftext"
+version = "0.1.0"
+description = "Wall of Text: a thermal wall printer on a Raspberry Pi"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.29",
+  "pydantic>=2.6",
+  "pillow>=10",
+  "numpy>=1.26",
+  "segno>=1.6",
+  "apscheduler>=3.10,<4",
+  "httpx>=0.27",
+  "sse-starlette>=2",
+  "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+pi = ["gpiozero>=2", "lgpio>=0.2"]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+walloftext = "walloftext.app:main"
+
+[tool.setuptools.packages.find]
+include = ["walloftext*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

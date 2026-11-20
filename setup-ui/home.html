@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0e0f13">
+<title>Wall Printer</title>
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/ui/setup.css">
+</head>
+<body>
+<!-- Phase 1 placeholder for the Preact app (Phase 2). Covers Settings › Device › Wi-Fi
+     (BUILD_PLAN 5.6 screen 4) and the Access password rows (10.2). DESIGN REVIEW. -->
+<main>
+  <div class="brand">Wall Printer</div>
+  <h1>Settings</h1>
+  <div id="banners"></div>
+
+  <h2>Device › Wi-Fi</h2>
+  <div class="glass">
+    <dl class="kv" id="wifi"><dt>Network</dt><dd>…</dd></dl>
+  </div>
+  <div class="row-gap">
+    <a class="btn" href="/setup">Change network</a>
+    <button class="btn btn-danger" id="forget" type="button">Forget this network and start setup again</button>
+  </div>
+
+  <h2>Device</h2>
+  <div class="glass"><dl class="kv" id="device"><dt>Version</dt><dd>…</dd></dl></div>
+  <div class="row-gap">
+    <button class="btn" id="slip" type="button">Print setup slip</button>
+  </div>
+
+  <h2>Access › Password</h2>
+  <form class="glass" style="padding:4px 16px 16px" id="pw-form" novalidate>
+    <div id="pw-msg"></div>
+    <label for="pw-cur">Current password</label>
+    <div class="field"><input id="pw-cur" type="password" autocomplete="current-password"><button type="button" class="show">Show</button></div>
+    <label for="pw-new">New password (4 to 64 characters)</label>
+    <div class="field"><input id="pw-new" type="password" autocomplete="new-password"><button type="button" class="show">Show</button></div>
+    <label for="pw-conf">Confirm new password</label>
+    <div class="field"><input id="pw-conf" type="password" autocomplete="new-password"><button type="button" class="show">Show</button></div>
+    <button class="btn btn-green block" type="submit">Change password</button>
+    <p class="dim" style="font-size:13px;margin-top:12px">Changing it signs out every other device.</p>
+  </form>
+
+  <h2>Access › Setup Wi-Fi password</h2>
+  <form class="glass" style="padding:4px 16px 16px" id="ap-form" novalidate>
+    <div id="ap-msg"></div>
+    <p class="dim" style="font-size:14px;margin:12px 0 0">This is the password of the WallOfText-Setup network, which appears only during setup or when the Pi loses your Wi-Fi. Changing it re-keys that network. 8 to 63 characters.</p>
+    <label for="ap-cur">Your site password</label>
+    <div class="field"><input id="ap-cur" type="password" autocomplete="current-password"><button type="button" class="show">Show</button></div>
+    <label for="ap-new">New setup Wi-Fi password</label>
+    <div class="field"><input id="ap-new" type="password" autocomplete="new-password"><button type="button" class="show">Show</button></div>
+    <button class="btn btn-green block" type="submit">Change setup Wi-Fi password</button>
+  </form>
+
+  <h2>Access</h2>
+  <div class="glass">
+    <label class="lrow" style="margin:0"><span class="grow">Ask for password</span><input id="ask" type="checkbox" style="width:22px;height:22px;accent-color:var(--wot-green)"></label>
+  </div>
+  <p class="dim" style="font-size:13px;margin:10px 4px">The passwords are stored as plain text on the Pi and typed over plain HTTP on your home network. Treat them as a household lock, not strong security.</p>
+
+  <button class="btn block" id="logout" type="button">Sign out</button>
+</main>
+
+<div class="sheet-backdrop" id="confirm" role="dialog" aria-modal="true" aria-labelledby="cf-title">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h1 id="cf-title">Forget this Wi-Fi?</h1>
+    <p>The printer will leave your home network and disappear from it until it's set up again. It will start the WallOfText-Setup network and print a setup slip.</p>
+    <button class="btn btn-green block" id="cf-yes" type="button" style="background:var(--wot-pink);color:#fff">Forget and start setup</button>
+    <button class="btn block" id="cf-no" type="button">Cancel</button>
+  </div>
+</div>
+
+<script src="/ui/common.js"></script>
+<script>
+(function () {
+  var $ = WOT.$;
+  WOT.showHide();
+  function kv(el, rows) {
+    el.innerHTML = rows.map(function (r) { return "<dt>" + WOT.esc(r[0]) + "</dt><dd>" + WOT.esc(r[1] == null ? "—" : r[1]) + "</dd>"; }).join("");
+  }
+  var MODES = { online: "Connected", connecting: "Connecting", setup_ap: "Setup network", fallback_ap: "Can't find your Wi-Fi" };
+  function renderWifi(w) {
+    kv($("#wifi"), [["Status", MODES[w.mode] || w.mode], ["Network", w.ssid], ["Signal", w.signal != null ? w.signal + "%" : null],
+      ["IP address", w.ip], ["Address", "http://" + w.hostname]]);
+  }
+  function load() {
+    WOT.api("GET", "/api/wifi/status").then(function (r) { if (r.ok) renderWifi(r.data); });
+    WOT.api("GET", "/api/device").then(function (r) {
+      if (!r.ok) return;
+      var d = r.data;
+      kv($("#device"), [["Version", d.version], ["Temperature", d.temperature_c != null ? d.temperature_c.toFixed(1) + " °C" : null],
+        ["Throttling", d.throttled.flags.length ? d.throttled.flags.join(", ") : "None"],
+        ["Clock", d.clock_synced ? "Synced" : "Waiting for the clock"], ["Printer", d.printer.state], ["IPs", d.ips.join(", ")]]);
+    });
+    WOT.api("GET", "/api/auth/status").then(function (r) {
+      if (!r.ok) return;
+      if (!r.data.signed_in) { location.replace("/signin"); return; }
+      $("#ask").checked = r.data.ask_for_password;
+      var b = [];
+      if (r.data.default_password_in_use) b.push("You're still using the default password. Change it below.");
+      if (r.data.default_setup_wifi_password_in_use) b.push("You're still using the default setup Wi-Fi password. Change it below.");
+      if (r.data.password_file_warning) b.push(r.data.password_file_warning);
+      $("#banners").innerHTML = b.map(function (t) { return '<div class="banner" role="alert">' + WOT.alert + "<div>" + WOT.esc(t) + "</div></div>"; }).join("");
+    });
+  }
+  load();
+  try {
+    var es = new EventSource("/api/events");
+    es.addEventListener("wifi", function (e) { renderWifi(JSON.parse(e.data)); });
+  } catch (e) {}
+  setInterval(load, 15000);
+
+  $("#pw-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    if ($("#pw-new").value !== $("#pw-conf").value) { WOT.banner($("#pw-msg"), "The new passwords don't match."); return; }
+    WOT.api("POST", "/api/auth/password", { current: $("#pw-cur").value, new: $("#pw-new").value }).then(function (r) {
+      WOT.banner($("#pw-msg"), r.ok ? "Password changed. Other devices are signed out." : (r.data.message || "Couldn't change it."), r.ok ? "info" : "");
+      if (r.ok) { $("#pw-form").reset(); load(); }
+    });
+  });
+  $("#ap-form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    WOT.api("POST", "/api/auth/setup-wifi-password", { current_password: $("#ap-cur").value, new: $("#ap-new").value }).then(function (r) {
+      WOT.banner($("#ap-msg"), r.ok ? "Setup Wi-Fi password changed. It applies the next time the setup network starts." : (r.data.message || "Couldn't change it."), r.ok ? "info" : "");
+      if (r.ok) { $("#ap-form").reset(); load(); }
+    });
+  });
+  $("#ask").addEventListener("change", function () {
+    WOT.api("POST", "/api/auth/ask-for-password", { ask_for_password: $("#ask").checked });
+  });
+  $("#slip").addEventListener("click", function () {
+    WOT.api("POST", "/api/print/setup-slip", {}).then(function (r) { alert(r.ok ? "Printing the setup slip." : (r.data.message || "Couldn't print.")); });
+  });
+  $("#forget").addEventListener("click", function () { $("#confirm").classList.add("open"); });
+  $("#cf-no").addEventListener("click", function () { $("#confirm").classList.remove("open"); });
+  $("#cf-yes").addEventListener("click", function () {
+    WOT.api("POST", "/api/wifi/reset", { confirm: true }).then(function (r) {
+      $("#confirm").classList.remove("open");
+      document.body.innerHTML = '<main class="center"><h1>Starting setup</h1><p>Join the WallOfText-Setup Wi-Fi to set the printer up again.</p></main>';
+    });
+  });
+  $("#logout").addEventListener("click", function () {
+    WOT.api("POST", "/api/auth/logout", {}).then(function () { location.replace("/signin"); });
+  });
+})();
+</script>
+</body>
+</html>
