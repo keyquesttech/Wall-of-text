@@ -18,6 +18,7 @@ from .api import auth as auth_api
 from .api import dev as dev_api
 from .api import device as device_api
 from .api import printing as printing_api
+from .api import remote as remote_api
 from .api import schedules as schedules_api
 from .api import settings as settings_api
 from .api import wifi as wifi_api
@@ -50,6 +51,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
         svc.queue.start()
         svc.led_ctl.update()
         svc.extras["scheduler"].start()
+        svc.extras["remote"].reconcile()
         await svc.wifi.start()
 
         async def watch_password_file():
@@ -67,6 +69,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
         watcher.cancel()
         await svc.wifi.stop()
         await svc.extras["scheduler"].stop()
+        await svc.extras["remote"].stop()
         svc.queue.stop()
         if svc.button:
             svc.button.close()
@@ -156,6 +159,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
     app.include_router(schedules_api.router)
     app.include_router(access_api.router)
     app.include_router(backup_api.router)
+    app.include_router(remote_api.router)
     if s.is_mock:
         app.include_router(dev_api.router)
 

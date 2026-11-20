@@ -79,6 +79,23 @@ MIGRATIONS: list[str] = [
     );
     CREATE INDEX inbox_state ON inbox(state);
     """,
+    # 6: remote messages
+    """
+    CREATE TABLE remote_senders (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        identifiers TEXT NOT NULL,
+        approval TEXT NOT NULL DEFAULT 'print',
+        created_at REAL NOT NULL
+    );
+    CREATE TABLE remote_seen (
+        external_id TEXT PRIMARY KEY,
+        channel TEXT NOT NULL,
+        seen_at REAL NOT NULL,
+        outcome TEXT NOT NULL
+    );
+    CREATE INDEX remote_seen_at ON remote_seen(seen_at);
+    """,
 ]
 
 

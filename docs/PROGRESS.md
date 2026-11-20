@@ -1,5 +1,22 @@
 # Progress
 
+## Phase 6: remote messages
+- One pipeline (`remote/pipeline.py`): dedupe by external id (persisted, so nothing prints twice
+  after a reboot; marked before queueing) → allow-list (+ email SPF/DKIM alignment check) → per-sender
+  rate limit → clean (HTML → text, quoted replies and signatures removed, blank lines collapsed, cap
+  with "… (cut)") → approval ("Wait for my OK" goes to the shared list) → daily limit → quiet hours
+  → print. Unknown senders are dropped and counted.
+- Adapters: Email over IMAP with an app password (`imap-tools`), Telegram bot via long-polled
+  `getUpdates` (offset committed after handling, photos, pairing mode, "Printed"/"Queued"
+  replies), mock adapter reading `var/mock-inbox/*.json` + `POST /api/dev/inbound`. SMS not built.
+- Channel manager with 60 s → 15 min back-off and "Can't connect" / "Sign in again" states.
+- Secrets in `secrets.json` (0600), write-only over the API, excluded from backups (tested).
+- UI: Settings › Connections › Remote messages (channel setup with step-by-step help, Telegram
+  "Add me" pairing, allowed senders with approval mode, blocked count). History has the Remote filter.
+- What to create and where to paste it: [REMOTE_SETUP.md](REMOTE_SETUP.md).
+- Not yet tried against real Gmail / Telegram accounts (none configured on this Pi).
+
+
 ## Phase 5: settings and connections
 - Settings groups: Printer (darkness → ESC 7 heat, speed → band pause, extra feed, paper saver, paper
   estimate, test page), Fonts (upload .ttf/.otf, min readable size, default font/size), Button & light

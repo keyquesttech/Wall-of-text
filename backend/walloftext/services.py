@@ -164,6 +164,21 @@ def build(settings: Settings | None = None, nm=None) -> Services:
     from .remote.inbox import Inbox
 
     svc.extras["inbox"] = Inbox(svc)
+    from .remote.email_imap import EmailAdapter
+    from .remote.manager import RemoteManager
+    from .remote.mock import MockAdapter
+    from .remote.pipeline import Pipeline
+    from .remote.secrets import Secrets
+    from .remote.telegram import TelegramAdapter
+
+    secrets_store = Secrets(settings.data_dir / "secrets.json")
+    svc.extras["secrets"] = secrets_store
+    adapters = {"email": EmailAdapter(secrets_store), "telegram": TelegramAdapter(secrets_store, store)}
+    if not real:
+        adapters["mock"] = MockAdapter(settings.data_dir / "mock-inbox")
+    pipeline = Pipeline(svc)
+    svc.extras["remote"] = RemoteManager(svc, pipeline, adapters)
+    queue.on_done.append(pipeline.on_job_done)
     passwords.on_gui_change.append(lambda: sessions.revoke_all())
     passwords.on_wifi_change.append(svc.on_setup_wifi_password_change)
     wifi.on_change.append(svc.on_wifi_change)

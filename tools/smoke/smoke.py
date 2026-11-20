@@ -117,6 +117,25 @@ def run(viewport, tag):
         shot(page, f"{tag}-41-inbox")
         page.click("button:has-text('Print it')")
         expect(page.locator("text=Nothing waiting.").first).to_be_visible()
+        # Remote: add a sender, push a message through the mock inbox, see it in History › Remote
+        page.goto(args.base + "/settings/remote")
+        page.click("text=Add a person")
+        page.fill("#sn", "Sam")
+        page.fill("input[aria-label='Address or ID']", "sam@example.com")
+        page.click(".sheet button.btn-green:has-text('Save')")
+        expect(page.locator("text=sam@example.com").first).to_be_visible()
+        shot(page, f"{tag}-50-remote")
+        page.request.post(args.base + "/api/dev/inbound", data={"channel": "email", "sender_id": "sam@example.com",
+                          "sender_name": "Sam", "subject": "Dinner", "body": "Back at 7, put the oven on",
+                          "external_id": f"smoke:{tag}"})
+        page.goto(args.base + "/history")
+        page.click(".chip:has-text('Remote')")
+        expect(page.locator("text=From Sam: Dinner").first).to_be_visible()
+        page.locator("a.lrow").first.click()
+        expect(page.locator(".sheet .paper img")).to_be_visible()
+        page.wait_for_timeout(400)
+        shot(page, f"{tag}-51-remote-history")
+        page.keyboard.press("Escape")
         extra = getattr(sys.modules[__name__], "EXTRA", None)
         if extra:
             extra(page, tag)

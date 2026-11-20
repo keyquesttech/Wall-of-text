@@ -36,7 +36,11 @@ export function Sheet(props: { open: boolean; onClose: () => void; title?: strin
       }
     };
     document.addEventListener("keydown", onKey);
-    setTimeout(() => ref.current?.querySelector<HTMLElement>("input, textarea, button")?.focus(), 30);
+    setTimeout(() => {
+      // only if the user hasn't already moved focus into the sheet
+      if (ref.current && !ref.current.contains(document.activeElement))
+        ref.current.querySelector<HTMLElement>("input, textarea, button")?.focus();
+    }, 30);
     return () => { document.removeEventListener("keydown", onKey); prev?.focus?.(); };
   }, [props.open]);
   if (!props.open) return null;

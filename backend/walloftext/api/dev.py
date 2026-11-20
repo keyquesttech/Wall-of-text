@@ -51,5 +51,7 @@ async def net_state(body: NetStateBody, request: Request):
 
 
 @router.post("/inbound")
-async def inbound():
-    return JSONResponse({"error": "not_yet", "message": "Remote messages arrive in Phase 6."}, status_code=501)
+async def inbound(payload: dict, request: Request):
+    from .remote import dev_inbound
+
+    return await dev_inbound(payload, request)
