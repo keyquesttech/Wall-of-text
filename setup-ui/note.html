@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e0f13">
+<title>Leave a note · Wall Printer</title>
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/ui/setup.css">
+<style>
+  .stickers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .stickers button { aspect-ratio: 1; border-radius: 14px; border: 1px solid var(--wot-line); background: var(--wot-panel-solid); font-size: 28px; color: var(--wot-text); cursor: pointer; }
+  .stickers button[aria-pressed="true"] { background: var(--wot-text); color: var(--wot-bg); }
+  textarea.input { width: 100%; min-height: 140px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--wot-line); background: var(--wot-panel-solid); color: var(--wot-text); font: inherit; font-size: 17px; resize: vertical; }
+  .count { text-align: right; font-size: 13px; color: var(--wot-dim); margin: 4px 4px 0; }
+</style>
+</head>
+<body>
+<!-- DESIGN REVIEW: guest page built from the setup components; not in the handoff mockups. -->
+<main>
+  <div class="brand">Wall Printer</div>
+  <h1>Leave a note</h1>
+  <div id="closed" class="hidden"><p>The guest page is switched off right now.</p></div>
+  <form id="form" class="hidden" novalidate>
+    <p class="dim" id="modeline">Your note prints on the wall.</p>
+    <div id="msg"></div>
+    <label for="name">Your name</label>
+    <input id="name" type="text" maxlength="40" autocomplete="nickname" placeholder="Optional">
+    <label for="text">Note</label>
+    <textarea id="text" class="input" maxlength="280" placeholder="Say hello…"></textarea>
+    <div class="count" id="count"></div>
+    <label>Add a sticker</label>
+    <div class="stickers" id="stickers" role="group" aria-label="Stickers"></div>
+    <button class="btn btn-green block" id="go" type="submit">Send to the wall</button>
+  </form>
+</main>
+<script src="/ui/common.js"></script>
+<script>
+(function () {
+  var $ = WOT.$, sticker = null, max = 280;
+  var GLYPH = { heart: "♥", star: "★", smile: "☺", sun: "☀", flower: "✿", note: "♫", check: "✔", coffee: "☕" };
+  function count() { $("#count").textContent = $("#text").value.length + " / " + max; }
+  WOT.api("GET", "/api/guest").then(function (r) {
+    if (!r.ok || !r.data.enabled) { $("#closed").classList.remove("hidden"); return; }
+    max = r.data.max_chars; $("#text").maxLength = max; count();
+    if (r.data.mode === "approve") $("#modeline").textContent = "Your note prints once someone in the house says OK.";
+    $("#form").classList.remove("hidden");
+    $("#stickers").innerHTML = r.data.stickers.map(function (s) {
+      return '<button type="button" data-s="' + s + '" aria-pressed="false" aria-label="' + s + '">' + (GLYPH[s] || "?") + "</button>";
+    }).join("");
+    var b = document.querySelectorAll("#stickers button");
+    for (var i = 0; i < b.length; i++) b[i].addEventListener("click", function (e) {
+      var s = e.currentTarget.getAttribute("data-s");
+      sticker = sticker === s ? null : s;
+      for (var j = 0; j < b.length; j++) b[j].setAttribute("aria-pressed", b[j].getAttribute("data-s") === sticker ? "true" : "false");
+    });
+  });
+  $("#text").addEventListener("input", count);
+  $("#form").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    $("#go").disabled = true;
+    WOT.api("POST", "/api/note", { name: $("#name").value, text: $("#text").value, sticker: sticker }).then(function (r) {
+      $("#go").disabled = false;
+      if (r.ok) { WOT.banner($("#msg"), r.data.message, "info"); $("#text").value = ""; count(); }
+      else WOT.banner($("#msg"), r.data.message || "That didn't send. Try again.");
+    }, function () { $("#go").disabled = false; WOT.banner($("#msg"), "Can't reach the printer."); });
+  });
+})();
+</script>
+</body>
+</html>

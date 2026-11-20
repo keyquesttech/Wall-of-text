@@ -95,6 +95,28 @@ def run(viewport, tag):
         page.wait_for_url(args.base + "/schedules")
         page.wait_for_timeout(400)
         shot(page, f"{tag}-21-schedules")
+        # every settings page renders without errors
+        for sp in ["printer", "fonts", "button", "schedules", "history", "weather", "calendars", "tasks",
+                   "remote", "access", "wifi", "device", "display"]:
+            page.goto(args.base + "/settings/" + sp)
+            expect(page.locator("h1")).not_to_have_text("Not found")
+            page.wait_for_timeout(250)
+            if sp in ("printer", "button", "access", "device", "schedules"):
+                shot(page, f"{tag}-30-settings-{sp}")
+        # guest page: enable, post a note as a stranger, approve it
+        page.request.patch(args.base + "/api/settings", data={"guest": {"enabled": True, "mode": "approve"}})
+        g = b.new_context(viewport=viewport).new_page()
+        g.goto(args.base + "/note")
+        g.fill("#text", "Hello from the hallway")
+        g.click("#stickers button >> nth=0")
+        shot(g, f"{tag}-40-guest")
+        g.click("#go")
+        expect(g.locator("#msg")).to_contain_text("approved")
+        page.goto(args.base + "/settings/access")
+        expect(page.locator("text=Hello from the hallway")).to_be_visible()
+        shot(page, f"{tag}-41-inbox")
+        page.click("button:has-text('Print it')")
+        expect(page.locator("text=Nothing waiting.").first).to_be_visible()
         extra = getattr(sys.modules[__name__], "EXTRA", None)
         if extra:
             extra(page, tag)

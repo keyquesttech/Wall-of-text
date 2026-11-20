@@ -296,6 +296,8 @@ class PrintQueue:
             return jid in self._cancel_ids
 
         state, err = "done", None
+        if hasattr(self.printer, "band_pause_s") and not hasattr(self.printer, "out_dir"):
+            self.printer.band_pause_s = {"slow": 0.09, "normal": 0.05, "fast": 0.02}.get(pset.get("speed"), 0.05)
         try:
             self.printer.print_bitmap(img, copies=job["copies"] or 1, extra_feed=int(pset.get("extra_feed", 0)),
                                       on_progress=progress, should_cancel=should_cancel,

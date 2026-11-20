@@ -62,6 +62,23 @@ MIGRATIONS: list[str] = [
         last_result TEXT
     );
     """,
+    # 5: shared approval list (guest notes + remote messages)
+    """
+    CREATE TABLE inbox (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        source TEXT NOT NULL,
+        sender TEXT NOT NULL,
+        channel TEXT NOT NULL,
+        title TEXT NOT NULL,
+        document TEXT NOT NULL,
+        preview TEXT,
+        state TEXT NOT NULL,
+        created_at REAL NOT NULL,
+        decided_at REAL,
+        meta TEXT
+    );
+    CREATE INDEX inbox_state ON inbox(state);
+    """,
 ]
 
 

@@ -11,7 +11,9 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__
+from .api import access as access_api
 from .api import actions as actions_api
+from .api import backup as backup_api
 from .api import auth as auth_api
 from .api import dev as dev_api
 from .api import device as device_api
@@ -29,7 +31,8 @@ log = logging.getLogger(__name__)
 
 # Paths anyone may load without signing in.
 OPEN_PREFIXES = ("/ui/", "/fonts/", "/favicon", "/manifest", "/apple-touch-icon", "/icons/")
-OPEN_PATHS = {"/signin", "/api/auth/login", "/api/auth/status", "/api/health", "/tokens.css"}
+OPEN_PATHS = {"/signin", "/api/auth/login", "/api/auth/status", "/api/health", "/tokens.css",
+              "/note", "/api/note", "/api/guest"}
 AP_OPEN_PATHS = {"/setup", "/api/wifi/status", "/api/wifi/scan", "/api/wifi/connect"}
 MUTATING = {"POST", "PUT", "PATCH", "DELETE"}
 
@@ -151,6 +154,8 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
     app.include_router(settings_api.router)
     app.include_router(actions_api.router)
     app.include_router(schedules_api.router)
+    app.include_router(access_api.router)
+    app.include_router(backup_api.router)
     if s.is_mock:
         app.include_router(dev_api.router)
 
@@ -163,6 +168,10 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
     @app.get("/signin", include_in_schema=False)
     async def signin_page():
         return page("signin.html")
+
+    @app.get("/note", include_in_schema=False)
+    async def note_page():
+        return page("note.html")
 
     @app.get("/setup", include_in_schema=False)
     async def setup_page(request: Request):

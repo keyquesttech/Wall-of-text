@@ -141,7 +141,7 @@ def build(settings: Settings | None = None, nm=None) -> Services:
     svc = Services(settings=settings, store=store, passwords=passwords, sessions=sessions,
                    limiter=LoginLimiter(), events=events, nm=nm, wifi=wifi, printer=printer,
                    led=led, system=system, app_settings=app_settings, fonts=fonts,
-                   renderer=Renderer(fonts), queue=queue)
+                   renderer=Renderer(fonts, app_settings.all), queue=queue)
 
     svc.led_ctl = LedController(led, app_settings.all)
     events.listeners.append(svc.led_ctl.on_event)
@@ -161,6 +161,9 @@ def build(settings: Settings | None = None, nm=None) -> Services:
 
     svc.extras["sources"] = Sources(svc)
     svc.extras["scheduler"] = Scheduler(svc)
+    from .remote.inbox import Inbox
+
+    svc.extras["inbox"] = Inbox(svc)
     passwords.on_gui_change.append(lambda: sessions.revoke_all())
     passwords.on_wifi_change.append(svc.on_setup_wifi_password_change)
     wifi.on_change.append(svc.on_wifi_change)

@@ -56,8 +56,9 @@ def _blank(h: int) -> Image.Image:
 
 
 class Renderer:
-    def __init__(self, fonts: FontRegistry):
+    def __init__(self, fonts: FontRegistry, settings_get=None):
         self.fonts = fonts
+        self.settings_get = settings_get
 
     # ------------------------------------------------------------ public --
     def render(self, doc: dict[str, Any]) -> RenderResult:
@@ -65,7 +66,16 @@ class Renderer:
             raise DocumentError("A document needs a list of blocks.")
         if len(doc["blocks"]) > 200:
             raise DocumentError("Too many blocks (200 at most).")
-        opts = doc.get("options") or {}
+        opts = dict(doc.get("options") or {})
+        saver = False
+        if self.settings_get is not None:
+            try:
+                saver = bool(self.settings_get()["printer"].get("paper_saver"))
+            except Exception:
+                saver = False
+        if saver:  # paper saver: tighter gaps, no top margin, trailing blank rows trimmed
+            opts.setdefault("gap", 3)
+            opts.setdefault("top_margin", 0)
         warnings: list[str] = []
         parts: list[Image.Image] = []
         for i, b in enumerate(doc["blocks"]):
@@ -90,6 +100,11 @@ class Renderer:
         for p in parts:
             out.paste(p, (0, y))
             y += p.height + gap
+        if saver:
+            arr0 = np.asarray(out, dtype=bool)
+            ink_rows = np.where(~arr0.all(axis=1))[0]
+            if len(ink_rows):
+                out = out.crop((0, 0, WIDTH, int(ink_rows[-1]) + 3))
         if opts.get("border"):
             d = ImageDraw.Draw(out)
             d.rectangle([0, 0, WIDTH - 1, out.height - 1], outline=0, width=3)
@@ -283,6 +298,17 @@ class Renderer:
     def _b_drawing(self, b, warnings):
         b = dict(b, style="sharp")
         return self._b_image(b, warnings)
+
+    def _b_sticker(self, b, warnings):
+        from .stickers import sticker_image
+
+        size = {"S": 72, "M": 120, "L": 180}.get(b.get("size", "M"), 120)
+        st = sticker_image(b.get("name", "star"), size)
+        out = _blank(size)
+        align = b.get("align", "center")
+        x = MARGIN if align == "left" else WIDTH - MARGIN - size if align == "right" else (WIDTH - size) // 2
+        out.paste(st, (x, 0))
+        return out
 
     def _b_columns(self, b, warnings):
         """Two short texts side by side, e.g. "Mon 12°" | "Rain 40%"."""

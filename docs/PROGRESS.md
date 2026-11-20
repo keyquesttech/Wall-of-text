@@ -1,5 +1,24 @@
 # Progress
 
+## Phase 5: settings and connections
+- Settings groups: Printer (darkness → ESC 7 heat, speed → band pause, extra feed, paper saver, paper
+  estimate, test page), Fonts (upload .ttf/.otf, min readable size, default font/size), Button & light
+  (gesture → action, fixed 10 s reset, brightness, pattern per event), Schedules (missed policy, quiet
+  hours, daily limit, holiday mode, time zone), History retention, Display (reduce motion /
+  transparency), Weather (place lookup, units), Calendars (secret iCal links, checked on add),
+  Google Tasks (token upload + list picker, "Sign in again" when Google rejects it), Access
+  (passwords, Ask for password, guest page, Waiting for your OK), Wi-Fi, Device (stats, heat and
+  under-voltage banners, backup/restore, restart, shut down).
+- Guest page `/note` (framework-free, open without sign-in when enabled): text + 8 built-in stickers,
+  per-client rate limit, length cap, "wait for my OK" or "print straight away", quiet hours and the
+  daily limit apply.
+- Shared approval list `/api/inbox` (guest notes now, remote messages in Phase 6); the LED shows
+  "message waiting".
+- Backup zip (settings, schedules, templates, lists, fonts, allowed senders) with path-safe restore;
+  never contains passwords, channel secrets or Google tokens (tested).
+- `tools/google_auth.py`: PKCE installed-app flow on the PC, stdlib only, writes the token file.
+
+
 ## Phase 4: schedules, sources, routines
 - Scheduler (`scheduler/engine.py`): local wall-clock times + zone (DST-safe), days of week, waits for
   NTP sync ("Waiting for the clock"), missed-run policy (late within 60 min / skip / always) with

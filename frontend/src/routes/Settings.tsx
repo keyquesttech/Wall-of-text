@@ -5,7 +5,7 @@ import { auth, settings, wifi } from "../lib/state";
 import { IconChevron } from "../components/icons";
 import { StatusPill } from "../components/printer";
 import { Banner, Sheet, toast, ToggleRow, Topbar } from "../components/ui";
-import { SETTINGS_PAGES } from "./settings/pages";
+import { GuestAndInbox, SETTINGS_PAGES } from "./settings/pages";
 
 const MODES: Record<string, string> = { online: "Connected", connecting: "Connecting", setup_ap: "Setup network", fallback_ap: "Can't find your Wi-Fi" };
 
@@ -155,12 +155,7 @@ export function AccessPage() {
         <button class="btn btn-green block" style="margin-top:16px" disabled={!apCur || apNew.length < 8}>Change setup Wi-Fi password</button>
       </form>
       <p class="dim tiny" style="margin:14px 6px">Both passwords are stored as plain text on the printer and typed over plain HTTP on your home network. Treat them as a household lock, not strong security.</p>
-      {settings.value && <GuestSection />}
+      {settings.value && <GuestAndInbox />}
     </>
   );
-}
-
-// Filled in Phase 5.
-function GuestSection() {
-  return null;
 }
