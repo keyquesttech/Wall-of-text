@@ -1,5 +1,6 @@
 """HTTP-level checks: sign-in, captive redirects, cross-site rules, Wi-Fi routes."""
 import os
+import time
 
 import pytest
 from fastapi.testclient import TestClient
@@ -27,7 +28,11 @@ def online(svc, fake_nm, settings):
     fake_nm.simulate_boot_autoconnect()
     with TestClient(create_app(services=svc), base_url="http://walloftext.local") as c:
         import asyncio
-        c.portal.call(svc.wifi.tick)
+        for _ in range(50):
+            c.portal.call(svc.wifi.tick)
+            if svc.wifi.status.mode == "online":
+                break
+            time.sleep(0.02)
         assert svc.wifi.status.mode == "online"
         yield c
 

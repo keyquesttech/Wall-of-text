@@ -34,6 +34,17 @@ MIGRATIONS: list[str] = [
         bitmap BLOB
     );
     """,
+    # 3: queue/history columns
+    """
+    ALTER TABLE jobs ADD COLUMN progress INTEGER DEFAULT 0;
+    ALTER TABLE jobs ADD COLUMN copies INTEGER DEFAULT 1;
+    ALTER TABLE jobs ADD COLUMN rows INTEGER;
+    ALTER TABLE jobs ADD COLUMN held_until REAL;
+    ALTER TABLE jobs ADD COLUMN started_at REAL;
+    ALTER TABLE jobs ADD COLUMN meta TEXT;
+    CREATE INDEX jobs_state ON jobs(state);
+    CREATE INDEX jobs_source ON jobs(source);
+    """,
 ]
 
 

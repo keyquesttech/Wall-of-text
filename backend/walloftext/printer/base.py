@@ -9,6 +9,10 @@ from PIL import Image
 WIDTH = 384
 
 
+class Cancelled(Exception):
+    """Raised by a driver between bands when the job was cancelled."""
+
+
 @dataclass
 class PrinterStatus:
     state: str  # "ready" | "offline" | "paper_out" | "printing"
@@ -20,7 +24,8 @@ class PrinterStatus:
 
 class Printer(Protocol):
     def print_bitmap(self, img: Image.Image, copies: int = 1, extra_feed: int = 0,
-                     on_progress: Callable[[int], None] | None = None) -> None: ...
+                     on_progress: Callable[[int], None] | None = None,
+                     should_cancel: Callable[[], bool] | None = None, density: int | None = None) -> None: ...
     def test_page(self) -> None: ...
     def status(self) -> PrinterStatus: ...
 

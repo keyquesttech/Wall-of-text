@@ -1,5 +1,23 @@
 # Progress
 
+## Phase 2: render and print path, shell, Create (Text)
+- Renderer (`render/document.py`): blocks → 384-dot 1-bit bitmap; one function feeds both the preview
+  and the printer. Block format in [DOCUMENT.md](DOCUMENT.md). Missing glyphs print as `□`,
+  >50 % black warns, image styles photo (Floyd–Steinberg / Atkinson / ordered), sharp, halftone,
+  `lighten` paper-safe limiter. Font registry with uploaded fonts and "min readable size".
+- Persistent queue (`queue/worker.py`): single worker thread, `held → queued → printing → done | failed |
+  cancelled`, progress over SSE, cancel between bands, crash → `failed (interrupted)` with Retry and no
+  auto-reprint, offline/paper-out hold the queue, paper estimate from printed rows, retention pruning.
+- API: `/api/preview`, `/api/print`, `/api/queue`, `/api/history`, `/api/printer/*`, `/api/fonts`, `/api/settings`.
+- Frontend (Preact + TS + Vite, `frontend/`): shell with tab bar (side rail ≥768 px, third column ≥1200 px),
+  status pill + sheet, Create › Text with live "As printed" preview, print-moment animation, Settings ›
+  Wi-Fi and Access ported from Phase 1. Self-hosted fonts. Manifest and icons, no service worker.
+- Golden tests: preview PNG == bitmap stored == bitmap the mock printer received.
+- Playwright smoke test (`tools/smoke/`): sign-in, type, preview, print moment, status sheet, every tab
+  at 390×844 and 1200×800, fails on any page error.
+- Build: Node 22 lives in `~/.local/node` on this Pi for building only; the Pi serves static files.
+
+
 ## 20 Nov 2026: Phase 0 scripts and Phase 1 code (mock-tested)
 
 The Pi has no electronics attached yet, and `design-handoff/` is still on the Windows PC.

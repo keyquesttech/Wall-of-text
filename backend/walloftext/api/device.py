@@ -34,7 +34,7 @@ async def device(request: Request):
         "uptime_s": sysi.uptime_s(),
         "disk": sysi.disk(),
         "clock_synced": await asyncio.to_thread(sysi.clock_synced),
-        "printer": svc.printer.status().to_dict(),
+        "printer": svc.queue.status(),
         "hw": svc.settings.hw,
     }
 
@@ -42,7 +42,7 @@ async def device(request: Request):
 @router.post("/print/setup-slip")
 async def print_setup_slip(request: Request):
     svc = request.app.state.svc
-    if svc.printer.status().state != "ready":
+    if svc.queue.status()["state"] not in ("ready", "printing"):
         return JSONResponse({"error": "printer_offline", "message": "The printer isn't ready."}, status_code=409)
     await svc.print_setup_slip()
     return {"ok": True}
@@ -74,6 +74,7 @@ async def events(request: Request):
     async def gen():
         try:
             yield {"event": "wifi", "data": json.dumps(svc.wifi.status.to_dict())}
+            yield {"event": "printer", "data": json.dumps(svc.queue.status())}
             while True:
                 if await request.is_disconnected():
                     break

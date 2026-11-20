@@ -3,8 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import threading
-import time
+import os
 from dataclasses import dataclass, field
 
 from PIL import Image
@@ -19,8 +18,12 @@ from .hw.system import MockSystemInfo, SystemInfo
 from .net.nm import FakeNetworkManager, NmcliClient
 from .net.wifi import AP_MODES, WifiManager, WifiStatus
 from .printer.drivers import EscposUsbPrinter, MockPrinter
+from .queue.worker import PrintQueue
+from .render.document import Renderer
+from .render.fonts import FontRegistry
 from .render.slips import connected_slip, setup_slip
 from .store.db import Store
+from .store.settings import AppSettings
 
 log = logging.getLogger(__name__)
 
@@ -38,41 +41,36 @@ class Services:
     printer: object
     led: Led
     system: SystemInfo
+    app_settings: AppSettings = None
+    fonts: FontRegistry = None
+    renderer: Renderer = None
+    queue: PrintQueue = None
     button: object = None
     loop: asyncio.AbstractEventLoop | None = None
-    _print_lock: threading.Lock = field(default_factory=threading.Lock)
+    extras: dict = field(default_factory=dict)
 
     # ----------------------------------------------------------- printing --
-    def print_image(self, img: Image.Image, source: str, title: str) -> int:
-        """Phase 1: synchronous print with a jobs row. Phase 2 replaces with the queue worker."""
-        c = self.store.conn()
-        cur = c.execute(
-            "INSERT INTO jobs(source,title,state,created_at) VALUES(?,?,?,?)",
-            (source, title, "printing", time.time()),
-        )
-        job_id = cur.lastrowid
-        try:
-            with self._print_lock:
-                self.printer.print_bitmap(img)
-            c.execute("UPDATE jobs SET state='done', finished_at=? WHERE id=?", (time.time(), job_id))
-        except Exception as exc:
-            log.warning("print failed: %s", exc)
-            c.execute("UPDATE jobs SET state='failed', error=?, finished_at=? WHERE id=?",
-                      (str(exc)[:200], time.time(), job_id))
-        return job_id
+    def print_image(self, img: Image.Image, source: str, title: str, document: dict | None = None,
+                    copies: int = 1, held_until: float | None = None, meta: dict | None = None) -> int:
+        return self.queue.enqueue(img, source, title, document, copies, held_until, meta)
+
+    def print_document(self, document: dict, source: str, title: str, copies: int = 1,
+                       held_until: float | None = None, meta: dict | None = None) -> int:
+        result = self.renderer.render(document)
+        return self.print_image(result.image, source, title, document, copies, held_until, meta)
 
     async def print_setup_slip(self) -> None:
-        if self.printer.status().state != "ready":
+        if self.queue.status()["state"] not in ("ready", "printing"):
             log.info("printer not ready; setup slip skipped")
             return
         img = setup_slip(self.settings.fonts_dir, self.passwords.state.setup_wifi_password)
-        await asyncio.to_thread(self.print_image, img, "System", "Setup slip")
+        self.print_image(img, "System", "Setup slip")
 
     async def print_connected_slip(self, ssid: str, ip: str | None) -> None:
-        if self.printer.status().state != "ready":
+        if self.queue.status()["state"] not in ("ready", "printing"):
             return
         img = connected_slip(self.settings.fonts_dir, ssid, ip)
-        await asyncio.to_thread(self.print_image, img, "System", "Connected")
+        self.print_image(img, "System", "Connected")
 
     # ------------------------------------------------------------ button --
     def on_gesture(self, gesture: str) -> None:
@@ -113,6 +111,9 @@ def build(settings: Settings | None = None, nm=None) -> Services:
 
     if nm is None:
         nm = NmcliClient() if real else FakeNetworkManager()
+        if not real and os.environ.get("WOT_MOCK_ONLINE"):
+            nm.profiles["wot-client"] = {"ssid": "HomeWiFi", "password": "correct-horse"}
+            nm.simulate_boot_autoconnect()
     printer = EscposUsbPrinter(settings.printer_device) if real else MockPrinter(settings.mock_printer_dir)
     system = SystemInfo() if real else MockSystemInfo()
     led: Led
@@ -123,9 +124,13 @@ def build(settings: Settings | None = None, nm=None) -> Services:
         led = MockLed()
 
     wifi = WifiManager(nm=nm, settings=settings, ap_password=lambda: passwords.state.setup_wifi_password)
+    app_settings = AppSettings(store)
+    fonts = FontRegistry(settings.fonts_dir, settings.data_dir / "fonts")
+    queue = PrintQueue(store, printer, events, app_settings.all)
     svc = Services(settings=settings, store=store, passwords=passwords, sessions=sessions,
                    limiter=LoginLimiter(), events=events, nm=nm, wifi=wifi, printer=printer,
-                   led=led, system=system)
+                   led=led, system=system, app_settings=app_settings, fonts=fonts,
+                   renderer=Renderer(fonts), queue=queue)
 
     detector = GestureDetector(svc.on_gesture, svc.on_reset_armed)
     if real:

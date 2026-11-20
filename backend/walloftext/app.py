@@ -14,6 +14,8 @@ from . import __version__
 from .api import auth as auth_api
 from .api import dev as dev_api
 from .api import device as device_api
+from .api import printing as printing_api
+from .api import settings as settings_api
 from .api import wifi as wifi_api
 from .auth.sessions import COOKIE_NAME
 from .config import AP_ADDRESS, HOSTNAME, LOCAL_ADDRESS, Settings
@@ -39,6 +41,8 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
         import asyncio
 
         svc.loop = asyncio.get_running_loop()
+        svc.events.loop = svc.loop
+        svc.queue.start()
         await svc.wifi.start()
 
         async def watch_password_file():
@@ -55,6 +59,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
         yield
         watcher.cancel()
         await svc.wifi.stop()
+        svc.queue.stop()
         if svc.button:
             svc.button.close()
         svc.led.close()
@@ -112,7 +117,10 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
             if origin and host_only(origin.split("://", 1)[-1]) not in hosts:
                 return JSONResponse({"error": "bad_origin"}, status_code=403)
             ctype = request.headers.get("content-type", "")
-            if path.startswith("/api/") and not ctype.startswith(("application/json", "multipart/form-data")):
+            has_body = request.headers.get("content-length", "0") not in ("", "0") or \
+                "transfer-encoding" in request.headers
+            if path.startswith("/api/") and has_body and \
+                    not ctype.startswith(("application/json", "multipart/form-data")):
                 return JSONResponse({"error": "json_required"}, status_code=415)
 
         # 4. Sign-in.
@@ -134,6 +142,8 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
     app.include_router(auth_api.router)
     app.include_router(wifi_api.router)
     app.include_router(device_api.router)
+    app.include_router(printing_api.router)
+    app.include_router(settings_api.router)
     if s.is_mock:
         app.include_router(dev_api.router)
 
@@ -172,9 +182,31 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
 
     frontend = s.frontend_dir
     if (frontend / "index.html").exists():
-        app.mount("/", StaticFiles(directory=frontend, html=True), name="frontend")
+        if (frontend / "assets").exists():
+            app.mount("/assets", StaticFiles(directory=frontend / "assets"), name="assets")
+        if (frontend / "icons").exists():
+            app.mount("/icons", StaticFiles(directory=frontend / "icons"), name="icons")
+
+        @app.get("/manifest.webmanifest", include_in_schema=False)
+        async def manifest():
+            return FileResponse(frontend / "manifest.webmanifest", media_type="application/manifest+json")
+
+        @app.get("/apple-touch-icon.png", include_in_schema=False)
+        async def touch_icon():
+            return FileResponse(frontend / "icons" / "apple-touch-icon.png")
+
+        @app.get("/settings-basic", include_in_schema=False)
+        async def basic_settings():
+            return page("home.html")
+
+        # SPA: every other GET that isn't an API call gets index.html (client-side routing).
+        @app.get("/{path:path}", include_in_schema=False)
+        async def spa(path: str):
+            if path.startswith("api/"):
+                return JSONResponse({"error": "not_found"}, status_code=404)
+            return FileResponse(frontend / "index.html", headers={"Cache-Control": "no-cache"})
     else:
-        # Phase 1 placeholder until the Preact app (Phase 2) is built.
+        # Phase 1 placeholder until the Preact app is built.
         @app.get("/", include_in_schema=False)
         async def home():
             return page("home.html")
