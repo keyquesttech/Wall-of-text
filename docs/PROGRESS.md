@@ -1,5 +1,17 @@
 # Progress
 
+## Phase 3: queue, History, printer states, button, LED
+- History screen: filters All / Manual / Schedules / Button / Guest / Remote, thumbnails, detail sheet
+  with the printed bitmap, Print again, Try again for failed jobs (with a plain reason), remove, clear.
+- Printer states in the UI: offline and out-of-paper banners on Create, status sheet with paper
+  estimate, test page, "Out of paper" (user-reported until Phase 0 shows a readback) and "New roll".
+- Button gestures run the mapped action (`actions.py`: reprint last, weather now, agenda today, random
+  fortune, cancel queue, run routine); results come back to open apps as a toast over SSE.
+  `/api/actions` exposes the same actions for the quick-action chips.
+- LED controller driven by the status events: setup network > offline > paper out > printing >
+  message waiting > idle, patterns and brightness from Settings.
+
+
 ## Phase 2: render and print path, shell, Create (Text)
 - Renderer (`render/document.py`): blocks → 384-dot 1-bit bitmap; one function feeds both the preview
   and the printer. Block format in [DOCUMENT.md](DOCUMENT.md). Missing glyphs print as `□`,

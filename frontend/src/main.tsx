@@ -1,7 +1,9 @@
 import { render } from "preact";
 import "./styles.css";
 import { App } from "./app";
-import { boot } from "./lib/state";
+import { boot, onServerToast } from "./lib/state";
+import { toast } from "./components/ui";
 
+onServerToast((m) => toast(m));
 boot();
 render(<App />, document.getElementById("app")!);

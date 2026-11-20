@@ -12,6 +12,11 @@ export const reachable = signal(true);
 export const settings = signal<any>(null);
 export const lastJobEvent = signal<Job | null>(null);
 export const progress = signal<Record<number, number>>({});
+export const inboxWaiting = signal(0);
+let toastHook: ((m: string) => void) | null = null;
+export function onServerToast(fn: (m: string) => void) {
+  toastHook = fn;
+}
 
 export const pendingJobs = computed(() =>
   [...jobs.value.values()].filter((j) => j.state === "queued" || j.state === "printing" || j.state === "held").sort((a, b) => a.id - b.id),
@@ -94,6 +99,8 @@ export function connect() {
     progress.value = { ...progress.value, [d.id]: d.progress };
   });
   es.addEventListener("settings", (e) => (settings.value = JSON.parse((e as MessageEvent).data)));
+  es.addEventListener("toast", (e) => toastHook?.(JSON.parse((e as MessageEvent).data).message));
+  es.addEventListener("inbox", (e) => (inboxWaiting.value = JSON.parse((e as MessageEvent).data).waiting ?? 0));
 }
 
 export async function boot() {

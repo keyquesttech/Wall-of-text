@@ -204,7 +204,7 @@ input[type="range"] { width: 100%; accent-color: var(--c-green); }
 /* ---------------------------------------------------------------- misc */
 .empty { text-align: center; color: var(--c-dim); padding: 40px 16px; }
 .empty svg { width: 44px; height: 44px; color: var(--c-faint); margin-bottom: 8px; }
-.thumb { width: 52px; height: 52px; border-radius: 8px; background: var(--c-paper); object-fit: cover; object-position: top; image-rendering: pixelated; flex-shrink: 0; }
+.thumb { width: 52px; height: 52px; border-radius: 8px; background: var(--c-paper); object-fit: cover; object-position: left top; image-rendering: pixelated; flex-shrink: 0; }
 .thumb.ph { display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.06); color: var(--c-faint); }
 .state-tag { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); color: var(--c-dim); }
 .state-tag.failed, .state-tag.missed { background: var(--c-pink-bg); color: var(--c-pink); }

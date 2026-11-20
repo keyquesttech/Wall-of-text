@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import { api, type Align, type Block, type Doc, type FontInfo, type Size } from "../lib/api";
 import { settings } from "../lib/state";
 import { IconDraw, IconImage, IconTemplate, IconText } from "../components/icons";
-import { AsPrinted, printWithMoment, StatusPill } from "../components/printer";
+import { AsPrinted, PrinterBanner, printWithMoment, StatusPill } from "../components/printer";
 import { Seg, Toggle, Topbar } from "../components/ui";
 import { DrawMode } from "./create/DrawMode";
 import { ImageMode } from "./create/ImageMode";
@@ -55,6 +55,7 @@ export function Create(props: { mode?: Mode }) {
   return (
     <>
       <Topbar title="Create"><StatusPill /></Topbar>
+      <PrinterBanner />
       <QuickActions />
       <div class="chips" role="tablist" aria-label="What to make" style="margin:10px 0 6px">
         {([["text", "Text", IconText], ["draw", "Draw", IconDraw], ["image", "Image", IconImage], ["templates", "Templates", IconTemplate]] as const).map(([m, label, I]) => (

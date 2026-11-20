@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Resp
 from fastapi.staticfiles import StaticFiles
 
 from . import __version__
+from .api import actions as actions_api
 from .api import auth as auth_api
 from .api import dev as dev_api
 from .api import device as device_api
@@ -43,6 +44,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
         svc.loop = asyncio.get_running_loop()
         svc.events.loop = svc.loop
         svc.queue.start()
+        svc.led_ctl.update()
         await svc.wifi.start()
 
         async def watch_password_file():
@@ -144,6 +146,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
     app.include_router(device_api.router)
     app.include_router(printing_api.router)
     app.include_router(settings_api.router)
+    app.include_router(actions_api.router)
     if s.is_mock:
         app.include_router(dev_api.router)
 

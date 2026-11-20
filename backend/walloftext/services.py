@@ -14,9 +14,10 @@ from .config import Settings
 from .events import EventBus
 from .hw.button import GestureDetector, GpioButton, MockButton
 from .hw.led import GpioLed, Led, MockLed
+from .hw.led_controller import LedController
 from .hw.system import MockSystemInfo, SystemInfo
 from .net.nm import FakeNetworkManager, NmcliClient
-from .net.wifi import AP_MODES, WifiManager, WifiStatus
+from .net.wifi import WifiManager, WifiStatus
 from .printer.drivers import EscposUsbPrinter, MockPrinter
 from .queue.worker import PrintQueue
 from .render.document import Renderer
@@ -48,6 +49,7 @@ class Services:
     button: object = None
     loop: asyncio.AbstractEventLoop | None = None
     extras: dict = field(default_factory=dict)
+    led_ctl: LedController = None
 
     # ----------------------------------------------------------- printing --
     def print_image(self, img: Image.Image, source: str, title: str, document: dict | None = None,
@@ -80,11 +82,21 @@ class Services:
         self.loop.call_soon_threadsafe(lambda: asyncio.ensure_future(self._handle_gesture(gesture)))
 
     async def _handle_gesture(self, gesture: str) -> None:
+        from . import actions
+
         log.info("button: %s", gesture)
         self.events.publish("button", {"gesture": gesture})
         if gesture == "reset":
             await self.wifi.reset()
-        # single/double/long map to user actions in Phase 3.
+            self.led_ctl.update()
+            return
+        action = self.app_settings.get("button").get(gesture, "none")
+        try:
+            msg = await actions.run(self, action, source="Button")
+        except Exception:
+            log.exception("button action %s failed", action)
+            msg = "That didn't work."
+        self.events.publish("toast", {"message": f"Button: {msg}"})
 
     def on_reset_armed(self) -> None:
         self.led.set("triple_blink")
@@ -92,7 +104,6 @@ class Services:
     # -------------------------------------------------------------- misc --
     def on_wifi_change(self, status: WifiStatus) -> None:
         self.events.publish("wifi", status.to_dict())
-        self.led.set("slow_pulse" if status.mode in AP_MODES else "solid")
 
     def on_setup_wifi_password_change(self, psk: str) -> None:
         if self.loop is None:
@@ -132,6 +143,9 @@ def build(settings: Settings | None = None, nm=None) -> Services:
                    led=led, system=system, app_settings=app_settings, fonts=fonts,
                    renderer=Renderer(fonts), queue=queue)
 
+    svc.led_ctl = LedController(led, app_settings.all)
+    events.listeners.append(svc.led_ctl.on_event)
+    app_settings.listeners.append(lambda merged: events.publish("settings", merged))
     detector = GestureDetector(svc.on_gesture, svc.on_reset_armed)
     if real:
         try:

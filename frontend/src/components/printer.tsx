@@ -197,3 +197,14 @@ export function PrintMoment() {
 export function PrinterBadge() {
   return <IconPrinter />;
 }
+
+export function PrinterBanner() {
+  const p = printer.value;
+  if (p?.state === "offline")
+    return <Banner action={<button class="btn small" onClick={() => (statusOpen.value = true)}>Details</button>}>The printer is offline. Prints wait in the queue until it's back.</Banner>;
+  if (p?.state === "paper_out")
+    return <Banner action={<button class="btn small" onClick={() => api.newRoll().then(() => toast("New roll noted"))}>New roll</button>}>Out of paper. Prints wait in the queue.</Banner>;
+  if (p && p.paper_percent <= 10)
+    return <Banner kind="warn">Paper is running low (about {p.paper_percent}% left).</Banner>;
+  return null;
+}
