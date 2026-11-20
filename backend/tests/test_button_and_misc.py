@@ -102,3 +102,20 @@ def test_raster_bands():
 def test_throttle_flags():
     assert decode_throttled(0x50005) == ["under_voltage", "throttled", "under_voltage_since_boot",
                                          "throttled_since_boot"]
+
+
+def test_sd_notify(tmp_path, monkeypatch):
+    import socket
+    from walloftext import watchdog
+
+    path = str(tmp_path / "n.sock")
+    srv = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+    srv.bind(path)
+    monkeypatch.setenv("NOTIFY_SOCKET", path)
+    monkeypatch.setenv("WATCHDOG_USEC", "60000000")
+    assert watchdog.notify("READY=1")
+    assert srv.recv(64) == b"READY=1"
+    assert watchdog.interval_s() == 30
+    monkeypatch.delenv("NOTIFY_SOCKET")
+    assert watchdog.notify("WATCHDOG=1") is False
+    srv.close()

@@ -109,6 +109,7 @@ export async function boot() {
   if (a) auth.value = a;
   if (s) settings.value = s;
   if (p) printer.value = p;
+  fetch("/api/inbox", { credentials: "same-origin" }).then((r) => (r.ok ? r.json() : null)).then((d) => { if (d) inboxWaiting.value = d.items.length; }).catch(() => {});
 }
 
 export function jobProgress(id: number): number {

@@ -1,5 +1,27 @@
 # Progress
 
+## Phase 8: layouts and hardening
+- Layouts: phone (tab bar), ≥768 px side rail, ≥1024 px editor and live preview side by side,
+  ≥1200 px third column with printer, queue progress, "Waiting for your OK" and recent prints.
+- Reduce motion and reduce transparency (app setting and the system preference), skip link,
+  focus-trapped sheets, labelled controls. axe-core across 26 screens (signed out and in):
+  0 serious/critical issues (`tools/smoke/a11y.py`).
+- systemd: `Type=notify` + `WatchdogSec=60`; the app pings only while the print worker is alive.
+  Verified on this Pi: a frozen process was restarted by the watchdog within 60 s. `MemoryMax=400M`,
+  no start-rate limit, journald capped at 64 MB.
+- Security headers on every response (CSP, nosniff, frame-ancestors none, same-origin referrer).
+- `install.sh` builds the frontend when `frontend/dist` is missing and Node is available.
+- `tools/soak.py` for the 24-hour soak; power-cycle and watchdog procedures in
+  [PI_TESTING.md](PI_TESTING.md). The 24 h soak and 20 power cycles need the printer and you.
+
+## Status after Phase 8
+All phases 0–8 have code, tests and docs. 132 backend tests, Playwright smoke test of every screen at
+390×844 and 1200×800, axe accessibility check, all passing. Deployed to this Pi (mock-free, printer
+offline because none is attached). Everything that needs real hardware, phones or accounts is
+listed in [PI_TESTING.md](PI_TESTING.md). Phase 9 (master image) is optional and not started.
+UI screens were built without `design-handoff/` (still on the PC) and need a design review.
+
+
 ## Phase 7: remaining Create modes and extras
 - Draw: 384-dot canvas (1 px = 1 dot), pointer events for finger/mouse/pen, pen sizes, eraser,
   undo, three paper lengths, caption.

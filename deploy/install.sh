@@ -71,10 +71,22 @@ if [[ $MODE != update ]]; then
   for g in netdev gpio lp video dialout; do getent group $g >/dev/null && usermod -aG $g $SVC_USER; done
 fi
 
+if [[ -f "$SRC/frontend/package.json" && ! -f "$SRC/frontend/dist/index.html" ]]; then
+  say "Frontend build"
+  BUILD_USER="${SUDO_USER:-root}"
+  NODE_DIR="$(getent passwd "$BUILD_USER" | cut -d: -f6)/.local/node/bin"
+  if sudo -u "$BUILD_USER" env PATH="$NODE_DIR:$PATH" bash -c 'command -v npm' >/dev/null 2>&1; then
+    sudo -u "$BUILD_USER" env PATH="$NODE_DIR:$PATH" bash -c "cd '$SRC/frontend' && npm ci --no-audit --no-fund && npm run build"
+  else
+    echo "WARNING: frontend/dist is missing and npm isn't installed. The site will show the basic"
+    echo "         settings page only. Build on the PC with deploy/deploy.ps1, or install Node."
+  fi
+fi
+
 say "Code -> $APP"
 mkdir -p $APP
 rsync -a --delete --exclude .git --exclude .venv --exclude 'backend/var' --exclude 'node_modules' \
-  --exclude '__pycache__' --exclude 'frontend/src' "$SRC"/ $APP/
+  --exclude '__pycache__' --exclude 'frontend/src' --exclude 'tools/smoke/sample.jpg' "$SRC"/ $APP/
 if [[ ! -x $APP/venv/bin/python ]]; then
   python3 -m venv --system-site-packages $APP/venv
 fi

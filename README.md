@@ -6,14 +6,17 @@ Wi-Fi open `http://walloftext.local/` to print notes, schedules and messages.
 - Plan: [BUILD_PLAN.md](BUILD_PLAN.md) (backend, Pi, phases) and `design-handoff/HANDOFF.md` (UI spec, not in this repo yet)
 - Progress: [docs/PROGRESS.md](docs/PROGRESS.md)
 - Phase 0 hardware spikes: [spikes/README.md](spikes/README.md)
+- What still needs trying on the real Pi: [docs/PI_TESTING.md](docs/PI_TESTING.md)
+- Remote messages setup (Gmail, Telegram): [docs/REMOTE_SETUP.md](docs/REMOTE_SETUP.md)
+- Print document format: [docs/DOCUMENT.md](docs/DOCUMENT.md)
 
 ## Layout
 
 | Folder | What |
 |---|---|
 | `backend/` | FastAPI app (`walloftext/`) and tests |
-| `setup-ui/` | Framework-free pages: Wi-Fi setup (captive portal), Sign in, Phase 1 settings placeholder, dev panel |
-| `frontend/` | Preact app (Phase 2) |
+| `setup-ui/` | Framework-free pages: Wi-Fi setup (captive portal), Sign in, guest note page, basic settings fallback, dev panel |
+| `frontend/` | Preact + TypeScript + Vite app, built to `frontend/dist` (served by the backend) |
 | `fonts/` | OFL fonts shared by the web UI and the print renderer |
 | `deploy/` | `install.sh`, `deploy.ps1`, systemd, NetworkManager, polkit, udev, admin scripts |
 | `spikes/` | Phase 0 scripts and `SPIKE_RESULTS.md` |
@@ -33,10 +36,28 @@ printer writes PNG and raw bytes to `backend/var/mock-printer/`.
 
 On Windows use `.venv\Scripts\python` and `set WOT_HW=mock`.
 
+Frontend (Node 18+; on this Pi Node lives in `~/.local/node`):
+
+```bash
+cd frontend && npm ci && npm run build
+```
+
+`npm run dev` serves the UI with hot reload and proxies `/api` to `localhost:8080`
+(`WOT_BACKEND=http://walloftext.local npm run dev` to use the real Pi).
+
 Tests:
 
 ```bash
 cd backend && ../.venv/bin/python -m pytest -q
+```
+
+End-to-end smoke test and accessibility check (Playwright + axe-core, mock backend on :8099):
+
+```bash
+tools/smoke/run_server.sh &
+```
+```bash
+.venv/bin/python tools/smoke/smoke.py && .venv/bin/python tools/smoke/a11y.py
 ```
 
 ## Install on the Pi

@@ -59,9 +59,10 @@ export function App() {
   }, [settings.value]);
   return (
     <LocationProvider>
+      <a class="skip" href="#main" onClick={(e) => { e.preventDefault(); document.getElementById("main")?.focus(); }}>Skip to content</a>
       <div class="app">
         <TabBar />
-        <main class="main" id="main">
+        <main class="main" id="main" tabIndex={-1}>
           <Router>
             <Route path="/" component={Create} />
             <Route path="/create/:mode" component={Create} />

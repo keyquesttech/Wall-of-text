@@ -134,7 +134,7 @@ button.lrow:hover, a.lrow:hover { background: rgba(255, 255, 255, 0.03); }
 .chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: none; }
 .chips::-webkit-scrollbar { display: none; }
 .chip { flex-shrink: 0; min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--c-line); background: var(--c-panel); color: var(--c-text); font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
-.chip[aria-pressed="true"], .chip.on { background: var(--c-text); color: var(--c-bg); border-color: transparent; }
+.chip[aria-pressed="true"], .chip[aria-selected="true"], .chip.on { background: var(--c-text); color: var(--c-bg); border-color: transparent; }
 .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--c-line); }
 .seg button { border: 0; background: none; padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 600; color: var(--c-dim); min-width: 44px; }
 .seg button[aria-pressed="true"] { background: var(--c-panel-hi); color: var(--c-text); }
@@ -231,7 +231,8 @@ canvas.draw { touch-action: none; display: block; width: 100%; background: var(-
 /* Create: editor + preview side by side when there is room */
 .create-grid { display: grid; gap: 8px; }
 @media (min-width: 1024px) { .create-grid { grid-template-columns: minmax(0, 1fr) 384px; gap: 28px; align-items: start; } .create-grid > div:last-child { position: sticky; top: 16px; } }
-@media (min-width: 1200px) { .create-grid { grid-template-columns: 1fr; } .create-grid > div:last-child { position: static; } }
+@media (min-width: 1200px) and (max-width: 1359px) { .create-grid { grid-template-columns: 1fr; } .create-grid > div:last-child { position: static; } }
+@media (min-width: 1360px) { .main { max-width: 1100px; } }
 
 /* layout fixes: grid items must be allowed to shrink below their content width */
 .main, .create-grid > div { min-width: 0; }
@@ -250,3 +251,11 @@ html, body { overflow-x: hidden; }
 .tcard .tname { font-weight: 700; font-size: 16px; }
 .tcard:active { transform: scale(0.98); }
 label.btn { cursor: pointer; }
+
+/* system setting: reduce transparency */
+@media (prefers-reduced-transparency: reduce) {
+  .glass, .tabbar, .sheet, .pill { background: var(--c-panel-solid) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+.skip { position: absolute; left: 8px; top: -60px; z-index: 100; background: var(--c-text); color: var(--c-bg); padding: 10px 14px; border-radius: 10px; font-weight: 700; text-decoration: none; }
+.skip:focus { top: 8px; }
+main.main:focus { outline: none; }

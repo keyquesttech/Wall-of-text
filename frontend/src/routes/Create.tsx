@@ -60,7 +60,7 @@ export function Create(props: { mode?: Mode }) {
       <QuickActions />
       <div class="chips" role="tablist" aria-label="What to make" style="margin:10px 0 6px">
         {([["text", "Text", IconText], ["draw", "Draw", IconDraw], ["image", "Image", IconImage], ["templates", "Templates", IconTemplate], ["list", "List", IconCheck]] as const).map(([m, label, I]) => (
-          <button class="chip" role="tab" aria-selected={mode === m} aria-pressed={mode === m} onClick={() => setMode(m)}>
+          <button class="chip" role="tab" aria-selected={mode === m} onClick={() => setMode(m)}>
             <I width={16} height={16} />{label}
           </button>
         ))}

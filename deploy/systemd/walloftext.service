@@ -2,9 +2,13 @@
 Description=Wall of Text printer web app
 After=network.target NetworkManager.service avahi-daemon.service
 Wants=NetworkManager.service avahi-daemon.service
+StartLimitIntervalSec=0
 
 [Service]
-Type=simple
+Type=notify
+NotifyAccess=main
+WatchdogSec=60
+TimeoutStartSec=90
 User=walloftext
 Group=walloftext
 SupplementaryGroups=netdev gpio lp video dialout
@@ -27,6 +31,7 @@ ProtectHome=yes
 PrivateTmp=yes
 Restart=always
 RestartSec=3
+MemoryMax=400M
 
 [Install]
 WantedBy=multi-user.target

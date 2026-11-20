@@ -17,7 +17,7 @@
     <p class="dim">Pick the network the printer should live on.</p>
     <div id="err"></div>
     <h2>Nearby networks</h2>
-    <div class="glass" id="list" role="list">
+    <div class="glass" id="list">
       <div class="lrow static dim">Looking for networks…</div>
     </div>
     <div class="glass" style="margin-top:10px">
@@ -84,7 +84,7 @@
     }
     el.innerHTML = nets.map(function (n, i) {
       var meta = (n.band === "5" ? "5 GHz " : "") + (n.security !== "open" ? WOT.lock : "") + WOT.bars(n.signal);
-      return '<button class="lrow" role="listitem" type="button" data-i="' + i + '"><span class="grow">' +
+      return '<button class="lrow" type="button" data-i="' + i + '"><span class="grow">' +
         WOT.esc(n.ssid) + '</span><span class="meta">' + meta + "</span></button>";
     }).join("");
     var btns = el.querySelectorAll("button");

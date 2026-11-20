@@ -66,7 +66,15 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
                     log.exception("password file watch failed")
 
         watcher = asyncio.create_task(watch_password_file())
+        from . import watchdog
+
+        def healthy() -> bool:
+            t = svc.queue._thread
+            return t is not None and t.is_alive()
+
+        dog = asyncio.create_task(watchdog.run(healthy))
         yield
+        dog.cancel()
         watcher.cancel()
         await svc.wifi.stop()
         await svc.extras["scheduler"].stop()
@@ -149,6 +157,14 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
         response: Response = await call_next(request)
         if path.startswith("/api/"):
             response.headers.setdefault("Cache-Control", "no-store")
+        h = response.headers
+        h.setdefault("X-Content-Type-Options", "nosniff")
+        h.setdefault("Referrer-Policy", "same-origin")
+        h.setdefault("X-Frame-Options", "DENY")
+        h.setdefault("Content-Security-Policy",
+                     "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; "
+                     "script-src 'self' 'unsafe-inline'; connect-src 'self'; font-src 'self'; "
+                     "frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
         return response
 
     app.include_router(auth_api.router)
