@@ -96,6 +96,27 @@ MIGRATIONS: list[str] = [
     );
     CREATE INDEX remote_seen_at ON remote_seen(seen_at);
     """,
+    # 7: templates and shared lists
+    """
+    CREATE TABLE templates (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        icon TEXT,
+        document TEXT NOT NULL,
+        created_at REAL NOT NULL
+    );
+    CREATE TABLE list_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        list TEXT NOT NULL,
+        text TEXT NOT NULL,
+        done INTEGER NOT NULL DEFAULT 0,
+        position INTEGER NOT NULL DEFAULT 0,
+        added_by TEXT,
+        created_at REAL NOT NULL,
+        done_at REAL
+    );
+    CREATE INDEX list_items_list ON list_items(list);
+    """,
 ]
 
 

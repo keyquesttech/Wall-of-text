@@ -1,5 +1,20 @@
 # Progress
 
+## Phase 7: remaining Create modes and extras
+- Draw: 384-dot canvas (1 px = 1 dot), pointer events for finger/mouse/pen, pen sizes, eraser,
+  undo, three paper lengths, caption.
+- Image: take a photo or choose one (`<input type=file capture>`), scaled on the phone before upload,
+  Photo (smooth / crisp dither), Sharp, Halftone, brightness, contrast, invert, rotate, and the
+  paper-safe "Lighten" offered automatically when the preview is over 50 % black.
+- Templates: 8 built-in fill-ins (Note to self, Big message, To-do list, Wi-Fi for guests with QR,
+  Greeting card, Recipe card, Chore chart, Sticker) with live preview, plus "Save as template" from
+  Text mode.
+- Shared shopping list (Create › List): add, tick, clear ticked, print; also a routine section and a
+  button/quick action.
+- Quick-action chips on Create run the same actions as the button.
+- Paper saver (Phase 5 setting) trims gaps and trailing blank paper in the renderer, so the preview matches.
+
+
 ## Phase 6: remote messages
 - One pipeline (`remote/pipeline.py`): dedupe by external id (persisted, so nothing prints twice
   after a reboot; marked before queueing) → allow-list (+ email SPF/DKIM alignment check) → per-sender

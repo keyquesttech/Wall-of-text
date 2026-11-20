@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from "preact/hooks";
-import { api, type Align, type Block, type Doc, type FontInfo, type Size } from "../lib/api";
+import { api, send, type Align, type Block, type Doc, type FontInfo, type Size } from "../lib/api";
 import { settings } from "../lib/state";
-import { IconDraw, IconImage, IconTemplate, IconText } from "../components/icons";
+import { IconCheck, IconDraw, IconImage, IconTemplate, IconText } from "../components/icons";
 import { AsPrinted, PrinterBanner, printWithMoment, StatusPill } from "../components/printer";
-import { Seg, Toggle, Topbar } from "../components/ui";
+import { Seg, toast, Toggle, Topbar } from "../components/ui";
 import { DrawMode } from "./create/DrawMode";
 import { ImageMode } from "./create/ImageMode";
 import { TemplatesMode } from "./create/TemplatesMode";
 import { QuickActions } from "./create/QuickActions";
+import { ListMode } from "./create/ListMode";
 
-export type Mode = "text" | "draw" | "image" | "templates";
+export type Mode = "text" | "draw" | "image" | "templates" | "list";
 
 interface TextDraft {
   heading: string;
@@ -58,7 +59,7 @@ export function Create(props: { mode?: Mode }) {
       <PrinterBanner />
       <QuickActions />
       <div class="chips" role="tablist" aria-label="What to make" style="margin:10px 0 6px">
-        {([["text", "Text", IconText], ["draw", "Draw", IconDraw], ["image", "Image", IconImage], ["templates", "Templates", IconTemplate]] as const).map(([m, label, I]) => (
+        {([["text", "Text", IconText], ["draw", "Draw", IconDraw], ["image", "Image", IconImage], ["templates", "Templates", IconTemplate], ["list", "List", IconCheck]] as const).map(([m, label, I]) => (
           <button class="chip" role="tab" aria-selected={mode === m} aria-pressed={mode === m} onClick={() => setMode(m)}>
             <I width={16} height={16} />{label}
           </button>
@@ -68,6 +69,7 @@ export function Create(props: { mode?: Mode }) {
       {mode === "draw" && <DrawMode />}
       {mode === "image" && <ImageMode />}
       {mode === "templates" && <TemplatesMode onUse={() => setMode("text")} />}
+      {mode === "list" && <ListMode />}
     </>
   );
 }
@@ -142,6 +144,13 @@ function TextMode() {
       <div>
         <AsPrinted doc={doc} />
         <PrintBar disabled={empty} copies={copies} setCopies={setCopies} onPrint={print} onClear={() => setD(blank())} />
+        {!empty && (
+          <button class="btn btn-ghost block small" style="margin-top:8px" onClick={async () => {
+            const name = window.prompt("Name this template", d.heading.trim() || d.text.trim().split("\n")[0].slice(0, 30));
+            if (!name) return;
+            try { await send("POST", "/api/templates", { name, document: doc }); toast("Saved to Templates"); } catch (e) { toast((e as Error).message); }
+          }}>Save as template</button>
+        )}
       </div>
     </div>
   );

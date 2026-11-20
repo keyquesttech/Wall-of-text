@@ -136,6 +136,44 @@ def run(viewport, tag):
         page.wait_for_timeout(400)
         shot(page, f"{tag}-51-remote-history")
         page.keyboard.press("Escape")
+        # Create › Draw: scribble with real pointer events
+        page.goto(args.base + "/")
+        page.click(".chip[role=tab]:has-text('Draw')")
+        box = page.locator("canvas.draw").bounding_box()
+        page.mouse.move(box["x"] + 40, box["y"] + 40)
+        page.mouse.down()
+        for i in range(12):
+            page.mouse.move(box["x"] + 40 + i * 20, box["y"] + 40 + (i % 3) * 30, steps=3)
+        page.mouse.up()
+        expect(page.locator(".paper img")).to_be_visible(timeout=8000)
+        page.wait_for_timeout(500)
+        shot(page, f"{tag}-60-draw")
+        # Create › Image: upload a photo
+        page.click(".chip[role=tab]:has-text('Image')")
+        page.set_input_files("#pic2", str(Path(__file__).with_name("sample.jpg")))
+        expect(page.locator(".paper img")).to_be_visible(timeout=10000)
+        page.wait_for_timeout(1200)
+        shot(page, f"{tag}-61-image")
+        # Templates: fill and print the Wi-Fi card
+        page.click(".chip[role=tab]:has-text('Templates')")
+        page.click(".tcard:has-text('Wi-Fi for guests')")
+        page.fill("#f-ssid", "HomeWiFi")
+        page.fill("#f-password", "correct-horse")
+        page.wait_for_timeout(900)
+        shot(page, f"{tag}-62-template")
+        page.click(".sheet button.btn-green:has-text('Print')")
+        expect(page.locator(".pm-text")).to_have_text("Printed", timeout=15000)
+        page.click(".pm-actions .btn-green")
+        # List: add two items and print
+        page.click(".chip[role=tab]:has-text('List')")
+        for item in ("Milk", "Bread"):
+            page.fill("input[aria-label='New item']", item + " " + tag)
+            page.keyboard.press("Enter")
+            expect(page.locator(f"text={item} {tag}")).to_be_visible()
+        shot(page, f"{tag}-63-list")
+        # quick action chip
+        page.click(".chip:has-text('Fortune')")
+        expect(page.locator(".toast")).to_contain_text("fortune")
         extra = getattr(sys.modules[__name__], "EXTRA", None)
         if extra:
             extra(page, tag)

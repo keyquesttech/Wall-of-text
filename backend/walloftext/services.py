@@ -164,6 +164,10 @@ def build(settings: Settings | None = None, nm=None) -> Services:
     from .remote.inbox import Inbox
 
     svc.extras["inbox"] = Inbox(svc)
+    from .templates_lists import Lists, Templates
+
+    svc.extras["templates"] = Templates(svc)
+    svc.extras["lists"] = Lists(svc)
     from .remote.email_imap import EmailAdapter
     from .remote.manager import RemoteManager
     from .remote.mock import MockAdapter

@@ -21,6 +21,7 @@ from .api import printing as printing_api
 from .api import remote as remote_api
 from .api import schedules as schedules_api
 from .api import settings as settings_api
+from .api import templates as templates_api
 from .api import wifi as wifi_api
 from .auth.sessions import COOKIE_NAME
 from .config import AP_ADDRESS, HOSTNAME, LOCAL_ADDRESS, Settings
@@ -160,6 +161,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
     app.include_router(access_api.router)
     app.include_router(backup_api.router)
     app.include_router(remote_api.router)
+    app.include_router(templates_api.router)
     if s.is_mock:
         app.include_router(dev_api.router)
 
