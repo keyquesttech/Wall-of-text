@@ -67,7 +67,7 @@ def test_preview_equals_print_path(renderer, tmp_path, name):
 def test_missing_glyph_becomes_box(renderer):
     plain = renderer.render({"blocks": [{"type": "text", "text": "ab", "font": "pixel"}]})
     emoji = renderer.render({"blocks": [{"type": "text", "text": "a😀", "font": "pixel"}]})
-    assert renderer._clean("a😀", "pixel") == "a\u25a1"
+    assert renderer._clean("a😀", "pixel") == "a\u0001"
     assert plain.image.tobytes() != emoji.image.tobytes()
 
 
@@ -271,3 +271,20 @@ def test_usb_driver_waits_for_the_paper_not_the_bytes(tmp_path, monkeypatch):
     expected = (240 + 24 * 3) / 600.0
     assert took >= expected * 0.95
     assert seen[-1] == 100 and seen == sorted(seen) and len(seen) > 3
+
+
+def test_missing_glyph_box_and_star_divider_have_no_notdef_boxes(renderer):
+    """No crossed 'missing glyph' rectangles: placeholder and stars are drawn shapes."""
+    from walloftext.render.document import PLACEHOLDER
+    for fid in ("mono", "pixel", "silk", "sans"):
+        res = renderer.render({"blocks": [{"type": "text", "text": "hi 😀 ✱ there", "font": fid}]})
+        assert res.image.width == WIDTH
+    stars = renderer.render({"blocks": [{"type": "divider", "style": "stars"}]}).image
+    import numpy as np
+    arr = ~np.asarray(stars, dtype=bool)
+    assert arr.sum() > 300  # three filled stars
+    # three separate blobs across the middle row
+    row = arr[arr.sum(axis=1).argmax()]
+    runs = sum(1 for i in range(1, len(row)) if row[i] and not row[i - 1])
+    assert runs == 3
+    assert PLACEHOLDER not in "".join(renderer._wrap(__import__("PIL.ImageDraw", fromlist=["x"]).Draw(stars), "ok", renderer.fonts.font("mono", 22)[0], 300))

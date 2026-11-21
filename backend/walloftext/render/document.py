@@ -28,7 +28,21 @@ MARGIN = 6
 GAP = 8
 MAX_HEIGHT = 8 * 1000 * 2  # 2 m of paper: refuse anything longer
 MAX_IMAGE_BYTES = 12 * 1024 * 1024
-PLACEHOLDER = "□"
+# Characters the chosen font lacks are swapped for this marker and drawn as an empty box the
+# width of a "0" (none of the thermal fonts has a box glyph, and the font's own fallback is a
+# crossed rectangle that looks like an error).
+PLACEHOLDER = "\u0001"
+PLACEHOLDER_SIZER = "0"
+
+
+class _Measure:
+    """textlength() that measures the placeholder marker as a "0" (used while wrapping)."""
+
+    def __init__(self, real):
+        self.real = real
+
+    def textlength(self, text, font=None):
+        return self.real(text.replace(PLACEHOLDER, PLACEHOLDER_SIZER), font=font)
 
 
 class DocumentError(ValueError):
@@ -125,6 +139,8 @@ class Renderer:
         return "".join(ch if self.fonts.covers(fid, ch) else PLACEHOLDER for ch in text)
 
     def _wrap(self, draw, text: str, font, width: int) -> list[str]:
+        real = draw.textlength
+        draw = _Measure(real)
         lines: list[str] = []
         for para in text.split("\n"):
             if para == "":
@@ -172,7 +188,7 @@ class Renderer:
         if invert:
             d.rectangle([0, 0, WIDTH - 1, img.height - 1], fill=0)
         for i, line in enumerate(lines):
-            w = d.textlength(line, font=font)
+            w = d.textlength(line.replace(PLACEHOLDER, PLACEHOLDER_SIZER), font=font)
             if align == "center":
                 x = (WIDTH - w) / 2
             elif align == "right":
@@ -180,11 +196,26 @@ class Renderer:
             else:
                 x = MARGIN + (4 if invert else 0)
             y = pad + i * lh
-            d.text((x, y), line, font=font, fill=ink)
+            shown = line.replace(PLACEHOLDER, " ") if PLACEHOLDER in line else line
             # 1-dot strokes print faint on thermal paper: widen thin fonts by a dot
             extra = (1 if fake_bold else 0) + (1 if thicken else 0)
-            for dx in range(1, extra + 1):
-                d.text((x + dx, y), line, font=font, fill=ink)
+            if PLACEHOLDER not in line:
+                for dx in range(0, extra + 1):
+                    d.text((x + dx, y), shown, font=font, fill=ink)
+            else:
+                # draw the text in runs so each placeholder gets exactly a "0"'s width
+                cx = x
+                for k, part in enumerate(line.split(PLACEHOLDER)):
+                    if k:
+                        bw = d.textlength(PLACEHOLDER_SIZER, font=font)
+                        top = y + max(1, int(asc * 0.25))
+                        bot = y + asc - 1
+                        d.rectangle([cx + 1, top, cx + bw - 2, bot], outline=ink, width=max(1, px // 16))
+                        cx += bw
+                    if part:
+                        for dx in range(0, extra + 1):
+                            d.text((cx + dx, y), part, font=font, fill=ink)
+                        cx += d.textlength(part, font=font)
             if underline and line:
                 uy = y + asc + 2
                 d.line([(x, uy), (x + w, uy)], fill=ink, width=max(1, px // 14))
@@ -256,7 +287,16 @@ class Renderer:
             pts = [(x, y + int(4 * math.sin(x / 8))) for x in range(MARGIN, WIDTH - MARGIN)]
             d.line(pts, fill=0, width=2)
         elif style == "stars":
-            return self._text_img("✱ ✱ ✱", "M", "mono", "center")
+            img = _blank(28)
+            d = ImageDraw.Draw(img)
+            for cx in (WIDTH // 2 - 44, WIDTH // 2, WIDTH // 2 + 44):  # three 5-point stars, drawn
+                pts = []
+                for k in range(10):
+                    a = -math.pi / 2 + k * math.pi / 5
+                    r = 11 if k % 2 == 0 else 4.5
+                    pts.append((cx + r * math.cos(a), 15 + r * math.sin(a)))
+                d.polygon(pts, fill=0)
+            return img
         elif style == "double":
             d.line([(MARGIN, y - 3), (WIDTH - MARGIN, y - 3)], fill=0, width=2)
             d.line([(MARGIN, y + 3), (WIDTH - MARGIN, y + 3)], fill=0, width=2)

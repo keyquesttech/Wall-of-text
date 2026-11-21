@@ -22,7 +22,7 @@ A document is a list of blocks rendered top to bottom on a 384-dot-wide, 1-bit c
 | `image` | `src` (data URL), `style` photo/sharp/halftone, `dither` floyd/atkinson/ordered, `brightness`, `contrast`, `invert`, `lighten`, `rotate`, `width` |
 | `drawing` | `src` (data URL); rendered with the sharp threshold |
 
-Characters the chosen font lacks print as `□` so the paper never has silent gaps.
+Characters the chosen font lacks print as a small empty box (drawn, not a glyph) so the paper never has silent gaps. The `stars` divider is drawn as three star shapes.
 Prints over 50 % black come back with a warning; `lighten: true` on images is the paper-safe limiter.
 Unknown block types print as a small note instead of failing the whole print. Prints over 2 m are refused.
 
