@@ -254,3 +254,20 @@ def test_sensor_paper_out_holds_then_new_roll_resets_estimate(tmp_path):
         assert queue.get(j2)["error"] == "paper_out"
     finally:
         queue.stop()
+
+
+def test_usb_driver_waits_for_the_paper_not_the_bytes(tmp_path, monkeypatch):
+    """Writes finish instantly (buffered); progress must follow the real print time."""
+    from walloftext.printer import drivers
+
+    node = tmp_path / "lp0"
+    node.write_bytes(b"")
+    monkeypatch.setattr(drivers, "ROWS_PER_S", 600.0)  # 10x faster so the test is quick
+    p = drivers.EscposUsbPrinter(str(node))
+    seen = []
+    t0 = time.monotonic()
+    p.print_bitmap(Image.new("1", (WIDTH, 240), 1), on_progress=seen.append)
+    took = time.monotonic() - t0
+    expected = (240 + 24 * 3) / 600.0
+    assert took >= expected * 0.95
+    assert seen[-1] == 100 and seen == sorted(seen) and len(seen) > 3

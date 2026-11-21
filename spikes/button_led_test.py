@@ -37,7 +37,7 @@ led.off()
 
 t0 = time.monotonic()
 det = GestureDetector(lambda g: print(f"  -> gesture: {g}"),
-                      lambda: (print("  -> 10 s reached: release now to reset"), led.blink(0.08, 0.08, n=3)))
+                      lambda: (print("  -> 30 s reached: release now to reset"), led.blink(0.08, 0.08, n=3)))
 btn = Button(a.button, pull_up=True, bounce_time=None)
 
 
@@ -55,7 +55,7 @@ def released():
 
 btn.when_pressed = pressed
 btn.when_released = released
-print("Press the button: single, double, long (0.8 s), and a 10 s hold. Ctrl-C to stop.")
+print("Press the button: single, double, long (0.8 s), and a 30 s hold. Ctrl-C to stop.")
 try:
     while True:
         det.poll()

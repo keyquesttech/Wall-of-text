@@ -43,15 +43,23 @@ def test_bounce_is_ignored():
     assert out == ["single"]
 
 
-def test_ten_second_hold_arms_then_resets_on_release():
+def test_thirty_second_hold_arms_then_resets_on_release():
     d, out, armed = detector()
     d.press(0.0)
-    d.poll(9.9)
-    assert armed == []
     d.poll(10.0)
+    d.poll(29.9)
+    assert armed == []
+    d.poll(30.0)
     assert armed == [1]
-    d.release(10.5)
+    d.release(30.5)
     assert out == ["reset"]
+
+
+def test_ten_second_hold_is_just_a_long_press_now():
+    d, out, _ = detector()
+    d.press(0.0)
+    d.release(10.5)
+    assert out == ["long"]
 
 
 def test_nmcli_terse_split():

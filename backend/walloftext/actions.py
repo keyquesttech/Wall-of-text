@@ -31,8 +31,19 @@ ACTIONS = {
 FORTUNES = Path(__file__).parent / "sources" / "fortunes.json"
 
 
+FALLBACK_FORTUNES = [
+    "Today is a good day to finish one small thing.",
+    "Drink a glass of water. Then another one.",
+    "Someone in this house could use a compliment.",
+]
+
+
 def fortunes(svc: "Services") -> list[str]:
-    items = json.loads(FORTUNES.read_text())
+    try:
+        items = json.loads(FORTUNES.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        log.error("fortunes file missing or unreadable at %s; using the short built-in list", FORTUNES)
+        items = list(FALLBACK_FORTUNES)
     try:
         extra = json.loads(svc.store.get("custom_fortunes", "[]") or "[]")
         items += [x for x in extra if isinstance(x, str) and x.strip()]

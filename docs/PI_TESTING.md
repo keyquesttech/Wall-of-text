@@ -40,7 +40,7 @@ density command the probe found (`printer/drivers.py`).
    seconds, no restart.
 6. Change the setup Wi-Fi password in Settings › Access, then Settings › Wi-Fi › Forget: the setup
    network uses the new password.
-7. Hold the button 10 s: the light blinks three times; let go: setup network again.
+7. Hold the button 30 s: the light blinks three times; let go: setup network again.
 8. Power cycle with the router off, switch the router on: the printer rejoins within about two minutes.
 
 ## 4. Printing (needs the printer)

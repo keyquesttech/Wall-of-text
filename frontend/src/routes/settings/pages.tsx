@@ -132,9 +132,9 @@ function ButtonPage() {
             </select>
           </div>
         ))}
-        <div class="lrow"><span class="grow">Hold for 10 seconds</span><span class="meta">Reset Wi-Fi (fixed)</span></div>
+        <div class="lrow"><span class="grow">Hold for 30 seconds</span><span class="meta">Reset Wi-Fi (fixed)</span></div>
       </div>
-      <p class="dim tiny" style="margin:8px 6px">Holding the button for 10 seconds always starts Wi-Fi setup again: the light blinks three times, then let go.</p>
+      <p class="dim tiny" style="margin:8px 6px">Holding the button for 30 seconds always starts Wi-Fi setup again: the light blinks three times, then let go.</p>
       <h2 class="section">Light</h2>
       <div class="glass card">
         <label class="field-label" for="bright" style="margin-top:0">Brightness</label>

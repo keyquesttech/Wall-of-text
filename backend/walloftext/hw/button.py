@@ -1,8 +1,8 @@
-"""Arcade button gestures (section 8) and the reserved 10 s Wi-Fi reset hold.
+"""Arcade button gestures (section 8) and the reserved 30 s Wi-Fi reset hold.
 
 `GestureDetector` is pure logic fed with press/release timestamps; the GPIO
 and mock buttons only feed it. Timings: 50 ms debounce, 300 ms double-press
-window, long press at 800 ms, reset at 10 s (fires on release after 10 s).
+window, long press at 800 ms, reset at 30 s (fires on release after 30 s).
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 DEBOUNCE_S = 0.05
 DOUBLE_WINDOW_S = 0.30
 LONG_S = 0.80
-RESET_S = 10.0
+RESET_S = 30.0
 
 Gesture = str  # "single" | "double" | "long" | "reset"
 

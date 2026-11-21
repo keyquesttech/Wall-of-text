@@ -24,25 +24,15 @@ const SIZE_PX: Record<Size, number> = { S: 18, M: 22, L: 30, XL: 40 };
 const PIXEL_PX: Record<string, Record<Size, number>> = { pixel: { S: 24, M: 30, L: 40, XL: 48 }, silk: { S: 16, M: 24, L: 32, XL: 40 } };
 const SIZES: Size[] = ["S", "M", "L", "XL"];
 
-// ------------------------------------------------------------- "from" signature --
-export function fromName(): string {
-  try { return localStorage.getItem("wot.fromName") || ""; } catch { return ""; }
-}
-export function withFrom(doc: Doc, on: boolean): Doc {
-  const n = fromName();
-  if (!on || !n || !doc.blocks.length) return doc;
-  return { ...doc, blocks: [...doc.blocks, { type: "divider", style: "dashed" }, { type: "banner", text: `from ${n}`, size: "S" }] };
-}
-
 // ------------------------------------------------------------------ Text draft --
 interface TextDraft {
   title: string; text: string; font: string; size: Size; align: Align;
-  bold: boolean; underline: boolean; invert: boolean; date: boolean; qr: string; sticker: string; from: boolean;
+  bold: boolean; underline: boolean; invert: boolean; date: boolean; qr: string; sticker: string;
 }
 const DRAFT_KEY = "wot.textDraft.v2";
 const blank = (): TextDraft => ({
   title: "", text: "", font: settings.value?.printer?.default_font ?? "pixel", size: settings.value?.printer?.default_size ?? "M",
-  align: "left", bold: false, underline: false, invert: false, date: false, qr: "", sticker: "", from: false,
+  align: "left", bold: false, underline: false, invert: false, date: false, qr: "", sticker: "",
 });
 function loadDraft(): TextDraft {
   try { return { ...blank(), ...JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}") }; } catch { return blank(); }
@@ -70,7 +60,7 @@ export function textDoc(d: TextDraft): Doc {
   }
   flushPara(); flushItems();
   if (d.qr.trim()) blocks.push({ type: "qr", data: d.qr.trim(), size: "S", caption: d.qr.trim().length < 40 ? d.qr.trim() : undefined });
-  return withFrom({ blocks }, d.from);
+  return { blocks };
 }
 
 // ---------------------------------------------------------------- shared pieces --
@@ -103,25 +93,11 @@ export function Canvas(props: { children: ComponentChildren; side?: ComponentChi
   );
 }
 
-export function SideButtons(props: { onSave?: () => void; from: boolean; onFrom: (v: boolean) => void; onClear: () => void }) {
-  const [ask, setAsk] = useState(false);
-  const [name, setName] = useState(fromName());
-  const initial = (fromName() || "?").slice(0, 1).toUpperCase();
+export function SideButtons(props: { onSave?: () => void; onClear: () => void }) {
   return (
     <>
       {props.onSave && <button class="ib" aria-label="Save as template" onClick={props.onSave}><IconBookmark class="i" /></button>}
-      <button class={`ib ${props.from ? "on" : ""}`} aria-pressed={props.from} aria-label={`From signature${fromName() ? `: ${fromName()}` : ""}`}
-        style="font-size:13px" onClick={() => (fromName() ? props.onFrom(!props.from) : setAsk(true))}>{initial}</button>
       <button class="ib" aria-label="Clear the strip" onClick={props.onClear}><IconTrash class="i" /></button>
-      <Sheet open={ask} onClose={() => setAsk(false)} title="Sign your notes">
-        <p class="cap">Adds a white-on-black "from {name || "you"}" line at the bottom so people know who it's from.</p>
-        <label class="field-label" for="fromn">Your name</label>
-        <input id="fromn" class="input" value={name} maxLength={20} onInput={(e) => setName((e.target as HTMLInputElement).value)} />
-        <button class="btn-green block" style="margin-top:14px" disabled={!name.trim()} onClick={() => {
-          try { localStorage.setItem("wot.fromName", name.trim()); } catch { /* private mode */ }
-          setAsk(false); props.onFrom(true);
-        }}>Sign with this name</button>
-      </Sheet>
     </>
   );
 }
@@ -302,13 +278,12 @@ function TextMode(props: { view: View; wide: boolean }) {
         <textarea id="note" ref={ta} class="onpaper" value={d.text} maxLength={4000} placeholder="Type something to print…"
           style={textStyle} onInput={(e) => set({ text: (e.target as HTMLTextAreaElement).value })} />
         {d.qr && <div class="r-c r-s" style="margin-top:6px">[QR] {d.qr.slice(0, 30)}</div>}
-        {d.from && fromName() && (<><div class="r-hr" /><div class="r-c"><span class="r-inv">from {fromName()}</span></div></>)}
       </div>
     </div>
   );
   const side = (
     <SideButtons onSave={empty ? undefined : () => { setTname(d.title.trim() || d.text.trim().split("\n")[0].slice(0, 30)); setSheet("save"); }}
-      from={d.from} onFrom={(from) => set({ from })} onClear={() => setD({ ...blank(), font: d.font, size: d.size, from: d.from })} />
+      onClear={() => setD({ ...blank(), font: d.font, size: d.size })} />
   );
   return (
     <>

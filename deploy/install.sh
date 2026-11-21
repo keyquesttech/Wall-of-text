@@ -86,12 +86,18 @@ fi
 say "Code -> $APP"
 mkdir -p $APP
 rsync -a --delete --exclude .git --exclude .venv --exclude 'backend/var' --exclude 'node_modules' \
-  --exclude '__pycache__' --exclude 'frontend/src' --exclude 'tools/smoke/sample.jpg' --exclude venv --exclude 'backend/build' "$SRC"/ $APP/
+  --exclude '__pycache__' --exclude 'frontend/src' --exclude 'tools/smoke/sample.jpg' --exclude venv --exclude 'backend/build' --exclude '*.egg-info' "$SRC"/ $APP/
 if [[ ! -x $APP/venv/bin/python ]]; then
   python3 -m venv --system-site-packages $APP/venv
 fi
 $APP/venv/bin/pip install -q --upgrade pip
+# stale build/ and egg-info make setuptools reuse an old file list (it once dropped fortunes.json)
+rm -rf "$APP/backend/build" "$APP"/backend/*.egg-info
+$APP/venv/bin/pip install -q --force-reinstall --no-deps "$APP/backend"
 $APP/venv/bin/pip install -q "$APP/backend"
+rm -rf "$APP/backend/build" "$APP"/backend/*.egg-info
+PKG="$($APP/venv/bin/python -c 'import walloftext, os; print(os.path.dirname(walloftext.__file__))')"
+[[ -f "$PKG/sources/fortunes.json" ]] || { echo "ERROR: installed package is missing sources/fortunes.json" >&2; exit 4; }
 chown -R root:root $APP
 # files copied from Windows (scp) can arrive as 0600; the service user must be able to read them
 chmod -R u=rwX,go=rX $APP

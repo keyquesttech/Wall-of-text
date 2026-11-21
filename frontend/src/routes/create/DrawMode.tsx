@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { Doc } from "../../lib/api";
 import { IconEraser, IconLine, IconRedo, IconUndo } from "../../components/icons";
-import { ActionRow, SideButtons, Split, Toolbar, withFrom, type View } from "../Create";
+import { ActionRow, SideButtons, Split, Toolbar, type View } from "../Create";
 
 const W = 384;
 const HEIGHTS = [240, 384, 640];
@@ -14,7 +14,6 @@ export function DrawMode(props: { view: View; wide: boolean }) {
   const [tool, setTool] = useState<Tool>(6);
   const [pen, setPen] = useState(6);
   const [src, setSrc] = useState<string | null>(null);
-  const [from, setFrom] = useState(false);
   const undo = useRef<ImageData[]>([]);
   const redo = useRef<ImageData[]>([]);
   const [, bump] = useState(0);
@@ -97,7 +96,7 @@ export function DrawMode(props: { view: View; wide: boolean }) {
   };
   const pick = (t: Tool) => { setTool(t); if (typeof t === "number") setPen(t); };
 
-  const doc: Doc = useMemo(() => withFrom({ blocks: src ? [{ type: "drawing", src }] : [] }, from), [src, from]);
+  const doc: Doc = useMemo(() => ({ blocks: src ? [{ type: "drawing" as const, src }] : [] }), [src]);
   const edit = (
     <div class="rwrap" style="width:100%">
       <div class="receipt" style="padding:10px 10px 22px">
@@ -109,7 +108,7 @@ export function DrawMode(props: { view: View; wide: boolean }) {
   return (
     <>
       <Split view={props.view} wide={props.wide} doc={doc} edit={edit}
-        side={<SideButtons from={from} onFrom={setFrom} onClear={clear} />} />
+        side={<SideButtons onClear={clear} />} />
       <Toolbar label="Drawing tools">
         <div class="row" style="gap:2px;flex:1;justify-content:space-between">
           {([3, 6, 14] as const).map((w, i) => (

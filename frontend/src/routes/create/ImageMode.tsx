@@ -5,7 +5,7 @@ import type { Doc } from "../../lib/api";
 import { IconCamera, IconImage } from "../../components/icons";
 import { usePreview } from "../../components/printer";
 import { Banner } from "../../components/ui";
-import { ActionRow, SideButtons, Split, Toolbar, withFrom, type View } from "../Create";
+import { ActionRow, SideButtons, Split, Toolbar, type View } from "../Create";
 
 async function shrink(file: File, max = 1100): Promise<string> {
   const url = URL.createObjectURL(file);
@@ -40,12 +40,11 @@ export function ImageMode(props: { view: View; wide: boolean }) {
   const [invert, setInvert] = useState(false);
   const [lighten, setLighten] = useState(false);
   const [rotate, setRotate] = useState(0);
-  const [from, setFrom] = useState(false);
 
   const imgDoc: Doc = useMemo(() => ({
     blocks: src ? [{ type: "image" as const, src, style, dither, brightness, contrast, invert, lighten, rotate }] : [],
   }), [src, style, dither, brightness, contrast, invert, lighten, rotate]);
-  const doc = useMemo(() => withFrom(imgDoc, from), [imgDoc, from]);
+  const doc = imgDoc;
   const { pv, loading } = usePreview(imgDoc, 350);
   const dense = (pv?.coverage ?? 0) > 0.5;
 
@@ -94,7 +93,7 @@ export function ImageMode(props: { view: View; wide: boolean }) {
       <input id="pic" type="file" accept="image/*" capture="environment" class="sr-only" onChange={onFile} />
       <input id="pic2" type="file" accept="image/*" class="sr-only" onChange={onFile} />
       <Split view={props.view} wide={props.wide} doc={doc} edit={edit}
-        side={src ? <SideButtons from={from} onFrom={setFrom} onClear={() => setSrc(null)} /> : undefined} />
+        side={src ? <SideButtons onClear={() => setSrc(null)} /> : undefined} />
       <Toolbar label="Picture tools">
         <div class="chips" style="gap:4px">
           <label for="pic" class="ib" aria-label="Take a photo"><IconCamera class="i" /></label>

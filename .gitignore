@@ -11,3 +11,4 @@ spikes/*.log
 secrets.json
 passwords.txt
 *.token.json
+backend/build/

@@ -1,5 +1,18 @@
 # Progress
 
+## 21 Nov 2026 (later): fixes from use
+- **Fortune printing** failed on the Pi: a stale `backend/build` + `egg-info` in `/opt` made
+  setuptools install an old file list without `sources/fortunes.json`. `install.sh` now deletes
+  them before every install, force-reinstalls the package and fails loudly if the file is missing;
+  `pyproject.toml` declares the data file; fortunes fall back to a short built-in list if unreadable.
+- **"From" signature removed** from Create (side button, sheet and the printed "from …" line).
+- **Wi-Fi reset hold is now 30 s** (was 10 s). A 10 s hold is an ordinary long press.
+- **LED / progress for the whole print**: the printer buffers a slip in ~0.5 s, so jobs used to end
+  (LED back to idle) while paper was still coming out. The driver now waits for the physical print
+  (rows ÷ ~60 rows/s) and reports progress by time, so the LED pattern, status pill and progress
+  bar last as long as the paper does.
+
+
 ## 21 Nov 2026: real printer + the handoff design
 - **Printer (Gprinter CSN-A4, USB 0fe6:811e on /dev/usb/lp0)** tested with `spikes/printer_probe.py`
   (results in `spikes/SPIKE_RESULTS.md`). Changes: 128-row bands with no pause (a pause between

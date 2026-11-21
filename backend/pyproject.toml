@@ -34,6 +34,10 @@ walloftext = "walloftext.app:main"
 [tool.setuptools.packages.find]
 include = ["walloftext*"]
 
+[tool.setuptools.package-data]
+# non-Python files the app reads at run time must ship in the installed package
+walloftext = ["sources/*.json"]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"

@@ -27,7 +27,7 @@ two density tests, then tries four status queries. Report:
 ```bash
 python3 spikes/button_led_test.py
 ```
-Report: LED brightness steps visible and smooth? Single, double, long and the 10 s hold
+Report: LED brightness steps visible and smooth? Single, double, long and the 30 s hold
 all detected correctly? Which pins you used (the Power + Fan HAT may cover the header).
 
 ## 3. Hotspot and captive portal

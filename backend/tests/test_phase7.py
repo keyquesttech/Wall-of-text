@@ -86,3 +86,18 @@ def test_thumb_search_extra_feed_and_message_section(c):
         {"type": "message", "document": {"blocks": [{"type": "text", "text": "Bins out"}]}}]}).json()
     r = c.post("/api/schedules/preview", json={"sections": s["sections"]})
     assert r.status_code == 200 and int(r.headers["x-wot-rows"]) > 10
+
+
+def test_installed_package_ships_data_files(tmp_path):
+    """A non-editable install (what install.sh does) must include fortunes.json."""
+    import subprocess
+    import sys
+    import zipfile
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    subprocess.run([sys.executable, "-m", "pip", "wheel", "--no-deps", "-q", "-w", str(tmp_path), str(root)],
+                   check=True, capture_output=True)
+    wheel = next(tmp_path.glob("walloftext-*.whl"))
+    names = zipfile.ZipFile(wheel).namelist()
+    assert "walloftext/sources/fortunes.json" in names

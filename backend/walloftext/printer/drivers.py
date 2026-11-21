@@ -90,6 +90,10 @@ class MockPrinter:
         return PrinterStatus("offline" if self.offline else "ready")
 
 
+# Measured motor speed (Phase 0): ~62 dot rows/s at the default heat; a feed line is ~24 dot rows.
+ROWS_PER_S = 60.0
+FEED_DOT_ROWS = 24
+
 # Status bytes (Phase 0, Gprinter CSN-A4 0fe6:811e): DLE EOT 4 = 0x12 with paper, 0x72 with the lid
 # open / no paper. Bits 0x60 = "roll paper end"; bits 0x0C = "near end" (not seen on this printer).
 DLE_EOT_PAPER = b"\x10\x04\x04"
@@ -158,28 +162,47 @@ class EscposUsbPrinter:
     def print_bitmap(self, img: Image.Image, copies: int = 1, extra_feed: int = 0,
                      on_progress: Callable[[int], None] | None = None,
                      should_cancel: Callable[[], bool] | None = None, density: int | None = None) -> None:
+        """Send the raster, then wait until the paper has physically come out.
+
+        The printer buffers about a slip's worth of data, so writes finish long before the paper
+        does. Progress (and so the LED's "printing" pattern and the app's progress bar) follows the
+        measured motor speed instead of the bytes sent (Phase 0: ~62 dot rows/s)."""
         node = self._node()
         if not node:
             raise FileNotFoundError("printer device node not found")
         bands = raster_bytes(img, self.band_rows)
-        total = len(bands) * copies
+        total_rows = img.height * copies + FEED_DOT_ROWS * (3 + extra_feed)
+        expected = total_rows / ROWS_PER_S
+        t0 = time.monotonic()
+        last = [-1]
+
+        def report(final: bool = False) -> None:
+            if not on_progress:
+                return
+            p = 100 if final else min(99, int((time.monotonic() - t0) * 100 / expected))
+            if p != last[0]:
+                last[0] = p
+                on_progress(p)
+
         with self._lock, open(node, "wb", buffering=0) as fh:
             fh.write(INIT)
             if density:
                 fh.write(heat(density))
-            done = 0
             for _ in range(copies):
                 for band in bands:
                     if should_cancel and should_cancel():
                         fh.write(feed(3))
                         raise Cancelled()
                     fh.write(band)
-                    done += 1
-                    if on_progress:
-                        on_progress(int(done * 100 / total))
+                    report()
                     if self.band_pause_s:
                         time.sleep(self.band_pause_s)
             fh.write(feed(3 + extra_feed))
+            # the rest is already in the printer's buffer: wait for the paper, not the bytes
+            while time.monotonic() - t0 < expected:
+                report()
+                time.sleep(0.1)
+        report(final=True)
         self._cache = None
 
     def test_page(self) -> None:
