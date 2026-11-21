@@ -33,7 +33,7 @@ NetworkManager 1.52.1, Python 3.13.5. Checked 20 Nov 2026 with no electronics at
 | P5 | Best band rows / pause with no stalls | ⚠️ A 50 ms pause between bands leaves faint streaks (24/48/64-row bands); no pause (64 or 128 rows) is clean. The motor limits speed to ~62 dot rows/s (~7.8 mm/s) whatever the band size. **Now: 128-row bands, no pause** ("Careful" speed: 48 rows, 20 ms) |
 | P6 | Density command that works (`ESC 7` / `DC2 #`) | ✅ Both visibly change darkness. Darkness slider uses `ESC 7` heat time |
 | P7 | Paper-out / status readable over USB | ✅ `DLE EOT 4`: `0x12` with paper, `0x72` lid open (bits `0x60` = paper end). `GS r 1`: `0x60` → `0x6C`. `ESC v`: `0x00` → `0x04`. **Paper-out is now detected automatically**; paper back after running out resets the roll estimate |
-| P8 | Text clarity | ⚠️ "Unclear on some letters": thin fonts at small sizes draw 1-dot strokes (Space Mono S/M, Inter S) and VT323/Silkscreen are uneven off their pixel grid. **Now:** fonts with >8 % 1-dot strokes at a size are widened by one dot; VT323 prints at 24/30/40/48 and Silkscreen at 16/24/32/40 for S/M/L/XL |
+| P8 | Text clarity | ⚠️ "Unclear on some letters": thin fonts at small sizes draw 1-dot strokes (Space Mono S/M, Inter S) and VT323/Silkscreen are uneven off their pixel grid. **Now:** fonts with >8 % 1-dot strokes at a size are widened by one dot; VT323 prints at 24/30/40/48 and Silkscreen at 16/24/32/40 for S/M/L/XL. Confirmed clear on paper at darkness 120 |
 | B1 | Pins reachable with the Power + Fan HAT | ⏳ (defaults GPIO17 button, GPIO18 LED) |
 | B2 | PWM brightness smooth | ⏳ |
 | B3 | Gestures detected correctly | ⏳ |

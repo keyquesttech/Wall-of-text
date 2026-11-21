@@ -18,6 +18,8 @@
   History (search, Waiting cards, receipt grid, failed + Retry, shimmer), Settings (device card,
   icon rows, "‹ Settings" back button), guest page. Shopping list moved into a sheet from its
   quick chip.
+- Text clarity fix confirmed on paper: thin strokes widened, pixel fonts on their grid; darkness 120
+  (the default) reads well, so it stays.
 - Two deliberate deviations for contrast (axe): the background blobs run at 18 % opacity
   instead of 36 %, and small muted text uses `#A3A8B0` instead of `--muted`. Both are noted in
   `frontend/src/styles.css`.
