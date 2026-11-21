@@ -295,6 +295,10 @@ class PrintQueue:
         self._publish_status()
         img = Image.open(io.BytesIO(job["bitmap"])).convert("1")
         pset = self.settings_get().get("printer", {})
+        if pset.get("rotate_180", True):
+            # The printer hangs so paper reads upside down; turn the slip round. Preview and History
+            # keep the upright bitmap; only what goes to the printer is rotated (exact for 1-bit).
+            img = img.transpose(Image.Transpose.ROTATE_180)
         last_pub = [0.0]
 
         def progress(p: int) -> None:

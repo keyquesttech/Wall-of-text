@@ -13,6 +13,7 @@ from .db import Store
 
 DEFAULTS: dict[str, Any] = {
     "printer": {"darkness": 120, "speed": "normal", "band_rows": 24, "extra_feed": 0, "paper_saver": False,
+                "rotate_180": True,
                 "default_font": "mono", "default_size": "M", "cut_lines": 3},
     "schedules": {"timezone": "Europe/London", "missed_policy": "late_60",  # late_60 | skip | always
                   "quiet_hours": {"enabled": True, "start": "22:00", "end": "07:30"},

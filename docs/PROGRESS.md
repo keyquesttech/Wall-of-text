@@ -1,6 +1,8 @@
 # Progress
 
 ## 21 Nov 2026 (later): fixes from use
+- **Every print is rotated 180°** before it goes to the printer (Settings › Printer › "Rotate prints
+  180°", on by default). Preview and History stay upright; only the paper is turned.
 - **Fortune printing** failed on the Pi: a stale `backend/build` + `egg-info` in `/opt` made
   setuptools install an old file list without `sources/fortunes.json`. `install.sh` now deletes
   them before every install, force-reinstalls the package and fails loudly if the file is missing;

@@ -50,6 +50,8 @@ function PrinterPage() {
       <div class="glass grp" style="margin-top:12px">
         <ToggleRow label="Paper saver" sub="Tighter spacing and no blank space at the end." checked={p.paper_saver}
           onChange={(v) => patch({ printer: { paper_saver: v } })} />
+        <ToggleRow label="Rotate prints 180°" sub="Turns every slip round so it reads the right way up as it hangs from the printer." checked={p.rotate_180 ?? true}
+          onChange={(v) => patch({ printer: { rotate_180: v } })} />
       </div>
       <h2 class="section">Paper</h2>
       <div class="glass grp">

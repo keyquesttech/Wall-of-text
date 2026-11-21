@@ -48,7 +48,13 @@ def test_preview_png_matches_printed_bitmap(c):
     stored = Image.open(io.BytesIO(c.get(f"/api/history/{j['id']}/image").content)).convert("1")
     assert stored.tobytes() == preview.tobytes()
     printed = Image.open(c.svc.printer.printed[-1]).convert("1")
-    assert printed.tobytes() == preview.tobytes()
+    # every print goes to the paper turned 180 degrees (setting on by default)
+    assert printed.tobytes() == preview.transpose(Image.Transpose.ROTATE_180).tobytes()
+    assert printed.tobytes() != preview.tobytes()
+    c.patch("/api/settings", json={"printer": {"rotate_180": False}})
+    j2 = c.post("/api/print", json={"document": DOC}).json()["job"]
+    assert wait(lambda: c.get(f"/api/history/{j2['id']}").json()["state"] == "done")
+    assert Image.open(c.svc.printer.printed[-1]).convert("1").tobytes() == preview.tobytes()
 
 
 def test_bad_document_is_422(c):
