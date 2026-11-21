@@ -22,7 +22,7 @@ import segno
 from PIL import Image, ImageDraw, ImageEnhance, ImageOps
 
 from ..printer.base import WIDTH
-from .fonts import SIZES, FontRegistry
+from .fonts import SIZES, FontRegistry, size_px
 
 MARGIN = 6
 GAP = 8
@@ -117,7 +117,7 @@ class Renderer:
 
     # ------------------------------------------------------------- text --
     def _font(self, fid, size_key, bold=False):
-        px = SIZES.get(size_key, SIZES["M"]) if isinstance(size_key, str) else int(size_key)
+        px = size_px(self.fonts.get(fid).id, size_key)
         return self.fonts.font(fid, px, bold) + (px,)
 
     def _clean(self, text: str, fid) -> str:
@@ -154,6 +154,7 @@ class Renderer:
     def _text_img(self, text, size="M", fid=None, align="left", bold=False, invert=False,
                   underline=False, line_gap=None, max_lines=None) -> Image.Image:
         font, fake_bold, px = self._font(fid, size, bold)
+        thicken = self.fonts.needs_thicken(fid, px, bold)
         text = self._clean(str(text), fid)
         probe = ImageDraw.Draw(_blank(1))
         inner = WIDTH - 2 * MARGIN - (8 if invert else 0)
@@ -180,8 +181,10 @@ class Renderer:
                 x = MARGIN + (4 if invert else 0)
             y = pad + i * lh
             d.text((x, y), line, font=font, fill=ink)
-            if fake_bold:
-                d.text((x + 1, y), line, font=font, fill=ink)
+            # 1-dot strokes print faint on thermal paper: widen thin fonts by a dot
+            extra = (1 if fake_bold else 0) + (1 if thicken else 0)
+            for dx in range(1, extra + 1):
+                d.text((x + dx, y), line, font=font, fill=ink)
             if underline and line:
                 uy = y + asc + 2
                 d.line([(x, uy), (x + w, uy)], fill=ink, width=max(1, px // 14))

@@ -18,6 +18,21 @@ from PIL import Image, ImageDraw, ImageFont
 
 SIZES = {"S": 18, "M": 22, "L": 30, "XL": 40}
 
+# Pixel fonts look crisp only when their pixel grid lands on whole printer dots (tested on the
+# CSN-A4, 21 Nov 2026): Silkscreen is an 8-px grid; VT323 is small for its size and uneven
+# below ~22 px. These sizes replace S/M/L/XL for them.
+PIXEL_SIZES = {
+    "pixel": {"S": 24, "M": 30, "L": 40, "XL": 48},
+    "silk": {"S": 16, "M": 24, "L": 32, "XL": 40},
+}
+
+
+def size_px(fid: str | None, size: str | int) -> int:
+    if isinstance(size, int):
+        return size
+    table = PIXEL_SIZES.get(fid or "", SIZES)
+    return table.get(size, SIZES.get(size, SIZES["M"]))
+
 BUILTIN = {
     "mono": ("Space Mono", "SpaceMono-Regular.ttf", "SpaceMono-Bold.ttf"),
     "pixel": ("VT323", "VT323-Regular.ttf", None),
@@ -96,6 +111,15 @@ class FontRegistry:
         variation = "Regular" if info.id == "sans" else None
         return _load(str(info.regular), size, variation), bold
 
+    def needs_thicken(self, fid: str | None, size: int, bold: bool = False) -> bool:
+        """True when this font at this size has many 1-dot strokes (they print faint and broken)."""
+        info = self.get(fid)
+        if bold and (info.bold or info.id == "sans"):
+            path, var = str(info.bold or info.regular), "Bold" if info.id == "sans" else None
+        else:
+            path, var = str(info.regular), "Regular" if info.id == "sans" else None
+        return thin_share(path, size, var) > 0.08
+
     def covers(self, fid: str | None, ch: str) -> bool:
         if ch in "\n\t ":
             return True
@@ -146,6 +170,28 @@ class FontRegistry:
             (self.upload_dir / m["file"]).unlink(missing_ok=True)
             self._meta_path().write_text(json.dumps(meta, indent=1))
         return True
+
+
+@lru_cache(maxsize=256)
+def thin_share(path: str, size: int, variation: str | None = None) -> float:
+    """Share of 1-dot-wide horizontal runs in sample text: high = strokes too thin for thermal paper."""
+    f = _load(path, size, variation)
+    img = Image.new("1", (size * 14, size * 2), 1)
+    d = ImageDraw.Draw(img)
+    d.fontmode = "1"
+    d.text((2, 2), "Hlmnoebrwx01", font=f, fill=0)
+    px = img.load()
+    ones = total = 0
+    for y in range(img.height):
+        run = 0
+        for x in range(img.width):
+            if px[x, y] == 0:
+                run += 1
+            elif run:
+                total += 1
+                ones += run == 1
+                run = 0
+    return ones / total if total else 0.0
 
 
 def stroke_width(path: Path, size: int) -> float:

@@ -86,13 +86,15 @@ fi
 say "Code -> $APP"
 mkdir -p $APP
 rsync -a --delete --exclude .git --exclude .venv --exclude 'backend/var' --exclude 'node_modules' \
-  --exclude '__pycache__' --exclude 'frontend/src' --exclude 'tools/smoke/sample.jpg' "$SRC"/ $APP/
+  --exclude '__pycache__' --exclude 'frontend/src' --exclude 'tools/smoke/sample.jpg' --exclude venv --exclude 'backend/build' "$SRC"/ $APP/
 if [[ ! -x $APP/venv/bin/python ]]; then
   python3 -m venv --system-site-packages $APP/venv
 fi
 $APP/venv/bin/pip install -q --upgrade pip
 $APP/venv/bin/pip install -q "$APP/backend"
 chown -R root:root $APP
+# files copied from Windows (scp) can arrive as 0600; the service user must be able to read them
+chmod -R u=rwX,go=rX $APP
 
 say "Config and data dirs"
 install -d -m 0750 -o $SVC_USER -g $SVC_USER $ETC

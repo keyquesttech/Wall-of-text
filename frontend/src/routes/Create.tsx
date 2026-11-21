@@ -20,6 +20,8 @@ export type View = "edit" | "printed";
 
 export const FONT_CSS: Record<string, string> = { mono: "'Space Mono', monospace", pixel: "VT323, monospace", silk: "Silkscreen, monospace", sans: "Inter, sans-serif" };
 const SIZE_PX: Record<Size, number> = { S: 18, M: 22, L: 30, XL: 40 };
+// pixel fonts print at grid-friendly sizes (backend render/fonts.py PIXEL_SIZES); mirror that on the strip
+const PIXEL_PX: Record<string, Record<Size, number>> = { pixel: { S: 24, M: 30, L: 40, XL: 48 }, silk: { S: 16, M: 24, L: 32, XL: 40 } };
 const SIZES: Size[] = ["S", "M", "L", "XL"];
 
 // ------------------------------------------------------------- "from" signature --
@@ -280,7 +282,7 @@ function TextMode(props: { view: View; wide: boolean }) {
   const cur = fonts.find((f) => f.id === d.font);
   const textStyle = {
     fontFamily: FONT_CSS[d.font] ?? "inherit",
-    fontSize: `${SIZE_PX[d.size] * scale * (d.font === "pixel" ? 1.25 : 1)}px`,
+    fontSize: `${(PIXEL_PX[d.font]?.[d.size] ?? SIZE_PX[d.size]) * scale}px`,
     fontWeight: d.bold ? 700 : 400,
     textDecoration: d.underline ? "underline" : "none",
     textAlign: d.align,
