@@ -1,74 +1,48 @@
-// Draw: a 384-dot-wide canvas (1 canvas pixel = 1 printer dot). Pointer events for
-// mouse, touch and pen. The PNG goes to the renderer as a "drawing" block (sharp threshold).
+// Draw (HANDOFF 7.1): finger drawing in black on the paper strip. 1 canvas px = 1 printer dot.
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import type { Doc } from "../../lib/api";
-import { AsPrinted, printWithMoment } from "../../components/printer";
-import { Seg } from "../../components/ui";
-import { PrintBar } from "../Create";
+import { IconEraser, IconLine, IconRedo, IconUndo } from "../../components/icons";
+import { ActionRow, SideButtons, Split, Toolbar, withFrom, type View } from "../Create";
 
 const W = 384;
-const HEIGHTS = { S: 240, M: 384, L: 640 } as const;
-type H = keyof typeof HEIGHTS;
+const HEIGHTS = [240, 384, 640];
+type Tool = 3 | 6 | 14 | "erase" | "line";
 
-export function DrawMode() {
+export function DrawMode(props: { view: View; wide: boolean }) {
   const canvas = useRef<HTMLCanvasElement>(null);
-  const [h, setH] = useState<H>("M");
+  const [hi, setHi] = useState(1);
+  const [tool, setTool] = useState<Tool>(6);
   const [pen, setPen] = useState(6);
-  const [erase, setErase] = useState(false);
-  const [caption, setCaption] = useState("");
   const [src, setSrc] = useState<string | null>(null);
-  const [copies, setCopies] = useState(1);
+  const [from, setFrom] = useState(false);
   const undo = useRef<ImageData[]>([]);
-  const drawing = useRef<{ x: number; y: number } | null>(null);
+  const redo = useRef<ImageData[]>([]);
+  const [, bump] = useState(0);
+  const drawing = useRef<{ x: number; y: number; start: { x: number; y: number }; snap: ImageData } | null>(null);
+  const H = HEIGHTS[hi];
 
   const ctx = () => canvas.current!.getContext("2d")!;
   const snapshot = () => setSrc(canvas.current!.toDataURL("image/png"));
-  const clear = () => {
-    const c = ctx();
-    c.fillStyle = "#fff";
-    c.fillRect(0, 0, W, HEIGHTS[h]);
-    undo.current = [];
-    setSrc(null);
-  };
   useEffect(() => {
-    // keep what's drawn when the height changes
-    const c = canvas.current!;
-    const old = src ? new Image() : null;
+    const c = canvas.current;
+    if (!c) return;
+    const prev = src;
     c.width = W;
-    c.height = HEIGHTS[h];
+    c.height = H;
     const x = ctx();
     x.fillStyle = "#fff";
-    x.fillRect(0, 0, W, HEIGHTS[h]);
-    if (old && src) { old.onload = () => { x.drawImage(old, 0, 0); snapshot(); }; old.src = src; }
-  }, [h]);
+    x.fillRect(0, 0, W, H);
+    if (prev) { const im = new Image(); im.onload = () => { x.drawImage(im, 0, 0); }; im.src = prev; }
+  }, [H, props.view]);
 
   const pos = (e: PointerEvent) => {
     const r = canvas.current!.getBoundingClientRect();
-    return { x: ((e.clientX - r.left) * W) / r.width, y: ((e.clientY - r.top) * HEIGHTS[h]) / r.height };
+    return { x: ((e.clientX - r.left) * W) / r.width, y: ((e.clientY - r.top) * H) / r.height };
   };
-  const down = (e: PointerEvent) => {
-    e.preventDefault();
-    canvas.current!.setPointerCapture(e.pointerId);
-    undo.current.push(ctx().getImageData(0, 0, W, HEIGHTS[h]));
-    if (undo.current.length > 30) undo.current.shift();
-    drawing.current = pos(e);
-    line(drawing.current, drawing.current);
-  };
-  const move = (e: PointerEvent) => {
-    if (!drawing.current) return;
-    const p = pos(e);
-    line(drawing.current, p);
-    drawing.current = p;
-  };
-  const up = () => {
-    if (!drawing.current) return;
-    drawing.current = null;
-    snapshot();
-  };
-  const line = (a: { x: number; y: number }, b: { x: number; y: number }) => {
+  const stroke = (a: { x: number; y: number }, b: { x: number; y: number }) => {
     const c = ctx();
-    c.strokeStyle = erase ? "#fff" : "#000";
-    c.lineWidth = erase ? pen * 3 : pen;
+    c.strokeStyle = tool === "erase" ? "#fff" : "#000";
+    c.lineWidth = tool === "erase" ? 24 : pen;
     c.lineCap = "round";
     c.lineJoin = "round";
     c.beginPath();
@@ -76,39 +50,81 @@ export function DrawMode() {
     c.lineTo(b.x + 0.01, b.y);
     c.stroke();
   };
+  const down = (e: PointerEvent) => {
+    e.preventDefault();
+    canvas.current!.setPointerCapture(e.pointerId);
+    const snap = ctx().getImageData(0, 0, W, H);
+    undo.current.push(snap);
+    if (undo.current.length > 30) undo.current.shift();
+    redo.current = [];
+    const p = pos(e);
+    drawing.current = { ...p, start: p, snap };
+    if (tool !== "line") stroke(p, p);
+  };
+  const move = (e: PointerEvent) => {
+    const d = drawing.current;
+    if (!d) return;
+    const p = pos(e);
+    if (tool === "line") { ctx().putImageData(d.snap, 0, 0); stroke(d.start, p); }
+    else { stroke(d, p); d.x = p.x; d.y = p.y; }
+  };
+  const up = () => {
+    if (!drawing.current) return;
+    drawing.current = null;
+    snapshot();
+    bump((n) => n + 1);
+  };
   const doUndo = () => {
     const d = undo.current.pop();
-    if (d) { ctx().putImageData(d, 0, 0); snapshot(); }
+    if (!d) return;
+    redo.current.push(ctx().getImageData(0, 0, W, H));
+    ctx().putImageData(d, 0, 0);
+    snapshot(); bump((n) => n + 1);
   };
+  const doRedo = () => {
+    const d = redo.current.pop();
+    if (!d) return;
+    undo.current.push(ctx().getImageData(0, 0, W, H));
+    ctx().putImageData(d, 0, 0);
+    snapshot(); bump((n) => n + 1);
+  };
+  const clear = () => {
+    const c = ctx();
+    c.fillStyle = "#fff";
+    c.fillRect(0, 0, W, H);
+    undo.current = []; redo.current = [];
+    setSrc(null);
+  };
+  const pick = (t: Tool) => { setTool(t); if (typeof t === "number") setPen(t); };
 
-  const doc: Doc = useMemo(() => ({
-    blocks: [
-      ...(src ? [{ type: "drawing" as const, src }] : []),
-      ...(caption.trim() ? [{ type: "text" as const, text: caption.trim(), align: "center" as const, size: "M" as const }] : []),
-    ],
-  }), [src, caption]);
-
-  return (
-    <div class="create-grid">
-      <div>
-        <div class="row wrap" style="margin:8px 0;gap:10px">
-          <Seg label="Pen" value={erase ? "erase" : String(pen)} onChange={(v) => { if (v === "erase") setErase(true); else { setErase(false); setPen(Number(v)); } }}
-            options={[{ value: "3", label: "Fine" }, { value: "6", label: "Pen" }, { value: "14", label: "Marker" }, { value: "erase", label: "Eraser" }]} />
-          <Seg label="Paper length" value={h} onChange={setH} options={[{ value: "S", label: "Short" }, { value: "M", label: "Square" }, { value: "L", label: "Long" }]} />
-        </div>
+  const doc: Doc = useMemo(() => withFrom({ blocks: src ? [{ type: "drawing", src }] : [] }, from), [src, from]);
+  const edit = (
+    <div class="rwrap" style="width:100%">
+      <div class="receipt" style="padding:10px 10px 22px">
         <canvas ref={canvas} class="draw" aria-label="Drawing area. Draw with your finger, mouse or pen."
-          onPointerDown={down as any} onPointerMove={move as any} onPointerUp={up} onPointerCancel={up} onPointerLeave={up} />
-        <div class="row" style="margin-top:8px">
-          <button class="btn small" onClick={doUndo} disabled={!undo.current.length}>Undo</button>
-          <button class="btn small btn-ghost" onClick={clear}>Clear</button>
-        </div>
-        <label class="field-label" for="cap">Caption (optional)</label>
-        <input id="cap" class="input" value={caption} maxLength={80} onInput={(e) => setCaption((e.target as HTMLInputElement).value)} />
-      </div>
-      <div>
-        <AsPrinted doc={doc} />
-        <PrintBar disabled={!src} copies={copies} setCopies={setCopies} onPrint={() => printWithMoment(doc, caption.trim() || "Drawing", copies)} />
+          onPointerDown={down as any} onPointerMove={move as any} onPointerUp={up} onPointerCancel={up} />
       </div>
     </div>
+  );
+  return (
+    <>
+      <Split view={props.view} wide={props.wide} doc={doc} edit={edit}
+        side={<SideButtons from={from} onFrom={setFrom} onClear={clear} />} />
+      <Toolbar label="Drawing tools">
+        <div class="row" style="gap:2px;flex:1;justify-content:space-between">
+          {([3, 6, 14] as const).map((w, i) => (
+            <button class={`ib ${tool === w ? "on" : ""}`} aria-pressed={tool === w} aria-label={["Thin pen", "Medium pen", "Thick pen"][i]} onClick={() => pick(w)}>
+              <span style={{ width: `${[6, 11, 17][i]}px`, height: `${[6, 11, 17][i]}px`, borderRadius: "50%", background: tool === w ? "#ECEEF2" : "#C9CDD4" }} />
+            </button>
+          ))}
+          <button class={`ib ${tool === "erase" ? "on" : ""}`} aria-pressed={tool === "erase"} aria-label="Eraser" onClick={() => pick("erase")}><IconEraser class="i" /></button>
+          <button class={`ib ${tool === "line" ? "on" : ""}`} aria-pressed={tool === "line"} aria-label="Straight line" onClick={() => pick("line")}><IconLine class="i" /></button>
+          <button class="ib" aria-label="Undo" disabled={!undo.current.length} onClick={doUndo}><IconUndo class="i" /></button>
+          <button class="ib" aria-label="Redo" disabled={!redo.current.length} onClick={doRedo}><IconRedo class="i" /></button>
+          <button class="ib" aria-label={`Paper length: ${["short", "square", "long"][hi]}. Change`} style="font-size:13px" onClick={() => setHi((hi + 1) % 3)}>{["S", "M", "L"][hi]}</button>
+        </div>
+      </Toolbar>
+      <ActionRow doc={doc} title="Drawing" disabled={!src} />
+    </>
   );
 }

@@ -1,5 +1,7 @@
 # Phase 0 spike results
 
+Printer tested 21 Nov 2026 (USB, Gprinter CSN-A4).
+
 Status key: ✅ answered · ⏳ needs hardware or a phone · ⚠️ answered, changes the plan
 
 Pi: Raspberry Pi 4, Raspberry Pi OS Lite 64-bit (Debian 13 trixie), kernel 6.18.50+rpt-rpi-v8,
@@ -24,13 +26,13 @@ NetworkManager 1.52.1, Python 3.13.5. Checked 20 Nov 2026 with no electronics at
 
 | # | Question | Answer |
 |---|---|---|
-| P1 | Printer `lsusb` vendor:product ID | ⏳ |
-| P2 | Device node (`/dev/usb/lp0` or `/dev/ttyUSB0`) | ⏳ |
-| P3 | Plain text prints | ⏳ |
-| P4 | `GS v 0` raster prints a 384-px bitmap | ⏳ |
-| P5 | Best band rows / pause with no stalls | ⏳ (code default: 24 rows, 50 ms) |
-| P6 | Density command that works (`ESC 7` / `DC2 #`) | ⏳ |
-| P7 | Paper-out / status readable over USB | ⏳ (if no: paper-out becomes user-reported) |
+| P1 | Printer `lsusb` vendor:product ID | ✅ `0fe6:811e`, reports as "Gprinter CSN-A4" ("ICS Advent Parallel Adapter" in lsusb's table), bidirectional usblp |
+| P2 | Device node (`/dev/usb/lp0` or `/dev/ttyUSB0`) | ✅ `/dev/usb/lp0`, group `lp`; the udev rule's `/dev/walloftext-printer` symlink appears |
+| P3 | Plain text prints | ✅ |
+| P4 | `GS v 0` raster prints a 384-px bitmap | ✅ test page from the app printed correctly |
+| P5 | Best band rows / pause with no stalls | ⚠️ A 50 ms pause between bands leaves faint streaks (24/48/64-row bands); no pause (64 or 128 rows) is clean. The motor limits speed to ~62 dot rows/s (~7.8 mm/s) whatever the band size. **Now: 128-row bands, no pause** ("Careful" speed: 48 rows, 20 ms) |
+| P6 | Density command that works (`ESC 7` / `DC2 #`) | ✅ Both visibly change darkness. Darkness slider uses `ESC 7` heat time |
+| P7 | Paper-out / status readable over USB | ✅ `DLE EOT 4`: `0x12` with paper, `0x72` lid open (bits `0x60` = paper end). `GS r 1`: `0x60` → `0x6C`. `ESC v`: `0x00` → `0x04`. **Paper-out is now detected automatically**; paper back after running out resets the roll estimate |
 | B1 | Pins reachable with the Power + Fan HAT | ⏳ (defaults GPIO17 button, GPIO18 LED) |
 | B2 | PWM brightness smooth | ⏳ |
 | B3 | Gestures detected correctly | ⏳ |

@@ -10,6 +10,7 @@ export default defineConfig({
   build: { outDir: "dist", emptyOutDir: true, sourcemap: false, target: "es2019", assetsInlineLimit: 0 },
   server: {
     host: true,
+    fs: { allow: [".."] }, // design-handoff/tokens.css lives one level up
     proxy: Object.fromEntries(
       ["/api", "/ui", "/fonts", "/signin", "/setup", "/note", "/tokens.css"].map((p) => [p, { target: backend, changeOrigin: false }]),
     ),

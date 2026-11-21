@@ -34,11 +34,25 @@
   };
 
   WOT.lock = '<svg width="14" height="14" viewBox="0 0 24 24" aria-label="Needs a password" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
-  WOT.alert = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 7v6M12 17h.01"/></svg>';
+  WOT.alert = '<span class="ico p"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l9 16H3z"/><path d="M12 10v4.5M12 17.4v.1"/></svg></span>';
+  WOT.ok = '<span class="ico g"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>';
+
+  // Background light (HANDOFF 4): two blurred blobs, added by script so the HTML stays plain.
+  WOT.blobs = function () {
+    var bg = document.createElement("div");
+    bg.className = "bg";
+    bg.setAttribute("aria-hidden", "true");
+    bg.innerHTML = '<div class="blob p" style="width:300px;height:300px;right:-120px;top:-60px"></div>' +
+      '<div class="blob g s" style="width:340px;height:340px;left:-150px;bottom:40px"></div>';
+    document.body.insertBefore(bg, document.body.firstChild);
+  };
+  if (document.readyState !== "loading") WOT.blobs(); else document.addEventListener("DOMContentLoaded", WOT.blobs);
 
   WOT.banner = function (el, text, kind) {
     if (!text) { el.innerHTML = ""; return; }
-    el.innerHTML = '<div class="banner ' + (kind || "") + '" role="alert">' + WOT.alert + "<div>" + WOT.esc(text) + "</div></div>";
+    var info = kind === "info";
+    el.innerHTML = '<div class="glass banner ' + (info ? "tg" : "pk") + '" role="' + (info ? "status" : "alert") + '">' +
+      (info ? WOT.ok : WOT.alert) + '<div style="flex:1">' + WOT.esc(text) + "</div></div>";
   };
 
   WOT.showHide = function (root) {

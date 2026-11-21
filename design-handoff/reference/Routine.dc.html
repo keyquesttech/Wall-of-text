@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Routine builder</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./wp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Silkscreen&amp;family=Space+Mono:wght@400;700&amp;family=VT323&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<main class="wp phone" style="width: 390px; height: 844px; background: #121315; font-family: Inter, sans-serif">
+<div class="blob p" style="width: 320px; height: 320px; left: -120px; top: 120px"></div>
+<div class="blob g s" style="width: 300px; height: 300px; right: -140px; bottom: 80px; opacity: .3"></div>
+<div class="col" style="position: absolute; inset: 0; padding: 52px 16px 30px; gap: 12px">
+  <div class="topbar">
+    <a href="Schedules.dc.html" class="glass ib" aria-label="Back to Schedules" style="border-radius: 22px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a>
+    <span class="lbl">Routine</span>
+    <button class="glass ib" aria-label="More options" style="border-radius: 22px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h.01M12 12h.01M18 12h.01" style="stroke-width: 3"></path></svg></button>
+  </div>
+  <div class="col" style="gap: 2px">
+    <h1 class="h1" style="font-size: 30px">Morning briefing</h1>
+    <span style="font-size: 15px; font-weight: 600; color: #FF63B4">Every weekday at 07:30 · one print</span>
+  </div>
+  <span class="cap">Drag blocks to change their order on the receipt.</span>
+
+  <div class="col" style="gap: 8px; position: relative">
+    <div class="glass rowf" style="gap: 10px; padding: 8px 12px; border-radius: 16px; min-height: 56px">
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; color: #8A8F98"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" style="stroke-width: 3"></path></svg>
+      <span class="ico">1</span><span style="flex: 1; font-weight: 600; color: #ECEEF2">Date and greeting</span><span class="cap">Always</span>
+    </div>
+    <div style="height: 3px; border-radius: 2px; background: #FF2E9A; box-shadow: 0 0 10px #FF2E9A; margin: 0 8px"></div>
+    <div class="glass rowf" style="gap: 10px; padding: 8px 12px; border-radius: 16px; min-height: 56px">
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; color: #8A8F98"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" style="stroke-width: 3"></path></svg>
+      <span class="ico">3</span><span style="flex: 1; font-weight: 600; color: #ECEEF2">Today's calendar</span><span class="cap">Next 12 h</span>
+    </div>
+    <div class="glass rowf" style="gap: 10px; padding: 8px 12px; border-radius: 16px; min-height: 56px">
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; color: #8A8F98"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" style="stroke-width: 3"></path></svg>
+      <span class="ico">4</span><span style="flex: 1; font-weight: 600; color: #ECEEF2">Today's tasks</span><span class="chip warn" style="border-radius: 15px">Only if any due</span>
+    </div>
+    <div class="glass rowf" style="gap: 10px; padding: 8px 12px; border-radius: 16px; min-height: 56px">
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; color: #8A8F98"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" style="stroke-width: 3"></path></svg>
+      <span class="ico">5</span><span style="flex: 1; font-weight: 600; color: #ECEEF2">Quote of the day</span><span class="cap">Always</span>
+    </div>
+    <div class="glass sel rowf" aria-label="Weather block, being moved" style="position: absolute; left: 10px; right: -6px; top: 40px; gap: 10px; padding: 8px 12px; border-radius: 16px; min-height: 60px; transform: rotate(-2deg); box-shadow: 0 0 0 1px rgba(255,46,154,.5), 0 24px 40px rgba(0,0,0,.55), 0 0 30px rgba(255,46,154,.3); background: rgba(48,30,42,.82)">
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 18px; color: #FF63B4"><path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" style="stroke-width: 3"></path></svg>
+      <span class="ico p">2</span><span style="flex: 1; font-weight: 600; color: #ECEEF2">Weather</span><span class="chip warn" style="border-radius: 15px">If rain likely</span>
+    </div>
+    <button class="rowf" style="gap: 10px; justify-content: center; min-height: 48px; border-radius: 16px; border: 1.5px dashed rgba(201,205,212,.3); color: #C9CDD4; font-weight: 600"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 20px"><path d="M12 5v14M5 12h14"></path></svg>Add a block</button>
+  </div>
+
+  <div class="fade-b" style="flex: 1; min-height: 0; overflow: hidden; display: flex; justify-content: center; padding-top: 4px">
+    <div class="rwrap" style="width: 236px"><div class="receipt bits" style="font-size: 17px; padding: 12px 14px">
+      <div class="r-c">FRI 20 NOV</div><div class="r-c" style="font-size: 26px">GOOD MORNING</div><div class="r-hr" style="margin: 5px 0"></div>
+      <div>WEATHER  London 9°/12°</div><div>Rain from 14:00, 70%</div><div class="r-hr" style="margin: 5px 0"></div>
+      <div>CALENDAR</div><div>10:00 Studio call</div><div>13:30 Team lunch</div><div class="r-hr" style="margin: 5px 0"></div>
+      <div>TASKS DUE</div><div><span class="r-cb" style="width: 11px; height: 11px"></span>Post the parcel</div>
+    </div></div>
+  </div>
+
+  <div class="rowf" style="gap: 10px">
+    <button class="btn-print" style="flex: 1; height: 56px; font-size: 16px; border-radius: 18px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 2.2"><path d="M7 9V3h10v6"></path><path d="M6 18H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-2"></path><path d="M7 14h10v7H7z"></path></svg>Print now</button>
+    <button class="btn-pink" style="flex: 1; min-height: 56px">Save routine</button>
+  </div>
+</div>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

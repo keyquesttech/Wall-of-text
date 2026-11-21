@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./wp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Silkscreen&amp;family=Space+Mono:wght@400;700&amp;family=VT323&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<main class="wp phone" style="width: 390px; height: 844px; background: #121315; font-family: Inter, sans-serif">
+<div class="blob g" style="width: 300px; height: 300px; left: -130px; top: 60px; opacity: .3"></div>
+<div class="blob p s" style="width: 300px; height: 300px; right: -140px; bottom: 140px; opacity: .3"></div>
+<div class="col" style="position: absolute; inset: 0; padding: 52px 16px 120px; gap: 14px; overflow: hidden">
+
+  <sc-if value="{{g.home}}" hint-placeholder-val="{{ true }}">
+    <div class="topbar"><button class="glass pill"><span class="dot"></span>Online<span class="n">· 0 waiting</span></button></div>
+    <h1 class="h1">Settings</h1>
+    <div class="glass tg" style="padding: 16px; border-radius: 24px; display: flex; flex-direction: column; gap: 12px">
+      <div class="rowf" style="gap: 14px">
+        <div style="width: 56px; height: 56px; border-radius: 16px; background: #1C1D21; border: 1px solid rgba(201,205,212,.2); display: grid; place-items: center; position: relative">
+          <div style="width: 34px; height: 5px; border-radius: 3px; background: #050506; box-shadow: 0 0 10px rgba(57,255,136,.6)"></div>
+          <span class="dot" style="position: absolute; right: 7px; bottom: 7px; width: 7px; height: 7px"></span>
+        </div>
+        <div class="col" style="flex: 1"><span class="h3">Wall Printer</span><span class="cap">Online · printer.local</span></div>
+      </div>
+      <div class="col" style="gap: 6px">
+        <div class="rowf" style="justify-content: space-between"><span style="font-size: 13px; color: #C9CDD4">Paper roll</span><span class="num" style="font-size: 13px; color: #ECEEF2; font-weight: 600">About 60% left</span></div>
+        <div class="bar"><i style="width: 60%"></i></div>
+      </div>
+      <span class="cap">Pi 52 °C · fan quiet · up 6 days</span>
+    </div>
+    <div class="glass grp">
+      <sc-for list="{{groups}}" as="r" hint-placeholder-count="8">
+        <a href="{{r.href}}" class="lrow"><span class="ico"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="{{r.icon}}"></path></svg></span>{{r.name}}<span class="v">{{r.val}}</span><span aria-hidden="true" style="color: #8A8F98; font-size: 22px">›</span></a>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{notHome}}" hint-placeholder-val="{{ false }}">
+    <div class="topbar">
+      <a href="Settings.dc.html" class="glass btn" style="min-height: 44px; padding: 0 14px 0 8px; border-radius: 22px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>Settings</a>
+      <button class="glass pill"><span class="dot"></span>Online</button>
+    </div>
+    <h1 class="h1" style="font-size: 30px">{{title}}</h1>
+  </sc-if>
+
+  <sc-if value="{{g.printer}}" hint-placeholder-val="{{ false }}">
+    <div class="glass tg rowf" style="gap: 12px; padding: 12px 12px 12px 16px; border-radius: 20px">
+      <span class="dot"></span><div class="col" style="flex: 1"><span class="h3" style="font-size: 15px">Online · idle</span><span class="cap">Last print 15:42</span></div>
+      <button class="btn-green" style="min-height: 44px; padding: 0 14px; font-size: 14px">Test print</button>
+    </div>
+    <div class="glass grp">
+      <div class="lrow" style="flex-direction: column; align-items: stretch; gap: 0"><label for="dk" class="rowf" style="justify-content: space-between">Print darkness<span class="v">Dark</span></label><input id="dk" type="range" value="70"></div>
+      <div class="lrow">Print speed<div class="glass seg sm" style="margin-left: auto; width: 190px; grid-template-columns: repeat(3, minmax(0, 1fr))"><span class="hl" style="left: calc(3px + (100% - 6px) / 3); width: calc((100% - 6px) / 3)"></span><button>Slow</button><button class="act">Normal</button><button>Fast</button></div></div>
+    </div>
+    <div class="glass grp">
+      <a href="Settings-Fonts.dc.html" class="lrow">Print fonts<span class="v" style="font-family: VT323, monospace; font-size: 20px; color: #C9CDD4">Thermal 12×24</span><span aria-hidden="true" style="color: #8A8F98; font-size: 22px">›</span></a>
+      <div class="lrow">Default size<div class="glass seg sm" style="margin-left: auto; width: 170px; grid-template-columns: repeat(4, minmax(0, 1fr))"><span class="hl" style="left: calc(3px + (100% - 6px) / 4); width: calc((100% - 6px) / 4)"></span><button>S</button><button class="act">M</button><button>L</button><button>XL</button></div></div>
+      <div class="lrow">Line spacing<span class="v">Normal</span><span aria-hidden="true" style="color: #8A8F98; font-size: 22px">›</span></div>
+      <div class="lrow">Blank feed after print<div class="rowf" style="margin-left: auto; gap: 6px"><button class="ib" aria-label="Less" style="background: rgba(201,205,212,.1)">−</button><span class="num" style="width: 52px; text-align: center; font-size: 15px">3 lines</span><button class="ib" aria-label="More" style="background: rgba(201,205,212,.1)">+</button></div></div>
+    </div>
+    <div class="glass grp">
+      <div class="lrow" style="flex-direction: column; align-items: stretch; gap: 8px; padding: 14px 16px"><div class="rowf" style="justify-content: space-between">Paper roll<span class="v">About 60% left</span></div><div class="bar"><i style="width: 60%"></i></div></div>
+      <div class="lrow">Warn me when paper is low<button class="tog on" role="switch" aria-checked="true" aria-label="Warn when paper is low" style="margin-left: auto"></button></div>
+      <button class="lrow" style="color: #39FF88; font-weight: 600">I loaded a new roll</button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{g.fonts}}" hint-placeholder-val="{{ false }}">
+    <p class="cap" style="margin-top: -6px">Each font is shown as it prints. Uploaded fonts are turned into black and white before printing.</p>
+    <div class="col" style="gap: 10px">
+      <sc-for list="{{fonts}}" as="f" hint-placeholder-count="4">
+        <div class="{{f.cls}}" style="border-radius: 20px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+          <div class="rwrap"><div class="receipt bits" style="padding: 8px 12px 18px; font-family: {{f.family}}; font-size: {{f.size}}; line-height: 1.1">{{f.sample}}</div></div>
+          <div class="rowf" style="gap: 8px">
+            <span style="font-weight: 600; color: #ECEEF2; font-size: 15px; flex: 1">{{f.name}}</span><span class="cap">{{f.kind}}</span>
+            <sc-if value="{{f.isDefault}}" hint-placeholder-val="{{ false }}"><span class="chip" style="height: 28px; font-size: 12px; background: rgba(57,255,136,.16); color: #39FF88; padding: 0 10px">Default</span></sc-if>
+          </div>
+          <sc-if value="{{f.warn}}" hint-placeholder-val="{{ false }}"><div class="rowf" style="gap: 8px; color: #FF63B4; font-size: 13px; font-weight: 600"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px; flex: none"><path d="M12 3.5l9 16H3z"></path><path d="M12 10v4M12 17v.1"></path></svg>Below size L this font may not print clearly.</div></sc-if>
+        </div>
+      </sc-for>
+    </div>
+    <button class="btn" style="color: #ECEEF2"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"></path></svg>Upload a font (.ttf, .otf)</button>
+  </sc-if>
+
+  <sc-if value="{{g.button}}" hint-placeholder-val="{{ false }}">
+    <div class="glass" style="border-radius: 24px; padding: 18px; display: flex; align-items: center; gap: 18px">
+      <div style="width: 84px; height: 84px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #8BFFBE, #39FF88 45%, #18A855); box-shadow: 0 0 0 7px #1C1D21, 0 0 0 9px rgba(201,205,212,.25), 0 0 34px rgba(57,255,136,.55); flex: none"></div>
+      <div class="col" style="gap: 4px"><span class="h3">Arcade button</span><span class="cap">Last press: single · 15:40. Reprinted “Shopping list”.</span></div>
+    </div>
+    <div class="glass grp">
+      <div class="lrow"><span class="ico g">1×</span><div class="col" style="flex: 1"><span>Single press</span><span class="cap">Reprint last</span></div><span aria-hidden="true" style="color: #8A8F98; font-size: 22px">›</span></div>
+      <div class="lrow"><span class="ico g">2×</span><div class="col" style="flex: 1"><span>Double press</span><span class="cap">Print weather now</span></div><span aria-hidden="true" style="color: #8A8F98; font-size: 22px">›</span></div>
+      <div class="lrow"><span class="ico g" style="font-size: 11px">Hold</span><div class="col" style="flex: 1"><span>Long press</span><span class="cap">Run “Morning briefing”</span></div><span aria-hidden="true" style="color: #8A8F98; font-size: 22px">›</span></div>
+    </div>
+    <span class="sect" style="padding-bottom: 0">Choose an action</span>
+    <div class="glass grp">
+      <div class="lrow">Reprint last<svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="margin-left: auto; width: 20px; color: #39FF88"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></div>
+      <div class="lrow">Print today's agenda</div>
+      <div class="lrow">Print a random fortune</div>
+      <div class="lrow">Cancel the queue</div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{g.led}}" hint-placeholder-val="{{ false }}">
+    <div class="glass rowf" style="border-radius: 24px; padding: 16px; gap: 16px">
+      <div style="width: 46px; height: 46px; border-radius: 50%; background: #1C1D21; border: 2px solid rgba(201,205,212,.3); display: grid; place-items: center"><span class="dot pulse" style="width: 18px; height: 18px"></span></div>
+      <div class="col" style="flex: 1"><span class="h3" style="font-size: 16px">Testing: Printing</span><span class="cap">Slow pulse at 70% brightness</span></div>
+      <button class="btn" style="min-height: 44px; padding: 0 14px">Stop</button>
+    </div>
+    <div class="glass grp"><div class="lrow" style="flex-direction: column; align-items: stretch; gap: 0"><label for="lb" class="rowf" style="justify-content: space-between">Brightness<span class="v num">70%</span></label><input id="lb" type="range" value="70"></div></div>
+    <div class="glass grp">
+      <sc-for list="{{leds}}" as="e" hint-placeholder-count="5">
+        <div class="lrow" style="flex-direction: column; align-items: stretch; gap: 8px; padding: 10px 14px">
+          <div class="rowf" style="justify-content: space-between"><span style="font-size: 15px">{{e.name}}</span><button class="cap" style="color: #39FF88; font-weight: 700; min-height: 24px">Test</button></div>
+          <div class="glass seg sm" style="grid-template-columns: repeat(4, minmax(0, 1fr))"><span class="hl" style="left: calc(3px + {{e.i}} * (100% - 6px) / 4); width: calc((100% - 6px) / 4)"></span><button>Off</button><button>Solid</button><button>Slow pulse</button><button>Blink</button></div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{g.connections}}" hint-placeholder-val="{{ false }}">
+    <div class="glass grp">
+      <div class="lrow" style="padding: 12px 16px"><span class="ico g"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v15H4zM4 10h16M9 3v4M15 3v4"></path></svg></span><div class="col" style="flex: 1"><span>Google Calendar</span><span class="cap">Connected as Matias · 3 calendars</span></div><span class="dot"></span></div>
+      <div class="lrow" style="padding: 12px 16px; align-items: flex-start"><span class="ico p"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"></path></svg></span><div class="col" style="flex: 1; gap: 6px"><span>Google Tasks</span><span class="cap" style="color: #FF63B4">Connection expired. 2 schedules can't print tasks.</span><button class="chip warn" style="align-self: flex-start; height: 36px">Sign in again</button></div></div>
+      <div class="lrow" style="padding: 12px 16px"><span class="ico g"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17a4 4 0 0 1-.6-8A6 6 0 0 1 18 9.5a3.8 3.8 0 0 1-.5 7.5z"></path></svg></span><div class="col" style="flex: 1"><span>Weather</span><span class="cap">Open-Meteo · London</span></div><span class="dot"></span></div>
+    </div>
+    <span class="sect" style="padding-bottom: 0">Coming later</span>
+    <div class="glass grp">
+      <div class="lrow"><span class="ico"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7M5 10v10h14V10"></path></svg></span><div class="col" style="flex: 1"><span>Home Assistant</span><span class="cap">Not connected</span></div><button class="btn" style="min-height: 40px; padding: 0 12px; font-size: 14px">Set up</button></div>
+      <div class="lrow"><span class="ico"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1"></path></svg></span><div class="col" style="flex: 1"><span>Webhook link</span><span class="cap">Let other apps send prints</span></div><button class="btn" style="min-height: 40px; padding: 0 12px; font-size: 14px">Copy</button></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{g.schedules}}" hint-placeholder-val="{{ false }}">
+    <div class="glass grp">
+      <div class="lrow">Time zone<span class="v">London (GMT)</span><span aria-hidden="true" style="color: #8A8F98; font-size: 22px">›</span></div>
+      <div class="lrow"><div class="col" style="flex: 1"><span>Quiet hours</span><span class="cap">No printing from 23:00 to 07:00</span></div><button class="tog pk on" role="switch" aria-checked="true" aria-label="Quiet hours"></button></div>
+      <div class="lrow"><div class="col" style="flex: 1"><span>Daily print limit</span><span class="cap">Saves paper if something loops</span></div><div class="rowf" style="gap: 6px"><button class="ib" aria-label="Lower limit" style="background: rgba(201,205,212,.1)">−</button><span class="num" style="width: 28px; text-align: center">30</span><button class="ib" aria-label="Raise limit" style="background: rgba(201,205,212,.1)">+</button></div></div>
+    </div>
+    <span class="sect" style="padding-bottom: 0">Paper saver</span>
+    <div class="glass tg" style="border-radius: 24px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+      <div class="rowf" style="justify-content: space-between; align-items: flex-end"><div class="col"><span class="cap">Paper used this week</span><span class="num" style="font-size: 34px; font-weight: 800; color: #ECEEF2; line-height: 1.1">2.4 m</span></div><span class="cap num">41 prints</span></div>
+      <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; align-items: end; height: 56px">
+        <div style="height: 40%; border-radius: 4px; background: rgba(201,205,212,.25)"></div><div style="height: 70%; border-radius: 4px; background: rgba(201,205,212,.25)"></div><div style="height: 55%; border-radius: 4px; background: rgba(201,205,212,.25)"></div><div style="height: 100%; border-radius: 4px; background: #39FF88; box-shadow: 0 0 10px rgba(57,255,136,.5)"></div><div style="height: 10%; border-radius: 4px; background: rgba(201,205,212,.12)"></div><div style="height: 10%; border-radius: 4px; background: rgba(201,205,212,.12)"></div><div style="height: 10%; border-radius: 4px; background: rgba(201,205,212,.12)"></div>
+      </div>
+      <div class="rowf" style="gap: 12px"><div class="col" style="flex: 1"><span style="color: #ECEEF2">Compact print style</span><span class="cap">Smaller margins and line spacing</span></div><button class="tog" role="switch" aria-checked="false" aria-label="Compact print style"></button></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{g.access}}" hint-placeholder-val="{{ false }}">
+    <div class="glass grp">
+      <div class="lrow"><div class="col" style="flex: 1"><span>Require a PIN</span><span class="cap">4 digits, asked when the app opens</span></div><button class="tog" role="switch" aria-checked="false" aria-label="Require a PIN"></button></div>
+    </div>
+    <div class="glass grp">
+      <div class="lrow"><div class="col" style="flex: 1"><span>Guest note page</span><span class="cap">printer.local/note for visitors on the Wi-Fi</span></div><button class="tog on" role="switch" aria-checked="true" aria-label="Guest note page"></button></div>
+      <div class="lrow" style="flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 16px"><span>Guest notes</span>
+        <div class="glass seg sm" style="grid-template-columns: repeat(2, minmax(0, 1fr))"><span class="hl" style="left: calc(3px + (100% - 6px) / 2); width: calc((100% - 6px) / 2)"></span><button>Print straight away</button><button class="act">Wait for my OK</button></div>
+      </div>
+      <a href="Guest.dc.html" class="lrow">Show a QR code for visitors<span aria-hidden="true" style="margin-left: auto; color: #8A8F98; font-size: 22px">›</span></a>
+    </div>
+    <span class="sect" style="padding-bottom: 0">Waiting for your OK · 1</span>
+    <div class="glass tp" style="border-radius: 20px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+      <div class="rwrap"><div class="receipt bits" style="padding: 8px 12px 18px; font-size: 18px">THANK YOU FOR DINNER!! - Sam</div></div>
+      <div class="rowf" style="gap: 8px"><span class="cap" style="flex: 1">Sam · 2 min ago</span><button class="btn" style="min-height: 44px; padding: 0 14px">Decline</button><button class="btn-green" style="min-height: 44px; padding: 0 16px; font-size: 14px">Print it</button></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{g.device}}" hint-placeholder-val="{{ false }}">
+    <div class="glass banner pk" role="alert">
+      <span class="ico p"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4a2 2 0 0 1 4 0v10a4 4 0 1 1-4 0z"></path><path d="M12 12v5"></path></svg></span>
+      <div class="col" style="flex: 1"><span style="font-weight: 700; color: #ECEEF2">Pi is too hot: 81 °C</span><span style="font-size: 13px; color: #C9CDD4">Fan is at full speed. Check the vents aren't blocked.</span></div>
+    </div>
+    <div class="glass grp">
+      <div class="lrow">Wi-Fi<span class="v">Home network</span></div>
+      <div class="lrow">Web address<span class="v">printer.local</span></div>
+      <div class="lrow">Temperature<span class="v num" style="color: #FF63B4; font-weight: 700">81 °C</span></div>
+      <div class="lrow">Fan<span class="v">Full speed</span></div>
+      <div class="lrow">Uptime<span class="v">6 days, 4 h</span></div>
+    </div>
+    <div class="glass grp">
+      <div class="lrow">Software<span class="v">Up to date</span><span aria-hidden="true" style="color: #8A8F98; font-size: 22px">›</span></div>
+      <div class="lrow">Backup and restore<span aria-hidden="true" style="margin-left: auto; color: #8A8F98; font-size: 22px">›</span></div>
+    </div>
+    <div class="rowf" style="gap: 10px"><button class="btn" style="flex: 1">Restart</button><button class="btn" style="flex: 1; color: #FF63B4">Shut down</button></div>
+  </sc-if>
+
+  <sc-if value="{{g.appearance}}" hint-placeholder-val="{{ false }}">
+    <div class="glass seg" style="grid-template-columns: repeat(2, minmax(0, 1fr))"><span class="hl" style="left: 4px; width: calc((100% - 8px) / 2)"></span><button class="act">Dark</button><button>Light</button></div>
+    <div class="glass grp">
+      <div class="lrow"><div class="col" style="flex: 1"><span>Reduce motion</span><span class="cap">Simple fades instead of bounces</span></div><button class="tog" role="switch" aria-checked="false" aria-label="Reduce motion"></button></div>
+      <div class="lrow"><div class="col" style="flex: 1"><span>Reduce transparency</span><span class="cap">Solid panels, faster on older phones</span></div><button class="tog" role="switch" aria-checked="false" aria-label="Reduce transparency"></button></div>
+      <div class="lrow"><div class="col" style="flex: 1"><span>Sounds</span><span class="cap">Clicks and the print chirp</span></div><button class="tog on" role="switch" aria-checked="true" aria-label="Sounds"></button></div>
+    </div>
+    <span class="sect" style="padding-bottom: 0">Glass vs solid</span>
+    <div style="position: relative; height: 128px; border-radius: 24px; overflow: hidden; background: #121315">
+      <div style="position: absolute; width: 180px; height: 180px; left: -20px; top: -30px; border-radius: 50%; background: #39FF88; filter: blur(40px); opacity: .5"></div>
+      <div style="position: absolute; width: 180px; height: 180px; right: -30px; bottom: -60px; border-radius: 50%; background: #FF2E9A; filter: blur(40px); opacity: .5"></div>
+      <div style="position: absolute; inset: 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+        <div class="glass" style="display: grid; place-items: center; font-weight: 600; color: #ECEEF2">Glass</div>
+        <div class="glass solidf" style="display: grid; place-items: center; font-weight: 600; color: #ECEEF2">Solid</div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+<div class="dock"><dc-import name="TabBar" active="settings" hint-size="358px,72px"></dc-import></div>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"group":{"editor":"enum","options":["home","printer","fonts","button","led","connections","schedules","access","device","appearance"],"default":"home"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const grp = this.props.group || 'home';
+    const keys = ['home', 'printer', 'fonts', 'button', 'led', 'connections', 'schedules', 'access', 'device', 'appearance'];
+    const g = {};
+    keys.forEach((k) => { g[k] = k === grp; });
+    const titles = { printer: 'Printer', fonts: 'Print fonts', button: 'Button', led: 'LED', connections: 'Connections', schedules: 'Schedules', access: 'Access', device: 'Device', appearance: 'Appearance' };
+    const r = (name, val, icon, file) => ({ name, val, icon, href: 'Settings-' + file + '.dc.html' });
+    return {
+      g, notHome: grp !== 'home', title: titles[grp] || '',
+      groups: [
+        r('Printer', 'Online', 'M7 9V3h10v6M6 18H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-2M7 14h10v7H7z', 'Printer'),
+        r('Button', 'Reprint last', 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', 'Button'),
+        r('LED', '70%', 'M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11.2V16h6v-1.8A6 6 0 0 0 12 3z', 'LED'),
+        r('Connections', '1 needs sign-in', 'M10 14a4 4 0 0 0 6 0l3-3a4 4 0 0 0-6-6l-1 1M14 10a4 4 0 0 0-6 0l-3 3a4 4 0 0 0 6 6l1-1', 'Connections'),
+        r('Schedules', 'Quiet 23–07', 'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17zM12 7.5V12l3 2', 'Schedules'),
+        r('Access', 'Guest page on', 'M7 11V8a5 5 0 0 1 10 0v3M5 11h14v10H5z', 'Access'),
+        r('Device', '52 °C', 'M5 5h14v14H5zM9 9h6v6H9zM9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3', 'Device'),
+        r('Appearance', 'Dark', 'M20 14A8 8 0 1 1 10 4a6.5 6.5 0 0 0 10 10z', 'Appearance')
+      ],
+      fonts: [
+        { name: 'Thermal 12×24', kind: 'Built-in', family: 'VT323, monospace', size: '28px', sample: 'Out of milk again!', isDefault: true, warn: false, cls: 'glass selg' },
+        { name: 'Thermal 9×17', kind: 'Built-in', family: 'VT323, monospace', size: '20px', sample: 'Fits more on a line, 42 per row', isDefault: false, warn: false, cls: 'glass' },
+        { name: 'Space Mono', kind: 'Uploaded', family: 'Space Mono, monospace', size: '18px', sample: 'Bins out tonight', isDefault: false, warn: false, cls: 'glass' },
+        { name: 'Silkscreen', kind: 'Uploaded', family: 'Silkscreen, monospace', size: '15px', sample: 'happy birthday', isDefault: false, warn: true, cls: 'glass' }
+      ],
+      leds: [
+        { name: 'Idle', i: 0 }, { name: 'Printing', i: 2 }, { name: 'New message waiting', i: 3 }, { name: 'Paper out', i: 3 }, { name: 'Error', i: 1 }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

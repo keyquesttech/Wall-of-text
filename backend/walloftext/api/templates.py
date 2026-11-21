@@ -44,6 +44,31 @@ async def delete_template(tid: str, request: Request):
     return {"ok": request.app.state.svc.extras["templates"].delete(tid)}
 
 
+SAMPLE = {"text": "See you at 7!", "title": "Groceries", "items": "Oat milk\nEggs\nCoffee", "ssid": "HomeWiFi",
+          "password": "••••••", "to": "Sam", "message": "Happy birthday!", "from": "Matias", "ingredients": "Flour\nEggs",
+          "steps": "Mix, then bake.", "who": "Sam", "caption": "Well done"}
+
+
+@router.get("/templates/{tid}/thumb")
+async def template_thumb(tid: str, request: Request):
+    """A small 1-bit picture of the template filled with sample words, for the gallery."""
+    import asyncio
+
+    from fastapi.responses import Response
+
+    svc = request.app.state.svc
+    t = svc.extras["templates"].get(tid)
+    if not t:
+        return JSONResponse({"error": "not_found"}, status_code=404)
+    doc = fill(t, SAMPLE) if t.get("fields") else t["document"]
+    res = await asyncio.to_thread(svc.renderer.render, doc)
+    img = res.image.crop((0, 0, 384, min(res.image.height, 420)))
+    import io
+    buf = io.BytesIO()
+    img.save(buf, "PNG", optimize=True)
+    return Response(buf.getvalue(), media_type="image/png", headers={"Cache-Control": "private, max-age=3600"})
+
+
 @router.post("/templates/{tid}/fill")
 async def fill_template(tid: str, body: FillBody, request: Request):
     """Returns the filled document; with print=true also queues it."""

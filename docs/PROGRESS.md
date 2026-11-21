@@ -1,5 +1,28 @@
 # Progress
 
+## 21 Nov 2026: real printer + the handoff design
+- **Printer (Gprinter CSN-A4, USB 0fe6:811e on /dev/usb/lp0)** tested with `spikes/printer_probe.py`
+  (results in `spikes/SPIKE_RESULTS.md`). Changes: 128-row bands with no pause (a pause between
+  bands left faint streaks; speed is motor-limited anyway), "Careful" speed = 48 rows + 20 ms,
+  darkness via `ESC 7`, and **automatic paper-out detection** from `DLE EOT 4` (bits 0x60). Jobs
+  wait while the lid is open or the roll is empty, resume when paper is back, and the roll estimate
+  resets when paper returns after running out. A job cut short by paper running out shows
+  "Paper ran out" with Retry.
+- **Design**: `design-handoff/` is now in the repo and `tokens.css` is the app's base stylesheet
+  (imported first by the frontend, served at `/tokens.css` for the setup, sign-in and guest pages).
+  Screens rebuilt to the reference mockups: floating glass tab bar / side rail, status pill,
+  Create (Edit | As printed, quick chips, 4-way mode switcher, paper strip you type on, side
+  buttons Save / From / Clear, mode toolbars, Print + Schedule, in-canvas paper feed and tear,
+  toast, History badge), Schedules (pink New, holiday card, Up next timeline, cards, empty state),
+  the 4-step schedule wizard with the wheel time picker and day chips, the routine builder,
+  History (search, Waiting cards, receipt grid, failed + Retry, shimmer), Settings (device card,
+  icon rows, "‹ Settings" back button), guest page. Shopping list moved into a sheet from its
+  quick chip.
+- Two deliberate deviations for contrast (axe): the background blobs run at 18 % opacity
+  instead of 36 %, and small muted text uses `#A3A8B0` instead of `--muted`. Both are noted in
+  `frontend/src/styles.css`.
+
+
 ## Phase 8: layouts and hardening
 - Layouts: phone (tab bar), ≥768 px side rail, ≥1024 px editor and live preview side by side,
   ≥1200 px third column with printer, queue progress, "Waiting for your OK" and recent prints.

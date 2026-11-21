@@ -34,6 +34,7 @@ SECTION_TYPES = {
     "countdown": "Countdown",
     "shopping": "Shopping list",
     "divider": "Divider",
+    "message": "My message",
 }
 
 
@@ -200,6 +201,9 @@ class Sources:
                     {"type": "checklist", "items": [{"text": i} for i in items]}]
         if t == "divider":
             return [{"type": "divider", "style": sec.get("style", "dashed")}]
+        if t == "message":
+            doc = sec.get("document") or {}
+            return [b for b in doc.get("blocks", []) if isinstance(b, dict)][:60]
         return []
 
     async def routine_doc(self, sections: list[dict], ctx: dict | None = None) -> dict:

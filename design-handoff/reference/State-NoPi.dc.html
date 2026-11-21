@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Can't reach the printer</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./wp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Silkscreen&amp;family=Space+Mono:wght@400;700&amp;family=VT323&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<main class="wp phone" style="width: 390px; height: 844px; background: #121315; font-family: Inter, sans-serif">
+<div class="blob p" style="width: 360px; height: 360px; left: 10px; top: 180px; opacity: .3"></div>
+<div class="blob g s" style="width: 220px; height: 220px; right: -60px; top: 420px; opacity: .14"></div>
+<div style="position: absolute; inset: 0; padding: 0 20px; display: flex; align-items: center">
+  <section class="glass" role="alert" style="width: 100%; border-radius: 32px; padding: 28px 22px 22px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px">
+    <div style="width: 76px; height: 76px; border-radius: 24px; display: grid; place-items: center; background: rgba(255,46,154,.14); border: 1px solid rgba(255,46,154,.5); color: #FF63B4">
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 38px; height: 38px"><path d="M3 3l18 18M8.5 16.5a5 5 0 0 1 7 0M5 13a10 10 0 0 1 4.2-2.6M19 13a10 10 0 0 0-3-2M2 9.3a15 15 0 0 1 4-2.6M22 9.3A15 15 0 0 0 11 5.1M12 20h.01"></path></svg>
+    </div>
+    <h1 class="h2" style="font-size: 26px; line-height: 32px">Can't reach Wall Printer</h1>
+    <p style="font-size: 16px; line-height: 22px; color: #C9CDD4">Your phone can't find the printer on this Wi-Fi.</p>
+    <div class="glass grp" style="width: 100%; text-align: left; border-radius: 20px">
+      <div class="lrow" style="font-size: 15px"><span class="ico">1</span>Is your phone on the home Wi-Fi?</div>
+      <div class="lrow" style="font-size: 15px"><span class="ico">2</span>Is the printer's light on?</div>
+      <div class="lrow" style="font-size: 15px"><span class="ico">3</span>Give it a minute after a restart</div>
+    </div>
+    <div class="rowf" style="gap: 8px; font-size: 14px; color: #8A8F98">Looking for<span style="font-family: 'Space Mono', monospace; color: #ECEEF2; font-size: 14px">printer.local</span></div>
+    <button class="btn-green" style="width: 100%; min-height: 56px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 2.2"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"></path></svg>Try again</button>
+  </section>
+</div>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

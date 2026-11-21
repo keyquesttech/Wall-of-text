@@ -90,7 +90,7 @@ class PrintQueue:
         return d
 
     def list(self, states: tuple[str, ...] | None = None, source: str | None = None, limit: int = 50,
-             before_id: int | None = None) -> list[dict]:
+             before_id: int | None = None, search: str | None = None) -> list[dict]:
         q = ("SELECT id,source,title,state,error,created_at,finished_at,progress,copies,rows,held_until,meta,"
              "started_at FROM jobs WHERE 1=1")
         args: list[Any] = []
@@ -103,6 +103,10 @@ class PrintQueue:
         if before_id:
             q += " AND id<?"
             args.append(before_id)
+        if search:
+            q += " AND (title LIKE ? ESCAPE '\\' OR document LIKE ? ESCAPE '\\')"
+            like = "%" + search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+            args += [like, like]
         q += " ORDER BY id DESC LIMIT ?"
         args.append(max(1, min(500, limit)))
         return [self._row(r) for r in self.store.conn().execute(q, args).fetchall()]
@@ -203,6 +207,16 @@ class PrintQueue:
     def status(self) -> dict:
         drv = self.printer.status()
         state = drv.state
+        if getattr(self.printer, "detects_paper", False):
+            # The sensor is the truth. Paper back after running out = a new roll: reset the estimate.
+            was_out = self.store.get("paper_out_sensor", "0") == "1"
+            now_out = state == "paper_out"
+            if now_out != was_out:
+                self.store.set("paper_out_sensor", "1" if now_out else "0")
+                if was_out and not now_out:
+                    self.store.set("rows_since_new_roll", "0")
+                    self.store.set("paper_out", "0")
+                    self._wake.set()
         if state == "ready" and self.store.get("paper_out", "0") == "1":
             state = "paper_out"
         if state == "ready" and self.active_id is not None:
@@ -296,10 +310,10 @@ class PrintQueue:
             return jid in self._cancel_ids
 
         state, err = "done", None
-        if hasattr(self.printer, "band_pause_s") and not hasattr(self.printer, "out_dir"):
-            self.printer.band_pause_s = {"slow": 0.09, "normal": 0.05, "fast": 0.02}.get(pset.get("speed"), 0.05)
+        if hasattr(self.printer, "set_speed"):
+            self.printer.set_speed(pset.get("speed", "normal"))
         try:
-            self.printer.print_bitmap(img, copies=job["copies"] or 1, extra_feed=int(pset.get("extra_feed", 0)),
+            self.printer.print_bitmap(img, copies=job["copies"] or 1, extra_feed=int(pset.get("extra_feed", 0)) + int((json.loads(job.get("meta") or "{}") or {}).get("extra_feed", 0)),
                                       on_progress=progress, should_cancel=should_cancel,
                                       density=int(pset.get("darkness", 120)))
         except Cancelled:
@@ -312,6 +326,10 @@ class PrintQueue:
             log.exception("print failed")
             state, err = "failed", str(exc)[:200]
         self._cancel_ids.discard(jid)
+        if state == "done" and getattr(self.printer, "detects_paper", False):
+            time.sleep(0.3)
+            if self.printer.status().state == "paper_out":
+                state, err = "failed", "paper_out"
         rows = img.height * (job["copies"] or 1) + FEED_ROWS
         if state in ("done", "cancelled"):
             used = int(self.store.get("rows_since_new_roll", "0") or 0) + rows

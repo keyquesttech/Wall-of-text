@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New schedule</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./wp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Silkscreen&amp;family=Space+Mono:wght@400;700&amp;family=VT323&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<main class="wp phone" style="width: 390px; height: 844px; background: #121315; font-family: Inter, sans-serif">
+<div class="blob p" style="width: 380px; height: 380px; right: -150px; top: 260px; opacity: .45"></div>
+<div class="blob g s" style="width: 240px; height: 240px; left: -120px; top: 20px; opacity: .25"></div>
+<div style="position: absolute; left: 16px; top: 52px"><h1 class="h1" style="opacity: .5">Schedules</h1></div>
+<div class="scrim"></div>
+
+<section class="glass sheet tp" role="dialog" aria-label="New schedule" style="top: 92px; display: flex; flex-direction: column; gap: 14px; background-color: rgba(28,29,33,.7)">
+  <div class="grab"></div>
+  <div class="rowf" style="justify-content: space-between">
+    <div class="col" style="gap: 2px">
+      <span class="lbl" style="color: #FF63B4">Step {{step}} of 4 · {{stepName}}</span>
+      <h2 class="h2">{{title}}</h2>
+    </div>
+    <a href="Schedules.dc.html" class="ib" aria-label="Close" style="background: rgba(201,205,212,.12)"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></a>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+    <sc-for list="{{bars}}" as="b" hint-placeholder-count="4"><div class="{{b}}"><i style="width: 100%"></i></div></sc-for>
+  </div>
+
+  <div class="col" style="flex: 1; min-height: 0; gap: 14px; overflow: hidden">
+    <sc-if value="{{s1}}" hint-placeholder-val="{{ true }}">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+        <sc-for list="{{sources}}" as="o" hint-placeholder-count="8">
+          <button class="{{o.cls}}" style="border-radius: 18px; padding: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left; min-height: 86px">
+            <span class="{{o.ico}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="{{o.icon}}"></path></svg></span>
+            <span class="col" style="gap: 1px"><span style="font-size: 15px; font-weight: 700; color: #ECEEF2">{{o.name}}</span><span class="cap" style="font-size: 12px; line-height: 15px">{{o.sub}}</span></span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 8px">
+        <button class="glass chip">Once</button>
+        <button class="glass chip pk on" style="background: rgba(255,46,154,.18)">Daily</button>
+        <button class="glass chip">Weekdays</button>
+        <button class="glass chip">Weekly</button>
+        <button class="glass chip">Every few hours</button>
+        <button class="glass chip">On a condition</button>
+      </div>
+      <div class="wheel" aria-label="Time 07:45">
+        <div class="glass band"></div>
+        <div class="wcol"><span class="far">05</span><span>06</span><span class="cur">07</span><span>08</span><span class="far">09</span></div>
+        <span class="colon">:</span>
+        <div class="wcol"><span class="far">35</span><span>40</span><span class="cur">45</span><span>50</span><span class="far">55</span></div>
+      </div>
+      <div class="rowf" style="justify-content: space-between">
+        <button class="day on" aria-pressed="true">M</button><button class="day on" aria-pressed="true">T</button><button class="day on" aria-pressed="true">W</button><button class="day on" aria-pressed="true">T</button><button class="day on" aria-pressed="true">F</button><button class="day on" aria-pressed="true">S</button><button class="day on" aria-pressed="true">S</button>
+      </div>
+      <div class="glass" style="border-radius: 16px; padding: 12px 14px; display: flex; gap: 10px; align-items: center">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 20px; height: 20px; color: #FF63B4"><circle cx="12" cy="13" r="7.5"></circle><path d="M12 9.5V13l2.5 1.5"></path></svg>
+        <span style="font-size: 15px; color: #ECEEF2">Prints <b>every day at 07:45</b>. First one tomorrow.</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{s3}}" hint-placeholder-val="{{ false }}">
+      <div class="glass grp">
+        <div class="lrow"><span class="ico p"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"></path><circle cx="12" cy="10" r="2"></circle></svg></span>Location<span class="v">London</span><svg class="i chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></div>
+        <div class="lrow">Units
+          <div class="glass seg sm" style="margin-left: auto; width: 120px; grid-template-columns: repeat(2, minmax(0, 1fr))"><span class="hl" style="left: 3px; width: calc((100% - 6px) / 2)"></span><button class="act">°C</button><button>°F</button></div>
+        </div>
+        <div class="lrow">Show
+          <div class="glass seg sm" style="margin-left: auto; width: 190px; grid-template-columns: repeat(2, minmax(0, 1fr))"><span class="hl" style="left: 3px; width: calc((100% - 6px) / 2)"></span><button class="act">Today</button><button>+ Tomorrow</button></div>
+        </div>
+      </div>
+      <span class="sect" style="padding-bottom: 0">Only print if</span>
+      <div class="glass grp">
+        <div class="lrow"><div class="col" style="flex: 1"><span>Rain is likely</span><span class="cap">Chance of rain 50% or more</span></div><button class="tog pk on" role="switch" aria-checked="true" aria-label="Rain is likely"></button></div>
+        <div class="lrow"><div class="col" style="flex: 1"><span>It drops below</span><span class="cap">3 °C at any point today</span></div><button class="tog pk" role="switch" aria-checked="false" aria-label="Temperature drops below"></button></div>
+        <div class="lrow"><div class="col" style="flex: 1"><span>Not in quiet hours</span><span class="cap">23:00 to 07:00, set in Settings</span></div><button class="tog pk on" role="switch" aria-checked="true" aria-label="Skip quiet hours"></button></div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{s4}}" hint-placeholder-val="{{ false }}">
+      <div class="glass" style="border-radius: 16px; padding: 4px 4px 4px 14px; display: flex; align-items: center; gap: 10px">
+        <label for="sn" class="cap" style="color: #C9CDD4">Name</label>
+        <input id="sn" value="Rain check" style="flex: 1; height: 44px; border: 0; background: transparent; outline: none; font-size: 16px; font-weight: 600; color: #ECEEF2">
+      </div>
+      <div style="display: flex; justify-content: center">
+        <div class="rwrap" style="width: 250px"><div class="receipt bits" style="font-size: 21px">
+          <div class="r-c r-s">FRI 20 NOV · 07:45</div>
+          <div class="r-c r-l" style="margin: 4px 0">RAIN CHECK</div>
+          <div class="r-hr"></div>
+          <svg viewBox="0 0 60 40" style="width: 70px; display: block; margin: 0 auto 6px" aria-hidden="true"><path d="M14 26a8 8 0 0 1-1-16A12 12 0 0 1 36 11a8 8 0 0 1 4 15z" fill="none" stroke="#000" stroke-width="3"></path><path d="M20 31l-2 6M30 31l-2 6M40 31l-2 6" stroke="#000" stroke-width="3"></path></svg>
+          <div class="r-c">London  9° / 12°</div>
+          <div class="r-c">Rain from 14:00 · 70%</div>
+          <div class="r-hr"></div>
+          <div class="r-c r-inv" style="display: block">TAKE AN UMBRELLA</div>
+        </div></div>
+      </div>
+      <p class="cap" style="text-align: center">Preview uses today's forecast. Tomorrow's print uses tomorrow's.</p>
+    </sc-if>
+  </div>
+
+  <div class="rowf" style="gap: 10px">
+    <button class="btn" style="width: 110px; min-height: 56px" onClick="{{back}}">{{backLabel}}</button>
+    <button class="btn-pink" style="flex: 1; min-height: 56px" onClick="{{next}}">{{nextLabel}}</button>
+  </div>
+</section>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"step":{"editor":"int","min":1,"max":4,"default":1},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const step = Math.min(4, Math.max(1, s.step || Number(this.props.step) || 1));
+    const names = ['What', 'When', 'Options', 'Preview'];
+    const titles = ['What should print?', 'When should it print?', 'Weather options', 'Check and save'];
+    const src = (name, sub, icon, sel) => ({ name, sub, icon, cls: sel ? 'glass sel' : 'glass', ico: sel ? 'ico p' : 'ico' });
+    return {
+      step, stepName: names[step - 1], title: titles[step - 1],
+      s1: step === 1, s2: step === 2, s3: step === 3, s4: step === 4,
+      bars: [1, 2, 3, 4].map((n) => (n <= step ? 'bar pk' : 'bar')),
+      back: () => this.setState({ step: Math.max(1, step - 1) }),
+      next: () => this.setState({ step: Math.min(4, step + 1) }),
+      backLabel: step === 1 ? 'Cancel' : 'Back',
+      nextLabel: step === 4 ? 'Save schedule' : 'Next',
+      sources: [
+        src('My message', 'Shopping list attached', 'M4 20l4-1 11-11-3-3L5 16z', false),
+        src('Weather', 'Forecast for a place', 'M7 17a4 4 0 0 1-.6-8A6 6 0 0 1 18 9.5a3.8 3.8 0 0 1-.5 7.5z', true),
+        src('Calendar agenda', 'Google Calendar', 'M4 5h16v15H4zM4 10h16M9 3v4M15 3v4', false),
+        src('Tasks', 'Google Tasks', 'M5 12l4 4L19 6', false),
+        src('Countdown', 'Days until a date', 'M5 21V4h11l-2 4 2 4H5', false),
+        src('Quote or fortune', 'Something new each time', 'M7 10h4v6H5v-3c0-3 1-5 4-6M17 10h4v6h-6v-3c0-3 1-5 4-6', false),
+        src('Saved template', '6 saved', 'M6 3h12v18l-6-4-6 4z', false),
+        src('Routine', 'Several in one print', 'M4 6h16M4 12h16M4 18h10', false)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

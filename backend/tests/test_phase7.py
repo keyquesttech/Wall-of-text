@@ -71,3 +71,18 @@ async def test_shopping_section_skips_when_empty(c):
     c.svc.extras["lists"].add("shopping", "Tea")
     blocks = await src.section_blocks({"type": "shopping"}, {})
     assert blocks[1]["items"] == [{"text": "Tea"}]
+
+
+def test_thumb_search_extra_feed_and_message_section(c):
+    r = c.get("/api/templates/b-card/thumb")
+    assert r.status_code == 200 and r.headers["content-type"] == "image/png"
+    j = c.post("/api/print", json={"document": {"blocks": [{"type": "text", "text": "Find me 50%"}]}, "extra_feed": 3}).json()["job"]
+    assert j["meta"]["extra_feed"] == 3
+    c.post("/api/print", json={"document": {"blocks": [{"type": "text", "text": "Other"}]}})
+    assert [i["id"] for i in c.get("/api/history?q=find me").json()["items"]] == [j["id"]]
+    assert c.get("/api/history?q=50%25").json()["items"][0]["id"] == j["id"]
+    assert c.get("/api/history?q=zzz").json()["items"] == []
+    s = c.post("/api/schedules", json={"name": "Msg", "time": "08:00", "sections": [
+        {"type": "message", "document": {"blocks": [{"type": "text", "text": "Bins out"}]}}]}).json()
+    r = c.post("/api/schedules/preview", json={"sections": s["sections"]})
+    assert r.status_code == 200 and int(r.headers["x-wot-rows"]) > 10

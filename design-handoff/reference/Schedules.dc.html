@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Schedules</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./wp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Silkscreen&amp;family=Space+Mono:wght@400;700&amp;family=VT323&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<main class="wp phone" style="width: 390px; height: 844px; background: #121315; font-family: Inter, sans-serif">
+<div class="blob p" style="width: 360px; height: 360px; right: -140px; top: 60px"></div>
+<div class="blob g s" style="width: 260px; height: 260px; left: -140px; bottom: 40px; opacity: .22"></div>
+<div class="col" style="position: absolute; inset: 0; padding: 52px 16px 120px; gap: 14px">
+  <div class="topbar">
+    <button class="glass pill"><span class="dot"></span>Online<span class="n">· 0 waiting</span></button>
+    <a href="Wizard.dc.html" class="btn-pink" style="min-height: 44px; padding: 0 16px; font-size: 15px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 2.4"><path d="M12 5v14M5 12h14"></path></svg>New</a>
+  </div>
+  <h1 class="h1">Schedules</h1>
+
+  <div class="glass" style="border-radius: 20px; display: flex; align-items: center; gap: 12px; padding: 12px 14px">
+    <span class="ico p"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 20h18M6 20c0-6 3-11 6-14 3 3 6 8 6 14M12 6v14"></path></svg></span>
+    <div class="col" style="flex: 1"><span class="h3" style="font-size: 16px">Holiday mode</span><span class="cap">Pause every schedule until you're back</span></div>
+    <button class="tog pk" role="switch" aria-checked="false" aria-label="Holiday mode"></button>
+  </div>
+
+  <sc-if value="{{notEmpty}}" hint-placeholder-val="{{ true }}">
+    <section class="glass tp" style="padding: 14px 16px 16px; border-radius: 22px" aria-label="Up next today">
+      <div class="rowf" style="justify-content: space-between; margin-bottom: 14px">
+        <span class="lbl">Up next · today</span>
+        <span style="font-size: 13px; font-weight: 700; color: #FF63B4">Shopping list in 2 h 18 min</span>
+      </div>
+      <div style="position: relative; height: 54px">
+        <div style="position: absolute; left: 0; right: 0; top: 18px; height: 2px; background: rgba(201,205,212,.18); border-radius: 1px"></div>
+        <div style="position: absolute; left: 0; width: 53.9%; top: 18px; height: 2px; background: rgba(201,205,212,.5)"></div>
+        <div style="position: absolute; left: 8.3%; top: 11px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: #2A2B30; border: 2px solid #8A8F98"></div>
+        <div style="position: absolute; left: 53.9%; top: 4px; width: 2px; height: 30px; background: #ECEEF2; box-shadow: 0 0 8px #fff"></div>
+        <div style="position: absolute; left: 66.7%; top: 9px; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: #FF2E9A; box-shadow: 0 0 14px #FF2E9A"></div>
+        <div style="position: absolute; left: 86.1%; top: 11px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; border: 2px solid #FF2E9A"></div>
+        <span class="cap num" style="position: absolute; left: 8.3%; top: 34px; transform: translateX(-50%); font-size: 11px">07:30 ✓</span>
+        <span class="num" style="position: absolute; left: 53.9%; top: 36px; transform: translateX(-50%); font-size: 11px; font-weight: 700; color: #ECEEF2">Now</span>
+        <span class="num" style="position: absolute; left: 66.7%; top: 36px; transform: translateX(-30%); font-size: 11px; font-weight: 700; color: #FF63B4">18:00</span>
+        <span class="num" style="position: absolute; left: 86.1%; top: 36px; transform: translateX(-50%); font-size: 11px; color: #C9CDD4">21:30</span>
+      </div>
+    </section>
+
+    <div class="col fade-b" style="gap: 10px; flex: 1; min-height: 0; overflow: hidden">
+      <sc-for list="{{cards}}" as="c" hint-placeholder-count="4">
+        <div style="position: relative; border-radius: 20px; overflow: hidden; flex: none">
+          <sc-if value="{{c.swiped}}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; inset: 0; display: flex; justify-content: flex-end; gap: 6px; padding: 8px">
+              <button class="btn" style="flex-direction: column; gap: 2px; width: 64px; min-height: 0; padding: 0; font-size: 11px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12"></path></svg>Pause</button>
+              <button class="btn" style="flex-direction: column; gap: 2px; width: 64px; min-height: 0; padding: 0; font-size: 11px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"></rect><path d="M16 8V4H4v12h4"></path></svg>Copy</button>
+              <button style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 64px; border-radius: 16px; background: #FF2E9A; color: #2A0016; font-size: 11px; font-weight: 700"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 22px; height: 22px"><path d="M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13"></path></svg>Delete</button>
+            </div>
+          </sc-if>
+          <div class="{{c.cls}}" style="align-items: center; {{c.shift}}">
+            <span class="{{c.icoCls}}" style="width: 40px; height: 40px; border-radius: 12px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="{{c.icon}}"></path></svg></span>
+            <div class="col" style="flex: 1; min-width: 0; gap: 2px">
+              <span class="h3" style="font-size: 16px">{{c.name}}</span>
+              <span style="font-size: 14px; font-weight: 600; color: {{c.whenColor}}">{{c.when}}</span>
+              <span class="cap" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{c.what}}</span>
+            </div>
+            <button class="{{c.tog}}" role="switch" aria-checked="{{c.on}}" aria-label="{{c.name}} on or off"></button>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+    <div class="col" style="flex: 1; align-items: center; justify-content: center; text-align: center; gap: 14px; padding: 0 20px">
+      <svg viewBox="0 0 160 140" style="width: 170px" aria-hidden="true">
+        <defs><filter id="gl"><feGaussianBlur stdDeviation="4"></feGaussianBlur></filter></defs>
+        <rect x="44" y="20" width="62" height="96" rx="4" fill="#F7F5F0"></rect>
+        <path d="M44 112l6 6 6-6 6 6 6-6 6 6 6-6 6 6 6-6 6 6 6-6V20H44z" fill="#F7F5F0"></path>
+        <path d="M54 38h42M54 52h30M54 66h36" stroke="#121315" stroke-width="4" stroke-linecap="round"></path>
+        <circle cx="110" cy="88" r="26" fill="#FF2E9A" filter="url(#gl)" opacity=".7"></circle>
+        <circle cx="110" cy="88" r="24" fill="#1C1D21" stroke="#FF2E9A" stroke-width="3"></circle>
+        <path d="M110 74v14l9 6" stroke="#FF63B4" stroke-width="3.5" stroke-linecap="round" fill="none"></path>
+      </svg>
+      <h2 class="h2">Nothing scheduled yet</h2>
+      <p style="font-size: 16px; line-height: 22px; color: #C9CDD4">Set a print to happen on its own, like an alarm. A morning briefing is a nice first one.</p>
+      <a href="Wizard.dc.html" class="btn-pink" style="margin-top: 6px"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 2.4"><path d="M12 5v14M5 12h14"></path></svg>New schedule</a>
+      <a href="Routine.dc.html" class="btn" style="color: #ECEEF2">Start from “Morning briefing”</a>
+    </div>
+  </sc-if>
+</div>
+<div class="dock"><dc-import name="TabBar" active="schedules" hint-size="358px,72px"></dc-import></div>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"empty":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const empty = !!this.props.empty;
+    const I = {
+      sun: 'M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
+      cart: 'M4 5h2l2 10h10l2-7H7M9 19h.01M17 19h.01',
+      rain: 'M7 15a4 4 0 0 1-.6-8A6 6 0 0 1 18 7.5a3.8 3.8 0 0 1-.5 7.5zM9 18l-1 3M13 18l-1 3M17 18l-1 3',
+      bin: 'M4 7h16M9 7V4h6v3M6.5 7l1 13h9l1-13',
+      flag: 'M5 21V4h11l-2 4 2 4H5'
+    };
+    const base = 'glass rowf';
+    const mk = (name, when, what, icon, on, swiped) => ({
+      name, when, what, icon, on: on ? 'true' : 'false', swiped,
+      cls: base, tog: on ? 'tog pk on' : 'tog pk',
+      icoCls: on ? 'ico p' : 'ico',
+      whenColor: on ? '#FF63B4' : '#8A8F98',
+      shift: 'gap: 12px; padding: 14px; border-radius: 20px; position: relative;' + (swiped ? ' transform: translateX(-212px);' : '') + (on ? '' : ' opacity: .75;')
+    });
+    return {
+      isEmpty: empty, notEmpty: !empty,
+      cards: [
+        mk('Morning briefing', 'Every weekday at 07:30', 'Date, weather, calendar, tasks · next tomorrow', I.sun, true, false),
+        mk('Shopping list', 'Thursdays at 18:00', 'Shared list · next today 18:00', I.cart, true, false),
+        mk('Rain check', 'Daily at 07:45 · only if rain is likely', 'Weather · skips dry days', I.rain, true, true),
+        mk('Bin night', 'Thursdays at 21:30', 'Template “Bins out tonight”', I.bin, true, false),
+        mk('Days until the holiday', 'Mondays at 08:00 · paused', 'Countdown to a date', I.flag, false, false)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

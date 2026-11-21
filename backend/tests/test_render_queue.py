@@ -203,3 +203,54 @@ def test_retention_prunes(q):
     store.conn().execute("UPDATE jobs SET created_at=0 WHERE id=?", (old,))
     queue.prune()
     assert len(queue.list(limit=100)) == 3
+
+
+# ---------------------------------------------------- paper sensor (Phase 0: CSN-A4) --
+from walloftext.printer.base import PrinterStatus
+from walloftext.printer.drivers import parse_paper_status
+
+
+def test_parse_paper_status_bytes_from_the_real_printer():
+    assert parse_paper_status(0x12) == "ready"      # paper loaded
+    assert parse_paper_status(0x72) == "paper_out"  # lid open / no paper
+
+
+class SensorPrinter(MockPrinter):
+    detects_paper = True
+
+    def __init__(self, out_dir):
+        super().__init__(out_dir)
+        self.paper = True
+        self.run_out_during_print = False
+
+    def print_bitmap(self, *a, **k):
+        super().print_bitmap(*a, **k)
+        if self.run_out_during_print:
+            self.paper = False
+
+    def status(self):
+        return PrinterStatus("ready" if self.paper else "paper_out")
+
+
+def test_sensor_paper_out_holds_then_new_roll_resets_estimate(tmp_path):
+    store = Store(tmp_path / "db.sqlite")
+    printer = SensorPrinter(tmp_path / "out")
+    queue = PrintQueue(store, printer, EventBus(), AppSettings(store).all)
+    try:
+        store.set("rows_since_new_roll", "40000")
+        printer.paper = False
+        queue.start()
+        jid = queue.enqueue(Image.new("1", (WIDTH, 10), 1), "Manual", "x")
+        time.sleep(0.3)
+        assert queue.status()["state"] == "paper_out" and queue.get(jid)["state"] == "queued"
+        printer.paper = True
+        assert queue.status()["paper_percent"] == 100  # paper back after running out = new roll
+        queue.kick()
+        assert wait_for(lambda: queue.get(jid)["state"] == "done")
+        # runs out mid-job -> failed "paper_out", never auto-reprinted
+        printer.run_out_during_print = True
+        j2 = queue.enqueue(Image.new("1", (WIDTH, 10), 1), "Manual", "y")
+        assert wait_for(lambda: queue.get(j2)["state"] == "failed")
+        assert queue.get(j2)["error"] == "paper_out"
+    finally:
+        queue.stop()

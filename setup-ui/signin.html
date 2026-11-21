@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0e0f13">
+<meta name="theme-color" content="#121315">
 <title>Sign in · Wall Printer</title>
 <link rel="stylesheet" href="/tokens.css">
 <link rel="stylesheet" href="/ui/setup.css">
 </head>
 <body>
 <main>
-  <div class="brand">Wall Printer</div>
+  <div class="brand"><span class="slotmark" aria-hidden="true"></span>Wall Printer</div>
   <h1>Sign in</h1>
   <p class="dim">Enter the printer's password to continue.</p>
   <div id="msg"></div>
@@ -22,7 +22,7 @@
       <button type="button" class="show" aria-pressed="false">Show</button>
     </div>
     <label class="check"><input id="remember" type="checkbox" checked> Remember this device for 30 days</label>
-    <button class="btn btn-green block" id="go" type="submit">Sign in</button>
+    <button class="btn-green block" id="go" type="submit">Sign in</button>
   </form>
   <p class="dim" style="margin-top:22px;font-size:14px">Forgot it? Someone with access to the Pi can run <span class="mono">sudo walloftext-reset-password</span>, which puts back the default password.</p>
 </main>

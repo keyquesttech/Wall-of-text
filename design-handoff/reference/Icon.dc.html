@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>App icon and splash</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./wp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Silkscreen&amp;family=Space+Mono:wght@400;700&amp;family=VT323&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="wp" style="width: 1280px; height: 900px; background: #0C0D0E; font-family: Inter, sans-serif; display: flex; gap: 56px; padding: 56px">
+<section class="col" style="flex: 1; gap: 28px">
+  <div class="col" style="gap: 6px"><h1 class="h1">App icon</h1><p style="font-size: 16px; color: #C9CDD4; line-height: 23px">A glowing slot with a strip of paper coming out. Reads at 60 px, works on any wallpaper.</p></div>
+  <div class="rowf" style="gap: 40px; align-items: flex-end">
+    <sc-for list="{{sizes}}" as="s" hint-placeholder-count="4">
+      <div class="col" style="align-items: center; gap: 12px">
+        <div style="width: {{s.px}}; height: {{s.px}}; position: relative">
+          <div role="img" aria-label="Wall Printer app icon" style="position: absolute; left: 0; top: 0; width: 360px; height: 360px; transform: scale({{s.k}}); transform-origin: 0 0; border-radius: 81px; overflow: hidden; background: #121315; box-shadow: inset 0 2px 0 rgba(255,255,255,.14), 0 20px 60px rgba(0,0,0,.6)">
+            <div style="position: absolute; width: 260px; height: 260px; left: -70px; bottom: -80px; border-radius: 50%; background: #39FF88; filter: blur(50px); opacity: .55"></div>
+            <div style="position: absolute; width: 240px; height: 240px; right: -80px; top: -70px; border-radius: 50%; background: #FF2E9A; filter: blur(50px); opacity: .55"></div>
+            <div style="position: absolute; left: 50px; right: 50px; top: 74px; height: 72px; border-radius: 26px; background: rgba(40,41,46,.6); border: 2px solid rgba(201,205,212,.22); border-top-color: rgba(236,238,242,.5); box-shadow: inset 0 2px 0 rgba(255,255,255,.12)"></div>
+            <div style="position: absolute; left: 82px; right: 82px; top: 102px; height: 16px; border-radius: 8px; background: #050506; box-shadow: 0 0 22px rgba(57,255,136,.9), 0 0 0 2px rgba(57,255,136,.5)"></div>
+            <div class="receipt" style="position: absolute; left: 104px; right: 104px; top: 112px; height: 186px; padding: 26px 22px 30px; -webkit-mask-size: 22px 100%; mask-size: 22px 100%">
+              <div style="height: 14px; border-radius: 3px; background: #0E0E0E; margin-bottom: 16px"></div>
+              <div style="height: 10px; width: 80%; border-radius: 3px; background: #0E0E0E; margin-bottom: 12px"></div>
+              <div style="height: 10px; width: 60%; border-radius: 3px; background: #0E0E0E"></div>
+            </div>
+          </div>
+        </div>
+        <span class="cap num">{{s.label}}</span>
+      </div>
+    </sc-for>
+  </div>
+  <div class="glass grp" style="border-radius: 22px; margin-top: 8px">
+    <div class="lrow"><span style="width: 200px; font-weight: 600">Name on home screen</span><span style="color: #C9CDD4">Wall Printer (working name)</span></div>
+    <div class="lrow"><span style="width: 200px; font-weight: 600">Opens</span><span style="color: #C9CDD4">Full screen, portrait, no browser bar</span></div>
+    <div class="lrow"><span style="width: 200px; font-weight: 600">Theme and background</span><span class="rowf" style="gap: 8px; color: #C9CDD4"><span style="width: 18px; height: 18px; border-radius: 5px; background: #121315; border: 1px solid #3A3C42"></span>#121315 for both, so there's no white flash</span></div>
+    <div class="lrow"><span style="width: 200px; font-weight: 600">Icon files</span><span style="color: #C9CDD4">512, 192 and 180 px, plus a maskable 512 with the slot kept inside the safe circle</span></div>
+  </div>
+</section>
+
+<section class="col" style="flex: 0 0 351px; gap: 12px; align-items: center">
+  <div style="width: 351px; height: 760px; border-radius: 44px; overflow: hidden; position: relative; background: #121315; box-shadow: 0 0 0 1px rgba(201,205,212,.18), 0 30px 80px rgba(0,0,0,.6)">
+    <div class="blob p" style="width: 300px; height: 300px; right: -120px; top: 60px; opacity: .45"></div>
+    <div class="blob g s" style="width: 320px; height: 320px; left: -140px; bottom: 80px; opacity: .45"></div>
+    <div class="col" style="position: absolute; inset: 0; align-items: center; justify-content: center; gap: 22px">
+      <div style="width: 120px; height: 120px; position: relative">
+        <div style="position: absolute; left: 0; top: 0; width: 360px; height: 360px; transform: scale(.3333); transform-origin: 0 0; border-radius: 81px; overflow: hidden; background: #121315; box-shadow: inset 0 2px 0 rgba(255,255,255,.14), 0 0 80px rgba(57,255,136,.35)">
+          <div style="position: absolute; width: 260px; height: 260px; left: -70px; bottom: -80px; border-radius: 50%; background: #39FF88; filter: blur(50px); opacity: .55"></div>
+          <div style="position: absolute; width: 240px; height: 240px; right: -80px; top: -70px; border-radius: 50%; background: #FF2E9A; filter: blur(50px); opacity: .55"></div>
+          <div style="position: absolute; left: 82px; right: 82px; top: 102px; height: 16px; border-radius: 8px; background: #050506; box-shadow: 0 0 22px rgba(57,255,136,.9), 0 0 0 2px rgba(57,255,136,.5)"></div>
+          <div class="receipt" style="position: absolute; left: 104px; right: 104px; top: 112px; height: 186px; padding: 26px 22px 30px; -webkit-mask-size: 22px 100%; mask-size: 22px 100%"><div style="height: 14px; border-radius: 3px; background: #0E0E0E; margin-bottom: 16px"></div><div style="height: 10px; width: 80%; border-radius: 3px; background: #0E0E0E"></div></div>
+        </div>
+      </div>
+      <span style="font-size: 26px; font-weight: 800; color: #ECEEF2; letter-spacing: -.02em">Wall Printer</span>
+      <span class="rowf" style="gap: 8px; font-size: 14px; color: #8A8F98"><span class="dot pulse"></span>Finding the printer…</span>
+    </div>
+  </div>
+  <span class="cap">Splash screen · shows until the Pi answers</span>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      sizes: [
+        { px: '240px', k: 0.6667, label: '240 px' },
+        { px: '120px', k: 0.3333, label: '120 px' },
+        { px: '90px', k: 0.25, label: '90 px' },
+        { px: '60px', k: 0.1667, label: '60 px' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

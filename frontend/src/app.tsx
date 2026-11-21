@@ -1,15 +1,15 @@
 import { useEffect } from "preact/hooks";
 import { LocationProvider, Route, Router, useLocation } from "preact-iso";
-import { pendingJobs, reachable, settings, wifi } from "./lib/state";
-import { IconClock, IconCreate, IconHistory, IconSettings, IconWifiOff } from "./components/icons";
-import { PrintMoment, StatusSheet } from "./components/printer";
+import { reachable, settings, wifi } from "./lib/state";
+import { IconClock, IconCreate, IconHistory, IconSettings } from "./components/icons";
+import { historyBadge, PrintMoment, StatusSheet } from "./components/printer";
 import { Toast } from "./components/ui";
 import { Create } from "./routes/Create";
 import { History } from "./routes/History";
-import { Schedules } from "./routes/Schedules";
+import { Schedules, WizardHost } from "./routes/Schedules";
 import { Settings } from "./routes/Settings";
 import { Aside } from "./routes/Aside";
-import { PRODUCT_NAME } from "./lib/config";
+import { HOSTNAME, PRODUCT_NAME } from "./lib/config";
 
 const TABS = [
   { href: "/", label: "Create", Icon: IconCreate, match: (p: string) => p === "/" || p.startsWith("/create") },
@@ -20,17 +20,35 @@ const TABS = [
 
 function TabBar() {
   const { path } = useLocation();
-  const waiting = pendingJobs.value.length;
+  useEffect(() => { if (path.startsWith("/history")) historyBadge.value = 0; }, [path]);
+  const badge = historyBadge.value;
   return (
-    <nav class="tabbar" aria-label="Main">
-      {TABS.map((t) => (
-        <a class="tab" href={t.href} aria-current={t.match(path) ? "page" : undefined}>
-          <t.Icon />
-          {t.label}
-          {t.href === "/history" && waiting > 0 && <span class="badge" aria-label={`${waiting} waiting`}>{waiting}</span>}
-        </a>
-      ))}
-    </nav>
+    <div class="dock">
+      <nav class="glass tabs" aria-label="Main">
+        {TABS.map((t) => {
+          const on = t.match(path);
+          return (
+            <a class={`tab ${on ? "act" : ""}`} href={t.href} aria-current={on ? "page" : undefined}>
+              <t.Icon class="i" />
+              <span>{t.label}</span>
+              {t.href === "/history" && badge > 0 && <span class="badge" aria-label={`${badge} new`}>{badge}</span>}
+            </a>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}
+
+function Blobs() {
+  const { path } = useLocation();
+  // the light leans pink on Schedules, green elsewhere (HANDOFF 4: glass picks it up)
+  const sched = path.startsWith("/schedules");
+  return (
+    <div class="bglight" aria-hidden="true">
+      <div class={`blob ${sched ? "g" : "p"}`} style="width:320px;height:320px;right:-130px;top:-70px" />
+      <div class={`blob ${sched ? "p" : "g"} s`} style="width:360px;height:360px;left:-170px;bottom:40px" />
+    </div>
   );
 }
 
@@ -38,17 +56,22 @@ function Unreachable() {
   if (reachable.value) return null;
   return (
     <div class="offline-screen" role="alert">
-      <IconWifiOff />
-      <h1>Can't reach {PRODUCT_NAME}</h1>
-      <p class="dim" style="max-width:340px">Check the printer is switched on and that this device is on the same Wi-Fi. This page reconnects by itself.</p>
-      {wifi.value?.ip && <p class="dim small">Last known address: http://{wifi.value.ip}/</p>}
-      <button class="btn" onClick={() => location.reload()}>Try again</button>
+      <div class="glass">
+        <h1 class="h2">Can't reach {PRODUCT_NAME}</h1>
+        <ol>
+          <li>Check the printer is plugged in and its light is on.</li>
+          <li>Make sure this phone is on your home Wi-Fi.</li>
+          <li>Wait a minute after a power cut while it starts up.</li>
+        </ol>
+        <div class="row cap"><span class="dot pulse" />Looking for {HOSTNAME}{wifi.value?.ip ? ` (${wifi.value.ip})` : ""}…</div>
+        <button class="btn-green" onClick={() => location.reload()}>Try again</button>
+      </div>
     </div>
   );
 }
 
 function NotFound() {
-  return <div class="empty"><h1>Not found</h1><a class="btn" href="/">Go to Create</a></div>;
+  return <div class="empty"><h1 class="h2">Not found</h1><a class="btn" href="/">Go to Create</a></div>;
 }
 
 export function App() {
@@ -60,6 +83,7 @@ export function App() {
   return (
     <LocationProvider>
       <a class="skip" href="#main" onClick={(e) => { e.preventDefault(); document.getElementById("main")?.focus(); }}>Skip to content</a>
+      <Blobs />
       <div class="app">
         <TabBar />
         <main class="main" id="main" tabIndex={-1}>
@@ -76,6 +100,7 @@ export function App() {
       </div>
       <StatusSheet />
       <PrintMoment />
+      <WizardHost />
       <Toast />
       <Unreachable />
     </LocationProvider>

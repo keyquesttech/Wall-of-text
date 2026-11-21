@@ -30,7 +30,7 @@ export function RemotePage() {
     <>
       <Topbar title="Remote messages" back={back} />
       <p class="dim small" style="margin:0 6px 12px">Send a message from anywhere and it prints on the wall. The printer only ever checks out to the internet; nothing is opened up to it. Only people on your allowed list get printed.</p>
-      <div class="glass list">
+      <div class="glass grp">
         {chs.map((c) => (
           <button class="lrow" onClick={() => setOpen(c.id)}>
             <div class="grow">
@@ -45,7 +45,7 @@ export function RemotePage() {
       {blocked > 0 && <p class="dim small" style="margin:8px 6px">{blocked} message{blocked === 1 ? "" : "s"} from people not on the list {blocked === 1 ? "was" : "were"} blocked this week.</p>}
 
       <h2 class="section">Allowed senders</h2>
-      <div class="glass list">
+      <div class="glass grp">
         {senders.length === 0 && <div class="lrow dim">Nobody yet. Messages from anyone else are dropped.</div>}
         {senders.map((s) => (
           <button class="lrow" onClick={() => setEditing(s)}>
@@ -94,7 +94,7 @@ function ChannelSheet(props: { ch: Channel; senders: Sender[]; onClose: () => vo
       {c.enabled && c.status !== "ok" && c.message && <Banner>{c.message}</Banner>}
       {msg && <Banner kind={msg.ok ? "info" : undefined}>{msg.t}</Banner>}
       {c.configured && (
-        <div class="glass list" style="margin-bottom:12px">
+        <div class="glass grp" style="margin-bottom:12px">
           <div class="lrow"><span class="grow">On</span><Toggle label={`${c.label} on`} checked={c.enabled} onChange={(v) => send("PATCH", `/api/remote/channels/${c.id}`, { enabled: v }).then(props.onClose)} /></div>
         </div>
       )}

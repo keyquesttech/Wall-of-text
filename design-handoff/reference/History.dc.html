@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>History</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./wp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Silkscreen&amp;family=Space+Mono:wght@400;700&amp;family=VT323&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<main class="wp phone" style="width: 390px; height: 844px; background: #121315; font-family: Inter, sans-serif">
+<div class="blob g" style="width: 320px; height: 320px; right: -140px; top: 90px"></div>
+<div class="blob p s" style="width: 280px; height: 280px; left: -150px; bottom: 120px; opacity: .25"></div>
+<div class="col" style="position: absolute; inset: 0; padding: 52px 16px 120px; gap: 12px">
+  <div class="topbar">
+    <button class="glass pill"><span class="dot pulse"></span>Printing<span class="n">· 2 waiting</span></button>
+  </div>
+  <h1 class="h1">History</h1>
+  <div class="glass rowf" style="border-radius: 16px; height: 46px; padding: 0 14px; gap: 10px">
+    <svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 20px; color: #8A8F98"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path></svg>
+    <label for="hs" style="position: absolute; left: -9999px">Search prints</label>
+    <input id="hs" placeholder="Search prints" style="flex: 1; border: 0; background: transparent; outline: none; font-size: 16px; color: #ECEEF2">
+  </div>
+  <div class="scroller">
+    <button class="glass chip on">All</button><button class="glass chip">Manual</button><button class="glass chip">Schedules</button><button class="glass chip">Button</button><button class="glass chip">Guest</button>
+  </div>
+
+  <sc-if value="{{loading}}" hint-placeholder-val="{{ false }}">
+    <div class="col" style="gap: 10px" aria-busy="true" aria-label="Loading history">
+      <div class="shim" style="height: 70px; border-radius: 20px"></div>
+      <div class="shim" style="height: 70px; border-radius: 20px"></div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 8px">
+        <div class="shim" style="height: 150px; border-radius: 18px"></div><div class="shim" style="height: 150px; border-radius: 18px"></div>
+        <div class="shim" style="height: 150px; border-radius: 18px"></div><div class="shim" style="height: 150px; border-radius: 18px"></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ready}}" hint-placeholder-val="{{ true }}">
+    <span class="sect" style="padding: 4px 4px 0">Waiting · 2</span>
+    <div class="glass tg rowf" style="gap: 12px; padding: 12px 12px 12px 14px; border-radius: 20px">
+      <div class="col" style="flex: 1; gap: 6px">
+        <div class="rowf" style="justify-content: space-between"><span class="h3" style="font-size: 15px">Shopping list</span><span style="font-size: 13px; font-weight: 700; color: #39FF88">Printing 60%</span></div>
+        <div class="bar"><i style="width: 60%"></i></div>
+        <span class="cap" style="font-size: 12px">Manual · from Matias</span>
+      </div>
+      <button class="btn" style="min-height: 44px; padding: 0 12px; font-size: 14px">Cancel</button>
+    </div>
+    <div class="glass rowf" style="gap: 12px; padding: 12px 12px 12px 14px; border-radius: 20px">
+      <div class="col" style="flex: 1; gap: 2px">
+        <span class="h3" style="font-size: 15px">Doodle for flatmate</span>
+        <span class="cap" style="font-size: 12px">Next in line · from Flatmate</span>
+      </div>
+      <button class="btn" style="min-height: 44px; padding: 0 12px; font-size: 14px">Cancel</button>
+    </div>
+
+    <span class="sect" style="padding: 6px 4px 0">Printed</span>
+    <div class="fade-b" style="flex: 1; min-height: 0; overflow: hidden; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-content: start">
+      <button class="glass col" style="padding: 10px; gap: 8px; border-radius: 18px; text-align: left">
+        <div class="rwrap"><div class="receipt bits" style="height: 92px; font-size: 14px; padding: 8px 10px 16px"><div class="r-c">THU 19 NOV</div><div class="r-c" style="font-size: 19px">GOOD MORNING</div><div>London 8°/11°</div><div>09:00 Studio</div></div></div>
+        <span style="font-size: 13px; font-weight: 600; color: #ECEEF2">Morning briefing</span><span class="cap" style="font-size: 12px; margin-top: -6px">07:30 · Schedule</span>
+      </button>
+      <button class="glass col" style="padding: 10px; gap: 8px; border-radius: 18px; text-align: left; border-color: rgba(255,46,154,.6)">
+        <div class="rwrap" style="opacity: .55"><div class="receipt bits" style="height: 92px; font-size: 14px; padding: 8px 10px 16px"><div class="r-c" style="font-size: 19px">HEY!</div><div>back late, pasta</div><div>in the fridge</div></div></div>
+        <span class="rowf" style="gap: 6px; font-size: 13px; font-weight: 700; color: #FF63B4"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="width: 16px; height: 16px"><path d="M12 3.5l9 16H3z"></path><path d="M12 10v4M12 17v.1"></path></svg>Paper ran out</span>
+        <span class="btn" style="min-height: 36px; font-size: 13px; margin-top: -2px">Retry</span>
+      </button>
+      <button class="glass col" style="padding: 10px; gap: 8px; border-radius: 18px; text-align: left">
+        <div class="rwrap"><div class="receipt bits" style="height: 92px; font-size: 14px; padding: 8px 10px 16px"><div class="r-c">FORTUNE</div><div class="r-hr" style="margin: 4px 0"></div><div>A small kindness</div><div>comes back today.</div></div></div>
+        <span style="font-size: 13px; font-weight: 600; color: #ECEEF2">Random fortune</span><span class="cap" style="font-size: 12px; margin-top: -6px">Yesterday 22:10 · Button</span>
+      </button>
+      <button class="glass col" style="padding: 10px; gap: 8px; border-radius: 18px; text-align: left">
+        <div class="rwrap"><div class="receipt bits" style="height: 92px; font-size: 14px; padding: 8px 10px 16px"><div class="r-c" style="font-size: 19px">THANK YOU</div><div>for dinner!!</div><div>- Sam</div></div></div>
+        <span style="font-size: 13px; font-weight: 600; color: #ECEEF2">Guest note</span><span class="cap" style="font-size: 12px; margin-top: -6px">Yesterday 21:02 · Guest</span>
+      </button>
+    </div>
+  </sc-if>
+</div>
+<div class="dock"><dc-import name="TabBar" active="history" hint-size="358px,72px"></dc-import></div>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"loading":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const l = !!this.props.loading;
+    return { loading: l, ready: !l };
+  }
+}
+</script>
+</body>
+</html>

@@ -90,18 +90,70 @@ class MockPrinter:
         return PrinterStatus("offline" if self.offline else "ready")
 
 
+# Status bytes (Phase 0, Gprinter CSN-A4 0fe6:811e): DLE EOT 4 = 0x12 with paper, 0x72 with the lid
+# open / no paper. Bits 0x60 = "roll paper end"; bits 0x0C = "near end" (not seen on this printer).
+DLE_EOT_PAPER = b"\x10\x04\x04"
+PAPER_END_BITS = 0x60
+NEAR_END_BITS = 0x0C
+
+
+def parse_paper_status(byte: int) -> str:
+    if byte & PAPER_END_BITS:
+        return "paper_out"
+    return "ready"
+
+
 class EscposUsbPrinter:
-    def __init__(self, device: str, band_rows: int = 24, band_pause_s: float = 0.05):
+    """Raw ESC/POS raster over the usblp node.
+
+    Phase 0 on the CSN-A4: `GS v 0` raster works; pausing between bands causes faint streaks
+    (the head cools), and the motor limits speed to ~60 dot rows/s anyway, so bands are sent
+    back to back (128 rows). "Careful" speed uses smaller bands with a short pause for long, dense
+    prints. Both `ESC 7` heat time and `DC2 #` change darkness; darkness uses `ESC 7`.
+    The printer answers `DLE EOT 4`, so paper-out is detected, not user-reported.
+    """
+
+    detects_paper = True
+
+    def __init__(self, device: str, band_rows: int = 128, band_pause_s: float = 0.0):
         self.device = device
         self.band_rows = band_rows
         self.band_pause_s = band_pause_s
         self._lock = threading.Lock()
+        self._cache: tuple[float, PrinterStatus] | None = None
+
+    def set_speed(self, speed: str) -> None:
+        if speed == "slow":
+            self.band_rows, self.band_pause_s = 48, 0.02
+        else:
+            self.band_rows, self.band_pause_s = 128, 0.0
 
     def _node(self) -> str | None:
         for cand in (self.device, "/dev/usb/lp0", "/dev/ttyUSB0"):
             if cand and os.path.exists(cand):
                 return cand
         return None
+
+    def query_paper(self, node: str, timeout: float = 0.6) -> str | None:
+        """Ask the printer for its paper sensor. None if it doesn't answer."""
+        import select
+
+        fd = os.open(node, os.O_RDWR | os.O_NONBLOCK)
+        try:
+            # drain anything left over from earlier queries
+            while select.select([fd], [], [], 0)[0]:
+                if not os.read(fd, 64):
+                    break
+            os.write(fd, DLE_EOT_PAPER)
+            r, _, _ = select.select([fd], [], [], timeout)
+            if not r:
+                return None
+            data = os.read(fd, 16)
+            return parse_paper_status(data[-1]) if data else None
+        except BlockingIOError:
+            return None
+        finally:
+            os.close(fd)
 
     def print_bitmap(self, img: Image.Image, copies: int = 1, extra_feed: int = 0,
                      on_progress: Callable[[int], None] | None = None,
@@ -125,13 +177,31 @@ class EscposUsbPrinter:
                     done += 1
                     if on_progress:
                         on_progress(int(done * 100 / total))
-                    time.sleep(self.band_pause_s)
+                    if self.band_pause_s:
+                        time.sleep(self.band_pause_s)
             fh.write(feed(3 + extra_feed))
+        self._cache = None
 
     def test_page(self) -> None:
         self.print_bitmap(_test_image())
 
     def status(self) -> PrinterStatus:
-        # Paper-out readback depends on the Phase 0 spike; until then node present = ready
-        # and paper-out is user-reported (PrintQueue.set_paper_out).
-        return PrinterStatus("ready" if self._node() else "offline")
+        node = self._node()
+        if not node:
+            self._cache = None
+            return PrinterStatus("offline")
+        now = time.monotonic()
+        if self._cache and now - self._cache[0] < 2.0:
+            return self._cache[1]
+        if not self._lock.acquire(blocking=False):  # printing: don't talk over the raster data
+            return PrinterStatus("ready")
+        try:
+            paper = self.query_paper(node)
+        except OSError as exc:
+            log.warning("printer status query failed: %s", exc)
+            paper = None
+        finally:
+            self._lock.release()
+        st = PrinterStatus(paper or "ready", None if paper else "no status reply")
+        self._cache = (now, st)
+        return st

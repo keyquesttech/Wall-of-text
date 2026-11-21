@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Design tokens</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./wp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Silkscreen&amp;family=Space+Mono:wght@400;700&amp;family=VT323&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="wp" style="width: 1280px; height: 1180px; background: #121315; font-family: Inter, sans-serif; padding: 56px; display: flex; flex-direction: column; gap: 40px">
+<header class="rowf" style="justify-content: space-between; align-items: flex-end">
+  <div class="col" style="gap: 6px"><span class="lbl">Wall Printer · tokens</span><h1 class="h1" style="font-size: 44px; line-height: 50px">Dark glass, neon as light</h1></div>
+  <p style="max-width: 420px; font-size: 15px; line-height: 22px; color: #C9CDD4">Green means do it now. Pink means later, or look at this. Everything else is greyish black and silver. Contrast is measured on the base background and on glass.</p>
+</header>
+
+<section style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 14px">
+  <sc-for list="{{colors}}" as="c" hint-placeholder-count="7">
+    <div class="col" style="gap: 10px">
+      <div style="height: 110px; border-radius: 20px; background: {{c.hex}}; border: 1px solid rgba(201,205,212,.16); box-shadow: {{c.glow}}"></div>
+      <div class="col" style="gap: 2px"><span style="font-weight: 700; color: #ECEEF2; font-size: 14px">{{c.name}}</span><span class="num" style="font-family: 'Space Mono', monospace; font-size: 12px; color: #C9CDD4">{{c.hex}}</span><span class="cap" style="font-size: 12px; line-height: 16px">{{c.role}}</span><span class="num" style="font-size: 12px; color: #ECEEF2; font-weight: 600">{{c.ratio}}</span></div>
+    </div>
+  </sc-for>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px">
+  <div class="col" style="gap: 16px">
+    <h2 class="h2">Glass</h2>
+    <div style="position: relative; height: 250px; border-radius: 28px; overflow: hidden; background: #121315; border: 1px solid rgba(201,205,212,.1)">
+      <div style="position: absolute; width: 260px; height: 260px; left: -40px; top: -40px; border-radius: 50%; background: #39FF88; filter: blur(60px); opacity: .5"></div>
+      <div style="position: absolute; width: 260px; height: 260px; right: -40px; bottom: -80px; border-radius: 50%; background: #FF2E9A; filter: blur(60px); opacity: .5"></div>
+      <div style="position: absolute; inset: 22px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+        <div class="glass" style="padding: 14px"><span class="h3" style="font-size: 15px">Regular</span><p class="cap" style="font-size: 12px">52% fill, 26 px blur, 170% saturate</p></div>
+        <div class="glass tg" style="padding: 14px"><span class="h3" style="font-size: 15px">Green tint</span><p class="cap" style="font-size: 12px">Over the green light</p></div>
+        <div class="glass tp" style="padding: 14px"><span class="h3" style="font-size: 15px">Pink tint</span><p class="cap" style="font-size: 12px">Schedules, sheets</p></div>
+        <div class="glass solidf" style="padding: 14px"><span class="h3" style="font-size: 15px">Solid fallback</span><p class="cap" style="font-size: 12px">#1C1D21, no blur</p></div>
+      </div>
+    </div>
+    <p class="cap">Edge: 1 px silver at 16%, top edge 36%. Sheen: 1 px inner highlight on top, soft inner glow at the bottom.</p>
+  </div>
+  <div class="col" style="gap: 16px">
+    <h2 class="h2">Type</h2>
+    <div class="glass grp" style="border-radius: 22px">
+      <div class="lrow"><span class="cap" style="width: 110px">Display 34/40</span><span style="font-size: 34px; font-weight: 800; letter-spacing: -.02em">Schedules</span></div>
+      <div class="lrow"><span class="cap" style="width: 110px">Title 22/28</span><span style="font-size: 22px; font-weight: 700">Morning briefing</span></div>
+      <div class="lrow"><span class="cap" style="width: 110px">Headline 17/22</span><span style="font-size: 17px; font-weight: 600">Every weekday at 07:30</span></div>
+      <div class="lrow"><span class="cap" style="width: 110px">Body 16/22</span><span style="font-size: 16px">Paper ran out. Load a new roll.</span></div>
+      <div class="lrow"><span class="cap" style="width: 110px">Caption 13/18</span><span style="font-size: 13px; color: #8A8F98; font-weight: 500">07:30 · Schedule</span></div>
+      <div class="lrow"><span class="cap" style="width: 110px">Print S–XL</span><span style="font-family: VT323, monospace; color: #F7F5F0; font-size: 18px">S</span><span style="font-family: VT323, monospace; color: #F7F5F0; font-size: 22px">M</span><span style="font-family: VT323, monospace; color: #F7F5F0; font-size: 30px">L</span><span style="font-family: VT323, monospace; color: #F7F5F0; font-size: 40px">XL</span></div>
+    </div>
+    <p class="cap">Interface: SF Pro on iPhone, Inter elsewhere. Receipt: the chosen print font; default is a bitmap thermal face.</p>
+  </div>
+</section>
+
+<section style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px">
+  <div class="col" style="gap: 14px">
+    <h2 class="h2">Spacing</h2>
+    <div class="col" style="gap: 8px">
+      <sc-for list="{{space}}" as="s" hint-placeholder-count="8">
+        <div class="rowf" style="gap: 12px"><span class="num cap" style="width: 28px">{{s.v}}</span><div style="height: 12px; width: {{s.w}}; border-radius: 3px; background: #C9CDD4; opacity: .7"></div></div>
+      </sc-for>
+    </div>
+  </div>
+  <div class="col" style="gap: 14px">
+    <h2 class="h2">Corner radius</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+      <div class="col" style="gap: 6px"><div style="height: 64px; border-radius: 12px; border: 2px solid #C9CDD4"></div><span class="cap">12 inputs</span></div>
+      <div class="col" style="gap: 6px"><div style="height: 64px; border-radius: 18px; border: 2px solid #C9CDD4"></div><span class="cap">18 buttons</span></div>
+      <div class="col" style="gap: 6px"><div style="height: 64px; border-radius: 24px; border: 2px solid #C9CDD4"></div><span class="cap">24 cards</span></div>
+      <div class="col" style="gap: 6px"><div style="height: 64px; border-radius: 28px; border: 2px solid #C9CDD4"></div><span class="cap">28 tab bar</span></div>
+      <div class="col" style="gap: 6px"><div style="height: 64px; border-radius: 32px 32px 0 0; border: 2px solid #C9CDD4; border-bottom: 0"></div><span class="cap">32 sheets</span></div>
+      <div class="col" style="gap: 6px"><div style="height: 64px; border-radius: 999px; border: 2px solid #C9CDD4"></div><span class="cap">Pill</span></div>
+    </div>
+  </div>
+  <div class="col" style="gap: 14px">
+    <h2 class="h2">Shadow and glow</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding-top: 6px">
+      <div class="col" style="gap: 10px; align-items: center"><div style="width: 72px; height: 72px; border-radius: 20px; background: #1C1D21; box-shadow: 0 12px 32px rgba(0,0,0,.5)"></div><span class="cap">Lift</span></div>
+      <div class="col" style="gap: 10px; align-items: center"><div style="width: 72px; height: 72px; border-radius: 20px; background: #39FF88; box-shadow: 0 8px 30px rgba(57,255,136,.5)"></div><span class="cap">Green glow</span></div>
+      <div class="col" style="gap: 10px; align-items: center"><div style="width: 72px; height: 72px; border-radius: 20px; background: #FF2E9A; box-shadow: 0 8px 30px rgba(255,46,154,.45)"></div><span class="cap">Pink glow</span></div>
+    </div>
+    <p class="cap">Spring: cubic-bezier(.34, 1.56, .64, 1). Ease: cubic-bezier(.2, .8, .2, 1).</p>
+  </div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const n = 'none';
+    return {
+      colors: [
+        { name: 'Base', hex: '#121315', role: 'Page background', ratio: '—', glow: n },
+        { name: 'Raised', hex: '#1C1D21', role: 'Solid surfaces, glass fallback', ratio: '—', glow: n },
+        { name: 'Silver', hex: '#C9CDD4', role: 'Main text, icons, glass edges', ratio: '11.6:1 base · 10.4:1 glass', glow: n },
+        { name: 'Silver muted', hex: '#8A8F98', role: 'Secondary text, inactive tabs', ratio: '5.7:1 base · 5.1:1 glass', glow: n },
+        { name: 'Neon green', hex: '#39FF88', role: 'Print, online, success', ratio: '14.0:1 · ink #06210F 12.9:1', glow: '0 0 30px rgba(57,255,136,.45)' },
+        { name: 'Neon pink', hex: '#FF2E9A', role: 'Schedules, time, alerts. Pink text uses #FF63B4', ratio: '5.4:1 base · #FF63B4 6.1:1 glass', glow: '0 0 30px rgba(255,46,154,.4)' },
+        { name: 'Paper', hex: '#F7F5F0', role: 'Receipt preview only', ratio: 'Ink #0E0E0E 17.7:1', glow: n }
+      ],
+      space: [4, 8, 12, 16, 20, 24, 32, 48].map((v) => ({ v, w: (v * 5) + 'px' }))
+    };
+  }
+}
+</script>
+</body>
+</html>

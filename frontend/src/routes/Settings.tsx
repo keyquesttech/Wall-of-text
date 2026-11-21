@@ -1,10 +1,10 @@
 import { useEffect, useState } from "preact/hooks";
 import { useLocation, useRoute } from "preact-iso";
 import { api, send } from "../lib/api";
-import { auth, settings, wifi } from "../lib/state";
-import { IconChevron } from "../components/icons";
-import { StatusPill } from "../components/printer";
-import { Banner, Sheet, toast, ToggleRow, Topbar } from "../components/ui";
+import { auth, printer, settings, wifi } from "../lib/state";
+import { STATE_TEXT, StatusPill } from "../components/printer";
+import { HOSTNAME, PRODUCT_NAME } from "../lib/config";
+import { Banner, Chevron, Group, Sheet, toast, ToggleRow, Topbar } from "../components/ui";
 import { GuestAndInbox, SETTINGS_PAGES } from "./settings/pages";
 
 const MODES: Record<string, string> = { online: "Connected", connecting: "Connecting", setup_ap: "Setup network", fallback_ap: "Can't find your Wi-Fi" };
@@ -19,26 +19,44 @@ export function Settings() {
 
 function SettingsIndex() {
   const a = auth.value;
+  const p = printer.value;
+  const w = wifi.value;
+  const [d, setD] = useState<any>(null);
+  useEffect(() => { api.device().then(setD).catch(() => {}); }, []);
+  const pct = p?.paper_percent ?? 100;
+  const up = d ? (d.uptime_s >= 86400 ? `up ${Math.floor(d.uptime_s / 86400)} day${d.uptime_s >= 172800 ? "s" : ""}` : `up ${Math.floor(d.uptime_s / 3600)} h`) : "";
+  const groups = SETTINGS_PAGES.reduce<string[]>((acc, x) => (acc.includes(x.group) ? acc : [...acc, x.group]), []);
   return (
     <>
       <Topbar title="Settings"><StatusPill /></Topbar>
-      {a?.default_password_in_use && <Banner action={<a class="btn small" href="/settings/access">Change</a>}>You're still using the default password.</Banner>}
-      {SETTINGS_PAGES.reduce<string[]>((acc, p) => (acc.includes(p.group) ? acc : [...acc, p.group]), []).map((g) => (
-        <>
-          <h2 class="section">{g}</h2>
-          <div class="glass list">
-            {SETTINGS_PAGES.filter((p) => p.group === g).map((p) => (
-              <a class="lrow" href={`/settings/${p.id}`}>
-                <span class="grow">{p.title}</span>
-                {p.meta && <span class="meta">{p.meta()}</span>}
-                <IconChevron class="chev" width={18} height={18} />
-              </a>
-            ))}
+      {a?.default_password_in_use && <Banner action={<a class="btn" href="/settings/access">Change</a>}>You're still using the default password.</Banner>}
+      <div class="glass tg devcard">
+        <div class="row" style="gap:14px">
+          <div class="devglyph" aria-hidden="true"><i /><span class={p?.state === "offline" ? "dot grey" : p?.state === "paper_out" ? "dot pink" : "dot"} /></div>
+          <div class="grow" style="display:flex;flex-direction:column">
+            <span class="h3">{PRODUCT_NAME}</span>
+            <span class="cap">{STATE_TEXT[p?.state ?? "ready"]} · {w?.hostname ?? HOSTNAME}</span>
           </div>
-        </>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="row" style="justify-content:space-between"><span style="font-size:13px">Paper roll</span><span class="num" style="font-size:13px;color:var(--hi);font-weight:600">About {pct}% left</span></div>
+          <div class={`bar ${pct <= 10 ? "pk" : ""}`}><i style={{ width: `${pct}%` }} /></div>
+        </div>
+        {d && <span class="cap">Pi {d.temperature_c != null ? `${Math.round(d.temperature_c)} °C` : "—"} · {d.throttled.flags.some((f: string) => !f.endsWith("since_boot")) ? "throttled" : "running cool"} · {up}</span>}
+      </div>
+      {groups.map((g) => (
+        <Group label={g}>
+          {SETTINGS_PAGES.filter((x) => x.group === g).map((x) => (
+            <a class="lrow" href={`/settings/${x.id}`}>
+              <span class="ico">{x.Icon ? <x.Icon class="i" /> : null}</span>
+              {x.title}
+              {x.meta && <span class="v">{x.meta()}</span>}
+              <Chevron />
+            </a>
+          ))}
+        </Group>
       ))}
-      <div class="spacer" />
-      <button class="btn block" onClick={() => send("POST", "/api/auth/logout").finally(() => location.replace("/signin"))}>Sign out</button>
+      <button class="btn" onClick={() => send("POST", "/api/auth/logout").finally(() => location.replace("/signin"))}>Sign out</button>
     </>
   );
 }
@@ -133,7 +151,7 @@ export function AccessPage() {
       {a?.password_file_warning && <Banner>{a.password_file_warning}</Banner>}
       {a?.default_password_in_use && <Banner>You're still using the default password.</Banner>}
       {a?.default_setup_wifi_password_in_use && <Banner kind="warn">You're still using the default setup Wi-Fi password.</Banner>}
-      <div class="glass list">
+      <div class="glass grp">
         <ToggleRow label="Ask for password" sub="Anyone on your Wi-Fi needs the password to use the printer." checked={a?.ask_for_password ?? true}
           onChange={(v) => send("POST", "/api/auth/ask-for-password", { ask_for_password: v }).then(refresh)} />
       </div>

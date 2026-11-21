@@ -4,7 +4,7 @@ import type { FunctionComponent } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { api, get, send, upload, type FontInfo } from "../../lib/api";
 import { inboxWaiting, printer, settings, wifi } from "../../lib/state";
-import { IconPlus, IconTrash } from "../../components/icons";
+import { IconBulb, IconCalendar, IconClock, IconCloud, IconDevice, IconEye, IconFont, IconHistory, IconLock, IconMail, IconPlus, IconPrinter, IconTasks, IconTrash, IconWifi } from "../../components/icons";
 import { Banner, Seg, Sheet, timeAgo, toast, Toggle, ToggleRow, Topbar } from "../../components/ui";
 import { AccessPage, useBack, WifiPage } from "../Settings";
 import { RemotePage } from "./remote";
@@ -15,6 +15,7 @@ export interface SettingsPage {
   group: string;
   Component: FunctionComponent;
   meta?: () => string;
+  Icon?: (p: any) => any;
 }
 
 function useSettings(): [any, (patch: any) => Promise<void>] {
@@ -46,12 +47,12 @@ function PrinterPage() {
         <Seg label="Extra feed" value={String(p.extra_feed)} onChange={(v) => patch({ printer: { extra_feed: Number(v) } })}
           options={["0", "1", "2", "4"].map((v) => ({ value: v, label: v === "0" ? "None" : `${v} lines` }))} />
       </div>
-      <div class="glass list" style="margin-top:12px">
+      <div class="glass grp" style="margin-top:12px">
         <ToggleRow label="Paper saver" sub="Tighter spacing and no blank space at the end." checked={p.paper_saver}
           onChange={(v) => patch({ printer: { paper_saver: v } })} />
       </div>
       <h2 class="section">Paper</h2>
-      <div class="glass list">
+      <div class="glass grp">
         <div class="lrow kv-row"><span class="grow">Left on the roll</span><span class="meta">About {printer.value?.paper_percent ?? 100}%</span></div>
         <button class="lrow" onClick={() => api.newRoll().then((x) => { printer.value = x; toast("Paper counter reset"); })}>I loaded a new roll</button>
         <button class="lrow" onClick={() => api.testPage().then(() => toast("Printing a test page"))}>Print a test page</button>
@@ -86,7 +87,7 @@ function FontsPage() {
   return (
     <>
       <Topbar title="Fonts" back={back} />
-      <div class="glass list">
+      <div class="glass grp">
         {fonts.map((f) => (
           <div class="lrow">
             <div class="grow">
@@ -121,7 +122,7 @@ function ButtonPage() {
     <>
       <Topbar title="Button & light" back={back} />
       <h2 class="section">Button</h2>
-      <div class="glass list">
+      <div class="glass grp">
         {(["single", "double", "long"] as const).map((g) => (
           <div class="lrow">
             <span class="grow">{g === "single" ? "Press" : g === "double" ? "Double press" : "Long press"}</span>
@@ -140,7 +141,7 @@ function ButtonPage() {
         <input id="bright" type="range" min={0} max={100} step={5} value={led.brightness}
           onChange={(e) => patch({ led: { brightness: Number((e.target as HTMLInputElement).value) } })} />
       </div>
-      <div class="glass list" style="margin-top:12px">
+      <div class="glass grp" style="margin-top:12px">
         {events.map(([k, label]) => (
           <div class="lrow">
             <span class="grow">{label}</span>
@@ -166,7 +167,7 @@ function SchedulePrefs() {
     <>
       <Topbar title="Schedules" back={back} />
       <h2 class="section">If the printer was off</h2>
-      <div class="glass list">
+      <div class="glass grp">
         {[["late_60", "Print late, up to an hour", "After an hour it's skipped and shows as Missed in History."],
           ["skip", "Skip it", "Missed prints never come out late."],
           ["always", "Always print when back", "Even if it's hours late."]].map(([v, l, sub]) => (
@@ -177,7 +178,7 @@ function SchedulePrefs() {
         ))}
       </div>
       <h2 class="section">Quiet hours</h2>
-      <div class="glass list">
+      <div class="glass grp">
         <ToggleRow label="Quiet hours" sub="Scheduled, guest and remote prints wait until they end. Your own prints always go." checked={q.enabled}
           onChange={(v) => patch({ schedules: { quiet_hours: { enabled: v } } })} />
         {q.enabled && (
@@ -190,7 +191,7 @@ function SchedulePrefs() {
         )}
       </div>
       <h2 class="section">Limits</h2>
-      <div class="glass list">
+      <div class="glass grp">
         <div class="lrow">
           <div class="grow"><div class="title">Daily limit</div><div class="sub" style="white-space:normal">Most scheduled, guest and remote prints per day. 0 = no limit.</div></div>
           <input type="number" min={0} max={500} class="input" style="width:90px" value={sc.daily_limit} aria-label="Daily limit"
@@ -215,7 +216,7 @@ function HistoryPrefs() {
   return (
     <>
       <Topbar title="History" back={back} />
-      <div class="glass list">
+      <div class="glass grp">
         <div class="lrow"><span class="grow">Keep up to</span>
           <select class="input" style="width:auto" value={s.history.max_items} aria-label="Items kept" onChange={(e) => patch({ history: { max_items: Number((e.target as HTMLSelectElement).value) } })}>
             {[50, 100, 200, 500].map((n) => <option value={n}>{n} prints</option>)}
@@ -239,7 +240,7 @@ function DisplayPage() {
   return (
     <>
       <Topbar title="Display" back={back} />
-      <div class="glass list">
+      <div class="glass grp">
         <ToggleRow label="Reduce motion" sub="Fewer animations, including the print moment." checked={s.display.reduce_motion} onChange={(v) => patch({ display: { reduce_motion: v } })} />
         <ToggleRow label="Reduce transparency" sub="Solid panels instead of frosted glass." checked={s.display.reduce_transparency} onChange={(v) => patch({ display: { reduce_transparency: v } })} />
       </div>
@@ -272,7 +273,7 @@ function WeatherPage() {
     <>
       <Topbar title="Weather" back={back} />
       {s.weather.place && (
-        <div class="glass list">
+        <div class="glass grp">
           <div class="lrow kv-row"><span class="grow">Place</span><span class="meta">{s.weather.place}</span></div>
           {f && <div class="lrow kv-row"><span class="grow">Now</span><span class="meta">{Math.round(f.now_temp)}°{s.weather.units} · {f.now_text}</span></div>}
           {now && !f && <div class="lrow"><span class="grow" style="color:var(--c-pink)">Can't reach the weather service.</span></div>}
@@ -313,7 +314,7 @@ function CalendarsPage() {
   return (
     <>
       <Topbar title="Calendars" back={back} />
-      <div class="glass list">
+      <div class="glass grp">
         {cals.length === 0 && <div class="lrow dim">No calendars yet.</div>}
         {cals.map((c) => (
           <div class="lrow">
@@ -374,7 +375,7 @@ function TasksPage() {
       {connected && (
         <>
           <h2 class="section">Lists to print</h2>
-          <div class="glass list">
+          <div class="glass grp">
             {lists.map((l) => (
               <div class="lrow"><span class="grow">{l.title}</span>
                 <Toggle label={l.title} checked={chosen.length === 0 ? l === lists[0] : chosen.includes(l.id)}
@@ -402,7 +403,7 @@ export function GuestAndInbox() {
   return (
     <>
       <h2 class="section">Waiting for your OK</h2>
-      <div class="glass list">
+      <div class="glass grp">
         {items.length === 0 && <div class="lrow dim">Nothing waiting.</div>}
         {items.map((i) => (
           <div class="lrow" style="flex-wrap:wrap">
@@ -418,7 +419,7 @@ export function GuestAndInbox() {
         ))}
       </div>
       <h2 class="section">Guest page</h2>
-      <div class="glass list">
+      <div class="glass grp">
         <ToggleRow label="Guest page" sub={`Visitors on your Wi-Fi can leave a note at ${wifi.value?.hostname ?? "walloftext.local"}/note, no password needed.`} checked={g.enabled}
           onChange={(v) => patch({ guest: { enabled: v } })} />
         {g.enabled && (
@@ -477,14 +478,14 @@ function DevicePage() {
       </div>
       <p class="dim tiny" style="margin:8px 6px">Updates are installed from your computer with deploy.ps1.</p>
       <h2 class="section">Backup</h2>
-      <div class="glass list">
+      <div class="glass grp">
         <a class="lrow" href="/api/backup" download>Download a backup</a>
         <label class="lrow" for="restore" style="cursor:pointer">{restoring ? "Restoring…" : "Restore from a backup"}</label>
       </div>
       <input ref={file} id="restore" type="file" accept=".zip,application/zip" class="sr-only" onChange={restore} />
       <p class="dim tiny" style="margin:8px 6px">Backups hold settings, schedules, templates, lists and uploaded fonts. Passwords and connection secrets are never included.</p>
       <h2 class="section">Power</h2>
-      <div class="glass list">
+      <div class="glass grp">
         <button class="lrow" onClick={() => setConfirm("restart")}>Restart</button>
         <button class="lrow btn-danger" style="color:var(--c-pink)" onClick={() => setConfirm("shutdown")}>Shut down</button>
       </div>
@@ -500,17 +501,17 @@ function DevicePage() {
 }
 
 export const SETTINGS_PAGES: SettingsPage[] = [
-  { id: "printer", title: "Printer", group: "Printing", Component: PrinterPage, meta: () => `About ${printer.value?.paper_percent ?? 100}% paper` },
-  { id: "fonts", title: "Fonts", group: "Printing", Component: FontsPage },
-  { id: "button", title: "Button & light", group: "Printing", Component: ButtonPage },
-  { id: "schedules", title: "Schedules", group: "Printing", Component: SchedulePrefs, meta: () => (settings.value?.schedules?.holiday_mode ? "Holiday mode" : settings.value?.schedules?.quiet_hours?.enabled ? `Quiet ${settings.value.schedules.quiet_hours.start}–${settings.value.schedules.quiet_hours.end}` : "") },
-  { id: "history", title: "History", group: "Printing", Component: HistoryPrefs },
-  { id: "weather", title: "Weather", group: "Connections", Component: WeatherPage, meta: () => settings.value?.weather?.place || "Not set" },
-  { id: "calendars", title: "Calendars", group: "Connections", Component: CalendarsPage, meta: () => `${settings.value?.calendars?.length ?? 0}` },
-  { id: "tasks", title: "Google Tasks", group: "Connections", Component: TasksPage, meta: () => (settings.value?.tasks?.enabled ? "Connected" : "Not connected") },
-  { id: "remote", title: "Remote messages", group: "Connections", Component: RemotePage },
-  { id: "access", title: "Access", group: "Access", Component: AccessPage, meta: () => (inboxWaiting.value ? `${inboxWaiting.value} waiting` : "") },
-  { id: "wifi", title: "Wi-Fi", group: "Device", Component: WifiPage, meta: () => wifi.value?.ssid ?? "" },
-  { id: "device", title: "Device", group: "Device", Component: DevicePage },
-  { id: "display", title: "Display", group: "Device", Component: DisplayPage },
+  { id: "printer", Icon: IconPrinter, title: "Printer", group: "Printing", Component: PrinterPage, meta: () => `About ${printer.value?.paper_percent ?? 100}% paper` },
+  { id: "fonts", Icon: IconFont, title: "Fonts", group: "Printing", Component: FontsPage },
+  { id: "button", Icon: IconBulb, title: "Button & light", group: "Printing", Component: ButtonPage },
+  { id: "schedules", Icon: IconClock, title: "Schedules", group: "Printing", Component: SchedulePrefs, meta: () => (settings.value?.schedules?.holiday_mode ? "Holiday mode" : settings.value?.schedules?.quiet_hours?.enabled ? `Quiet ${settings.value.schedules.quiet_hours.start}–${settings.value.schedules.quiet_hours.end}` : "") },
+  { id: "history", Icon: IconHistory, title: "History", group: "Printing", Component: HistoryPrefs },
+  { id: "weather", Icon: IconCloud, title: "Weather", group: "Connections", Component: WeatherPage, meta: () => settings.value?.weather?.place || "Not set" },
+  { id: "calendars", Icon: IconCalendar, title: "Calendars", group: "Connections", Component: CalendarsPage, meta: () => `${settings.value?.calendars?.length ?? 0}` },
+  { id: "tasks", Icon: IconTasks, title: "Google Tasks", group: "Connections", Component: TasksPage, meta: () => (settings.value?.tasks?.enabled ? "Connected" : "Not connected") },
+  { id: "remote", Icon: IconMail, title: "Remote messages", group: "Connections", Component: RemotePage },
+  { id: "access", Icon: IconLock, title: "Access", group: "Access", Component: AccessPage, meta: () => (inboxWaiting.value ? `${inboxWaiting.value} waiting` : "") },
+  { id: "wifi", Icon: IconWifi, title: "Wi-Fi", group: "Device", Component: WifiPage, meta: () => wifi.value?.ssid ?? "" },
+  { id: "device", Icon: IconDevice, title: "Device", group: "Device", Component: DevicePage },
+  { id: "display", Icon: IconEye, title: "Display", group: "Device", Component: DisplayPage },
 ];

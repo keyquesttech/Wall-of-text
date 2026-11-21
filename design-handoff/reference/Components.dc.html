@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Component kit</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./wp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Silkscreen&amp;family=Space+Mono:wght@400;700&amp;family=VT323&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="wp" style="width: 1280px; height: 1180px; background: #121315; font-family: Inter, sans-serif; padding: 56px; display: flex; flex-direction: column; gap: 28px">
+<div class="blob g" style="width: 520px; height: 520px; left: -120px; top: 300px; opacity: .3"></div>
+<div class="blob p s" style="width: 520px; height: 520px; right: -120px; top: 40px; opacity: .3"></div>
+<div class="blob g" style="width: 400px; height: 400px; right: 200px; bottom: -160px; opacity: .22"></div>
+<header class="col" style="gap: 6px; position: relative"><span class="lbl">Wall Printer · kit</span><h1 class="h1" style="font-size: 44px; line-height: 50px">Glass components and states</h1></header>
+
+<div style="position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; flex: 1">
+
+  <section class="col" style="gap: 12px">
+    <h2 class="lbl">Glass card</h2>
+    <div class="rowf" style="gap: 10px">
+      <div class="glass" style="flex: 1; height: 86px; padding: 12px"><span class="cap">Default</span></div>
+      <div class="glass prs" style="flex: 1; height: 86px; padding: 12px"><span class="cap">Pressed</span></div>
+      <div class="glass sel" style="flex: 1; height: 86px; padding: 12px"><span class="cap" style="color: #FF63B4">Selected</span></div>
+    </div>
+    <h2 class="lbl" style="margin-top: 10px">Primary button</h2>
+    <div class="col" style="gap: 10px">
+      <div class="rowf" style="gap: 10px"><button class="btn-print" style="flex: 1">Print</button><button class="btn-print prs" style="flex: 1">Pressed</button></div>
+      <div class="rowf" style="gap: 10px">
+        <button class="btn-print" style="flex: 1" aria-label="Printing"><span class="prog" style="width: 45%"></span><span style="position: relative; width: 22px; height: 22px; border-radius: 50%; border: 3px solid rgba(6,33,15,.25); border-top-color: #06210F"></span></button>
+        <button class="btn-print" style="flex: 1"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 3"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>Done</button>
+      </div>
+    </div>
+    <h2 class="lbl" style="margin-top: 10px">Secondary button</h2>
+    <div class="rowf" style="gap: 10px"><button class="btn-sched" style="flex: 1">Schedule</button><button class="btn" style="flex: 1; height: 64px; border-radius: 22px">Add to queue</button></div>
+    <h2 class="lbl" style="margin-top: 10px">Status pill</h2>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+      <span class="glass pill"><span class="dot"></span>Online<span class="n">· 0 waiting</span></span>
+      <span class="glass pill"><span class="dot pulse"></span>Printing<span class="n">· 2 waiting</span></span>
+      <span class="glass pill"><span class="dot pink"></span>Paper out</span>
+      <span class="glass pill"><span class="dot grey"></span>Offline</span>
+    </div>
+  </section>
+
+  <section class="col" style="gap: 12px">
+    <h2 class="lbl">Segmented control</h2>
+    <div class="glass seg" style="grid-template-columns: repeat(4, minmax(0, 1fr))"><span class="hl" style="left: calc(4px + (100% - 8px) / 4); width: calc((100% - 8px) / 4)"></span><button>Text</button><button class="act">Draw</button><button>Image</button><button>Templates</button></div>
+    <h2 class="lbl" style="margin-top: 10px">Toggle</h2>
+    <div class="rowf" style="gap: 18px"><button class="tog on" role="switch" aria-checked="true" aria-label="Green toggle on"></button><button class="tog pk on" role="switch" aria-checked="true" aria-label="Pink toggle on"></button><button class="tog" role="switch" aria-checked="false" aria-label="Toggle off"></button><span class="cap">Green · pink in Schedules · off</span></div>
+    <h2 class="lbl" style="margin-top: 10px">Time and repeat picker</h2>
+    <div class="glass tp" style="border-radius: 24px; padding: 8px 14px 14px">
+      <div class="wheel"><div class="glass band"></div><div class="wcol"><span>06</span><span class="cur">07</span><span>08</span></div><span class="colon">:</span><div class="wcol"><span>25</span><span class="cur">30</span><span>35</span></div></div>
+      <div class="rowf" style="justify-content: space-between"><button class="day on">M</button><button class="day on">T</button><button class="day on">W</button><button class="day on">T</button><button class="day on">F</button><button class="day">S</button><button class="day">S</button></div>
+    </div>
+    <h2 class="lbl" style="margin-top: 10px">Toolbar</h2>
+    <div class="glass rowf" style="border-radius: 20px; padding: 6px; gap: 2px">
+      <button class="ib on" aria-label="Print font" style="font-family: VT323, monospace; font-size: 22px">Aa</button><button class="ib" aria-label="Size">M</button><button class="ib" aria-label="Bold" style="font-weight: 900">B</button><button class="ib" aria-label="Underline" style="text-decoration: underline">U</button>
+      <button class="ib" aria-label="Checkbox"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8 12l3 3 5-6"></path></svg></button>
+      <button class="ib" aria-label="Date stamp"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12l3 2"></path></svg></button>
+      <button class="ib" aria-label="QR code"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6"></rect><rect x="14" y="4" width="6" height="6"></rect><rect x="4" y="14" width="6" height="6"></rect></svg></button>
+    </div>
+    <h2 class="lbl" style="margin-top: 10px">Toast</h2>
+    <div class="rowf" style="gap: 10px">
+      <div class="glass rowf" style="height: 46px; border-radius: 23px; padding: 0 18px; gap: 10px; font-weight: 600; color: #ECEEF2"><span class="dot"></span>Printed</div>
+      <div class="glass rowf" style="height: 46px; border-radius: 23px; padding: 0 18px; gap: 10px; font-weight: 600; color: #ECEEF2"><span class="dot pink"></span>Scheduled for 07:30</div>
+    </div>
+  </section>
+
+  <section class="col" style="gap: 12px">
+    <h2 class="lbl">Bottom sheet</h2>
+    <div style="position: relative; height: 196px; border-radius: 24px; overflow: hidden; background: rgba(8,8,10,.4)">
+      <div class="glass sheet tp" style="top: 34px; padding-top: 10px"><div class="grab"></div><span class="h3">Printer status</span><p class="cap" style="margin-top: 4px">Online · 2 waiting · paper about 60%</p>
+        <div class="rowf" style="gap: 8px; margin-top: 14px"><button class="btn" style="flex: 1; min-height: 44px">Test print</button><button class="btn" style="flex: 1; min-height: 44px">Cancel queue</button></div></div>
+    </div>
+    <h2 class="lbl" style="margin-top: 10px">List row</h2>
+    <div class="glass grp">
+      <div class="lrow"><span class="ico"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6M6 18H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-2M7 14h10v7H7z"></path></svg></span>Printer<span class="v">Online</span><span aria-hidden="true" style="color: #8A8F98; font-size: 22px">›</span></div>
+      <div class="lrow"><span class="ico p"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l4 4L19 6"></path></svg></span>Google Tasks<span class="chip warn" style="margin-left: auto">Sign in again</span></div>
+    </div>
+    <h2 class="lbl" style="margin-top: 10px">Receipt preview</h2>
+    <div class="rowf" style="gap: 16px; align-items: flex-start">
+      <div class="rwrap" style="width: 170px"><div class="receipt bits" style="font-size: 18px; padding: 10px 12px 22px"><div class="r-c" style="font-size: 24px">NOTE</div><div class="r-hr" style="margin: 5px 0"></div><div>back at 7,</div><div>pasta in the</div><div>fridge</div><div class="r-c" style="margin-top: 4px"><span class="r-inv">- M</span></div></div></div>
+      <div class="col" style="gap: 10px; flex: 1">
+        <div class="shim" style="height: 46px"></div>
+        <div class="shim" style="height: 46px"></div>
+        <span class="cap">Loading: shimmering glass, never blank</span>
+      </div>
+    </div>
+    <h2 class="lbl" style="margin-top: 10px">Error banner</h2>
+    <div class="glass banner pk"><span class="ico p"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l9 16H3z"></path><path d="M12 10v4.5M12 17.4v.1"></path></svg></span><p style="flex: 1; font-size: 14px; color: #ECEEF2">Paper ran out. Load a new roll, then tap Retry.</p></div>
+  </section>
+</div>
+<div style="position: relative; width: 358px"><dc-import name="TabBar" active="schedules" badge="2" hint-size="358px,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1180}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

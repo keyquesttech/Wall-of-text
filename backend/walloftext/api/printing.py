@@ -19,6 +19,7 @@ class DocBody(BaseModel):
     document: dict[str, Any]
     copies: int = Field(default=1, ge=1, le=10)
     title: str | None = Field(default=None, max_length=120)
+    extra_feed: int = Field(default=0, ge=0, le=20)
 
 
 class PaperOutBody(BaseModel):
@@ -64,7 +65,7 @@ async def print_doc(body: DocBody, request: Request):
     except DocumentError as exc:
         return JSONResponse({"error": "bad_document", "message": str(exc)}, status_code=422)
     job_id = svc.print_image(result.image, "Manual", _title(body.document, body.title), body.document,
-                             body.copies)
+                             body.copies, meta={"extra_feed": body.extra_feed} if body.extra_feed else None)
     return {"job": svc.queue.get(job_id), "warnings": result.warnings, "printer": svc.queue.status()}
 
 
@@ -88,12 +89,13 @@ async def cancel_all(request: Request):
 
 # ---------------------------------------------------------- history --
 @router.get("/history")
-async def history(request: Request, source: str | None = None, limit: int = 50, before: int | None = None):
+async def history(request: Request, source: str | None = None, limit: int = 50, before: int | None = None,
+                  q: str | None = None):
     svc = request.app.state.svc
     if source and source not in SOURCES:
         return JSONResponse({"error": "bad_source"}, status_code=400)
     states = ("done", "failed", "cancelled", "missed", "printing", "queued", "held")
-    return {"items": svc.queue.list(states, source, limit, before)}
+    return {"items": svc.queue.list(states, source, limit, before, (q or "").strip()[:60] or None)}
 
 
 @router.get("/history/{job_id}")

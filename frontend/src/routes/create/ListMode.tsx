@@ -1,14 +1,14 @@
 // The shared shopping list: everyone on the Wi-Fi adds to it; print it when you go out.
 import { useEffect, useState } from "preact/hooks";
 import { get, send, type Job } from "../../lib/api";
-import { lastJobEvent, trackJob } from "../../lib/state";
+import { lastJobEvent } from "../../lib/state";
 import { IconPlus, IconTrash } from "../../components/icons";
-import { moment } from "../../components/printer";
+import { startMoment } from "../../components/printer";
 import { toast } from "../../components/ui";
 
 interface Item { id: number; text: string; done: boolean }
 
-export function ListMode() {
+export function ListMode(props: { onPrinted?: () => void } = {}) {
   const [items, setItems] = useState<Item[]>([]);
   const [text, setText] = useState("");
   const load = () => get<{ items: Item[] }>("/api/lists/shopping").then((r) => setItems(r.items));
@@ -29,24 +29,24 @@ export function ListMode() {
       <form class="row" onSubmit={add} style="margin:8px 0 12px">
         <input class="input grow" value={text} maxLength={120} placeholder="Add to the shopping list" aria-label="New item"
           onInput={(e) => setText((e.target as HTMLInputElement).value)} />
-        <button class="icon-btn" aria-label="Add" style="width:48px;height:48px"><IconPlus /></button>
+        <button class="ib tile" aria-label="Add"><IconPlus class="i" /></button>
       </form>
-      <div class="glass list">
+      <div class="glass grp">
         {open.length === 0 && <div class="lrow dim">The list is empty.</div>}
         {open.map((i) => <Row i={i} onChange={load} />)}
       </div>
       {done.length > 0 && (
         <>
           <h2 class="section">Got it</h2>
-          <div class="glass list">{done.map((i) => <Row i={i} onChange={load} />)}</div>
+          <div class="glass grp">{done.map((i) => <Row i={i} onChange={load} />)}</div>
           <button class="btn btn-ghost block" style="margin-top:8px" onClick={() => send("POST", "/api/lists/shopping/clear-done").then(load)}>Clear ticked items</button>
         </>
       )}
-      <button class="btn btn-green block" style="margin-top:16px" disabled={open.length === 0} onClick={async () => {
+      <button class="btn-green block" style="margin-top:16px;width:100%" disabled={open.length === 0} onClick={async () => {
         try {
           const r = await send<{ job: Job }>("POST", "/api/lists/shopping/print");
-          trackJob(r.job);
-          moment.value = { job: r.job, img: null };
+          startMoment(r.job, null);
+          props.onPrinted?.();
         } catch (e) { toast((e as Error).message); }
       }}>Print the list</button>
       <p class="dim tiny" style="margin:10px 6px">Anyone signed in on your Wi-Fi can add to this list. Morning routines can include it too.</p>
@@ -57,10 +57,10 @@ export function ListMode() {
 function Row({ i, onChange }: { i: Item; onChange: () => void }) {
   return (
     <div class="lrow">
-      <input type="checkbox" checked={i.done} aria-label={`${i.text} ${i.done ? "ticked" : ""}`} style="width:22px;height:22px;accent-color:var(--c-green)"
+      <input type="checkbox" checked={i.done} aria-label={`${i.text} ${i.done ? "ticked" : ""}`} style="width:22px;height:22px;accent-color:var(--green)"
         onChange={() => send("PATCH", `/api/lists/items/${i.id}`, { done: !i.done }).then(onChange)} />
       <span class="grow" style={i.done ? "text-decoration:line-through;color:var(--c-dim)" : ""}>{i.text}</span>
-      <button class="icon-btn" aria-label={`Remove ${i.text}`} onClick={() => send("DELETE", `/api/lists/items/${i.id}`).then(onChange)}><IconTrash /></button>
+      <button class="ib" aria-label={`Remove ${i.text}`} onClick={() => send("DELETE", `/api/lists/items/${i.id}`).then(onChange)}><IconTrash /></button>
     </div>
   );
 }

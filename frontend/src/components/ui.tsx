@@ -1,3 +1,4 @@
+// Shared UI built on design-handoff/tokens.css components.
 import { signal } from "@preact/signals";
 import type { ComponentChildren } from "preact";
 import { useEffect, useRef } from "preact/hooks";
@@ -6,21 +7,21 @@ import { IconAlert, IconCheck } from "./icons";
 // ----------------------------------------------------------------- toast --
 export const toastMsg = signal<string | null>(null);
 let toastTimer: number | undefined;
-export function toast(msg: string, ms = 2600) {
+export function toast(msg: string, ms = 1800) {
   toastMsg.value = msg;
   window.clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => (toastMsg.value = null), ms);
 }
 export function Toast() {
   return toastMsg.value ? (
-    <div class="toast" role="status" aria-live="polite">
-      {toastMsg.value}
+    <div class="glass toastf" role="status" aria-live="polite" key={toastMsg.value}>
+      <IconCheck />{toastMsg.value}
     </div>
   ) : null;
 }
 
 // ----------------------------------------------------------------- sheet --
-export function Sheet(props: { open: boolean; onClose: () => void; title?: string; children: ComponentChildren; labelledBy?: string }) {
+export function Sheet(props: { open: boolean; onClose: () => void; title?: string; label?: string; tint?: "tp" | "tg"; children: ComponentChildren }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!props.open) return;
@@ -28,7 +29,7 @@ export function Sheet(props: { open: boolean; onClose: () => void; title?: strin
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") props.onClose();
       if (e.key === "Tab" && ref.current) {
-        const f = ref.current.querySelectorAll<HTMLElement>("button, [href], input, textarea, select, [tabindex]:not([tabindex='-1'])");
+        const f = ref.current.querySelectorAll<HTMLElement>("button:not([disabled]), [href], input, textarea, select, [tabindex]:not([tabindex='-1'])");
         if (!f.length) return;
         const first = f[0], last = f[f.length - 1];
         if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
@@ -45,73 +46,97 @@ export function Sheet(props: { open: boolean; onClose: () => void; title?: strin
   }, [props.open]);
   if (!props.open) return null;
   return (
-    <div class="backdrop" onClick={(e) => e.target === e.currentTarget && props.onClose()}>
-      <div class="sheet" role="dialog" aria-modal="true" aria-label={props.title} ref={ref}>
+    <div class="scrimf" onClick={(e) => e.target === e.currentTarget && props.onClose()}>
+      <section class={`glass sheetf ${props.tint ?? ""}`} role="dialog" aria-modal="true" aria-label={props.label ?? props.title} ref={ref}>
         <div class="grab" />
-        {props.title && <h2>{props.title}</h2>}
+        {props.title && <h2 class="h2">{props.title}</h2>}
         {props.children}
-      </div>
+      </section>
     </div>
   );
 }
 
 // ---------------------------------------------------------------- banner --
+// Errors: pink + icon + plain sentence (HANDOFF 4). Info/warn use the neutral glass banner.
 export function Banner(props: { kind?: "info" | "warn" | "error"; children: ComponentChildren; action?: ComponentChildren }) {
-  const cls = props.kind === "info" ? "banner info" : props.kind === "warn" ? "banner warn" : "banner";
+  const err = !props.kind || props.kind === "error";
   return (
-    <div class={cls} role={props.kind === "info" ? "status" : "alert"}>
-      {props.kind === "info" ? <IconCheck /> : <IconAlert />}
-      <div class="grow">{props.children}</div>
+    <div class={`glass banner ${err ? "pk" : props.kind === "info" ? "tg" : ""}`} role={props.kind === "info" ? "status" : "alert"}>
+      <span class={`ico ${err ? "p" : props.kind === "info" ? "g" : "p"}`}>{props.kind === "info" ? <IconCheck /> : <IconAlert />}</span>
+      <div class="btxt">{props.children}</div>
       {props.action}
     </div>
   );
 }
 
 // ---------------------------------------------------------------- toggle --
-export function Toggle(props: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
+export function Toggle(props: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean; pink?: boolean }) {
   return (
-    <span class="toggle">
-      <input type="checkbox" role="switch" aria-label={props.label} checked={props.checked} disabled={props.disabled}
-        onChange={(e) => props.onChange((e.target as HTMLInputElement).checked)} />
-      <span />
-    </span>
+    <button type="button" class={`tog ${props.pink ? "pk" : ""} ${props.checked ? "on" : ""}`} role="switch" aria-checked={props.checked}
+      aria-label={props.label} disabled={props.disabled} onClick={() => props.onChange(!props.checked)} />
   );
 }
 
-export function ToggleRow(props: { label: string; sub?: string; checked: boolean; onChange: (v: boolean) => void }) {
+export function ToggleRow(props: { label: string; sub?: string; checked: boolean; onChange: (v: boolean) => void; pink?: boolean; icon?: ComponentChildren }) {
   return (
     <div class="lrow">
+      {props.icon}
       <div class="grow">
-        <div class="title">{props.label}</div>
-        {props.sub && <div class="sub" style="white-space:normal">{props.sub}</div>}
+        <div>{props.label}</div>
+        {props.sub && <div class="cap">{props.sub}</div>}
       </div>
-      <Toggle checked={props.checked} onChange={props.onChange} label={props.label} />
+      <Toggle checked={props.checked} onChange={props.onChange} label={props.label} pink={props.pink} />
     </div>
   );
 }
 
-export function Seg<T extends string>(props: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string }) {
+// ------------------------------------------------------------- segmented --
+export function Seg<T extends string>(props: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label: string; small?: boolean; width?: string; tabs?: boolean }) {
+  const n = props.options.length;
+  const i = Math.max(0, props.options.findIndex((o) => o.value === props.value));
+  const pad = props.small ? 3 : 4;
   return (
-    <div class="seg" role="group" aria-label={props.label}>
+    <div class={`glass seg ${props.small ? "sm" : ""}`} role={props.tabs ? "tablist" : "group"} aria-label={props.label}
+      style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`, width: props.width }}>
+      <span class="hl" aria-hidden="true" style={{ left: `calc(${pad}px + (100% - ${pad * 2}px) / ${n} * ${i})`, width: `calc((100% - ${pad * 2}px) / ${n})` }} />
       {props.options.map((o) => (
-        <button type="button" aria-pressed={props.value === o.value} onClick={() => props.onChange(o.value)}>{o.label}</button>
+        <button type="button" class={props.value === o.value ? "act" : ""}
+          {...(props.tabs ? { role: "tab", "aria-selected": props.value === o.value } : { "aria-pressed": props.value === o.value })}
+          onClick={() => props.onChange(o.value)}>{o.label}</button>
       ))}
     </div>
   );
 }
 
-export function Topbar(props: { title: string; children?: ComponentChildren; back?: () => void }) {
+// ----------------------------------------------------------------- header --
+// Pill top-left (and an optional action top-right), then the page title (HANDOFF 5, 7).
+export function Topbar(props: { title: string; children?: ComponentChildren; right?: ComponentChildren; back?: () => void; backLabel?: string }) {
   return (
-    <header class="topbar">
-      {props.back && (
-        <button class="icon-btn" onClick={props.back} aria-label="Back">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
-        </button>
-      )}
-      <h1>{props.title}</h1>
-      {props.children}
-    </header>
+    <>
+      <header class="topbar">
+        {props.back ? (
+          <button class="glass btn backbtn" onClick={props.back} aria-label={`Back to ${props.backLabel ?? "Settings"}`}>
+            <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>{props.backLabel ?? "Settings"}
+          </button>
+        ) : props.children}
+        {props.back ? props.children : props.right}
+      </header>
+      <h1 class="h1 page-title" style={props.back ? "font-size:30px" : undefined}>{props.title}</h1>
+    </>
   );
+}
+
+export function Group(props: { children: ComponentChildren; label?: string }) {
+  return (
+    <>
+      {props.label && <span class="sect">{props.label}</span>}
+      <div class="glass grp">{props.children}</div>
+    </>
+  );
+}
+
+export function Chevron() {
+  return <span class="chevr" aria-hidden="true">›</span>;
 }
 
 export function timeAgo(ts: number): string {
@@ -121,7 +146,7 @@ export function timeAgo(ts: number): string {
   const d = new Date(ts * 1000);
   const today = new Date();
   const hm = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-  if (d.toDateString() === today.toDateString()) return `Today ${hm}`;
+  if (d.toDateString() === today.toDateString()) return hm;
   const y = new Date(today.getTime() - 86400000);
   if (d.toDateString() === y.toDateString()) return `Yesterday ${hm}`;
   return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + hm;

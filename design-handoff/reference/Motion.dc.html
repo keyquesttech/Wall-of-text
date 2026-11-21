@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Motion study</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./wp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Silkscreen&amp;family=Space+Mono:wght@400;700&amp;family=VT323&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="wp" style="width: 1280px; height: 900px; background: #121315; font-family: Inter, sans-serif; display: flex; gap: 48px; padding: 56px">
+<div class="blob g" style="width: 420px; height: 420px; left: 40px; bottom: -120px; opacity: .3"></div>
+<div class="blob p s" style="width: 380px; height: 380px; left: 260px; top: -140px; opacity: .3"></div>
+
+<section class="glass" aria-label="Print moment demo" style="position: relative; flex: 0 0 400px; height: 788px; border-radius: 40px; overflow: hidden">
+  <span class="lbl" style="position: absolute; top: 24px; left: 0; right: 0; text-align: center">The print moment</span>
+  <div class="slot" style="top: 92px"></div>
+  <sc-if value="{{showPaper}}" hint-placeholder-val="{{ false }}">
+    <div class="{{paperCls}}" style="top: 102px">
+      <div class="rwrap"><div class="receipt bits" style="font-size: 20px">
+        <div class="r-c" style="font-size: 30px">OUT OF MILK</div><div class="r-hr"></div><div class="r-c">grabbing some on</div><div class="r-c">the way home</div><div class="r-hr"></div><div class="r-c">- M</div>
+      </div></div>
+    </div>
+  </sc-if>
+  <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}"><div class="glass toast" role="status" style="top: 40px"><span class="dot"></span>Printed</div></sc-if>
+  <div style="position: absolute; left: 24px; right: 24px; bottom: 116px">
+    <button class="{{btnCls}}" style="width: 100%" onClick="{{play}}"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 2.2"><path d="M7 9V3h10v6"></path><path d="M6 18H4v-7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7h-2"></path><path d="M7 14h10v7H7z"></path></svg>{{btnLabel}}</button>
+  </div>
+  <div style="position: absolute; left: 21px; right: 21px; bottom: 24px"><dc-import name="TabBar" active="create" badge="{{badge}}" hint-size="358px,72px"></dc-import></div>
+</section>
+
+<section class="col" style="flex: 1; min-width: 0; gap: 22px; position: relative">
+  <div class="col" style="gap: 6px">
+    <h1 class="h1">Motion study</h1>
+    <p style="font-size: 17px; color: #C9CDD4; line-height: 24px">Press Print on the left to replay. Springs use cubic-bezier(.34, 1.56, .64, 1). With “reduce motion” on, every step below becomes a 150 ms fade and the background stops drifting.</p>
+  </div>
+  <div class="glass grp" style="border-radius: 22px">
+    <div class="lrow" style="font-size: 13px; color: #8A8F98; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; min-height: 40px"><span style="width: 70px">Start</span><span style="width: 70px">Length</span><span style="flex: 1">Print button → History</span></div>
+    <sc-for list="{{steps}}" as="s" hint-placeholder-count="8">
+      <div class="lrow" style="font-size: 15px; min-height: 46px; padding: 6px 16px"><span class="num" style="width: 70px; color: #39FF88; font-weight: 700">{{s.t}}</span><span class="num" style="width: 70px; color: #C9CDD4">{{s.d}}</span><span style="flex: 1">{{s.what}}</span></div>
+    </sc-for>
+  </div>
+  <div class="glass grp" style="border-radius: 22px">
+    <div class="lrow" style="font-size: 13px; color: #8A8F98; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; min-height: 40px">Everywhere else</div>
+    <sc-for list="{{others}}" as="s" hint-placeholder-count="5">
+      <div class="lrow" style="font-size: 15px; min-height: 44px; padding: 6px 16px"><span style="width: 180px; font-weight: 600">{{s.name}}</span><span style="flex: 1; color: #C9CDD4">{{s.how}}</span></div>
+    </sc-for>
+  </div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const ph = s.phase || 'idle';
+    const at = (ms, st) => setTimeout(() => this.setState(st), ms);
+    const play = () => {
+      if (ph !== 'idle') return;
+      this.setState({ phase: 'press', toast: false });
+      at(140, { phase: 'feed' });
+      at(1560, { phase: 'tear' });
+      at(2200, { phase: 'idle', toast: true, badge: ((this.state || {}).badge || 0) + 1 });
+      at(4000, { toast: false });
+    };
+    return {
+      play,
+      btnCls: ph === 'press' ? 'btn-print prs' : 'btn-print',
+      btnLabel: ph === 'feed' ? 'Printing…' : 'Print',
+      showPaper: ph === 'feed' || ph === 'tear',
+      paperCls: ph === 'tear' ? 'feedpaper tearing' : 'feedpaper feeding',
+      hasToast: !!s.toast, badge: s.badge || 0,
+      steps: [
+        { t: '0', d: '90 ms', what: 'Button squashes to 95% wide, 90% tall; glow tightens' },
+        { t: '90', d: '380 ms', what: 'Button springs back past 100% and settles' },
+        { t: '120', d: '200 ms', what: 'Slot lights green; status pill starts pulsing' },
+        { t: '140', d: '1400 ms', what: 'Paper feeds out in 24 small steps, like the motor' },
+        { t: '1560', d: '90 ms', what: 'Tear: paper tips 3° and drops 4 px, with a click sound' },
+        { t: '1650', d: '520 ms', what: 'Strip flies down to the History tab, shrinking to 12%' },
+        { t: '2170', d: '400 ms', what: 'History badge pops in on a spring' },
+        { t: '2200', d: '1800 ms', what: 'Toast “Printed” drops from the top, then lifts away' }
+      ],
+      others: [
+        { name: 'Tab change', how: 'Highlight slides 480 ms on a spring; screen fades and rises 12 px in 180 ms' },
+        { name: 'Bottom sheet', how: 'Slides up 520 ms with about 6% overshoot; backdrop fades 200 ms' },
+        { name: 'Toggle', how: 'Knob snaps 340 ms on a spring; track colour fades 250 ms' },
+        { name: 'Status pill', how: 'Dot breathes every 1.4 s while printing, steady otherwise' },
+        { name: 'Background', how: 'Blobs drift on a 22–30 s loop and lean toward touch and scroll' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

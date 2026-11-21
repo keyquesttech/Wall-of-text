@@ -1,11 +1,11 @@
-// Image: take or pick a photo with <input type=file accept=image/* capture> (getUserMedia
-// needs HTTPS; BUILD_PLAN override 4). Scaled down on the phone before upload.
+// Image (HANDOFF 7.1): take or pick a photo (<input type=file capture>, override 4); the converted
+// 1-bit result shows live on the paper, with brightness and contrast under it.
 import { useMemo, useState } from "preact/hooks";
 import type { Doc } from "../../lib/api";
-import { IconImage } from "../../components/icons";
-import { AsPrinted, printWithMoment, usePreview } from "../../components/printer";
-import { Banner, Seg, Toggle } from "../../components/ui";
-import { PrintBar } from "../Create";
+import { IconCamera, IconImage } from "../../components/icons";
+import { usePreview } from "../../components/printer";
+import { Banner } from "../../components/ui";
+import { ActionRow, SideButtons, Split, Toolbar, withFrom, type View } from "../Create";
 
 async function shrink(file: File, max = 1100): Promise<string> {
   const url = URL.createObjectURL(file);
@@ -30,7 +30,7 @@ async function shrink(file: File, max = 1100): Promise<string> {
   }
 }
 
-export function ImageMode() {
+export function ImageMode(props: { view: View; wide: boolean }) {
   const [src, setSrc] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [style, setStyle] = useState<"photo" | "sharp" | "halftone">("photo");
@@ -40,16 +40,13 @@ export function ImageMode() {
   const [invert, setInvert] = useState(false);
   const [lighten, setLighten] = useState(false);
   const [rotate, setRotate] = useState(0);
-  const [caption, setCaption] = useState("");
-  const [copies, setCopies] = useState(1);
+  const [from, setFrom] = useState(false);
 
-  const doc: Doc = useMemo(() => ({
-    blocks: [
-      ...(src ? [{ type: "image" as const, src, style, dither, brightness, contrast, invert, lighten, rotate }] : []),
-      ...(caption.trim() ? [{ type: "text" as const, text: caption.trim(), align: "center" as const }] : []),
-    ],
-  }), [src, style, dither, brightness, contrast, invert, lighten, rotate, caption]);
-  const { pv } = usePreview(doc, 400);
+  const imgDoc: Doc = useMemo(() => ({
+    blocks: src ? [{ type: "image" as const, src, style, dither, brightness, contrast, invert, lighten, rotate }] : [],
+  }), [src, style, dither, brightness, contrast, invert, lighten, rotate]);
+  const doc = useMemo(() => withFrom(imgDoc, from), [imgDoc, from]);
+  const { pv, loading } = usePreview(imgDoc, 350);
   const dense = (pv?.coverage ?? 0) > 0.5;
 
   const onFile = async (e: Event) => {
@@ -57,51 +54,60 @@ export function ImageMode() {
     if (!f) return;
     setErr(null);
     try { setSrc(await shrink(f)); } catch (x) { setErr((x as Error).message); }
+    (e.target as HTMLInputElement).value = "";
   };
 
-  return (
-    <div class="create-grid">
-      <div>
-        {err && <Banner>{err}</Banner>}
-        <input id="pic" type="file" accept="image/*" capture="environment" class="sr-only" onChange={onFile} />
-        <input id="pic2" type="file" accept="image/*" class="sr-only" onChange={onFile} />
-        <div class="row" style="margin:8px 0">
-          <label for="pic" class="btn grow"><IconImage width={18} />Take a photo</label>
-          <label for="pic2" class="btn grow">Choose a picture</label>
-        </div>
+  const edit = (
+    <div class="rwrap" style="width:100%">
+      <div class="receipt" style="padding:12px 12px 24px;font-family:Inter,sans-serif">
+        {!src && (
+          <div class="col center" style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 0;color:#3A3C40">
+            <IconImage width={40} height={40} />
+            <span style="font-size:15px">Take or choose a photo.<br />It prints in black dots.</span>
+            <label for="pic2" class="btn" style="color:var(--hi)">Choose a picture</label>
+          </div>
+        )}
         {src && (
           <>
-            <label class="field-label">Style</label>
-            <Seg label="Style" value={style} onChange={setStyle} options={[{ value: "photo", label: "Photo" }, { value: "sharp", label: "Sharp" }, { value: "halftone", label: "Halftone" }]} />
-            {style === "photo" && (
-              <div style="margin-top:8px">
-                <Seg label="Dither" value={dither} onChange={setDither} options={[{ value: "floyd", label: "Smooth" }, { value: "atkinson", label: "Crisp" }]} />
-              </div>
-            )}
-            <label class="field-label" for="br">Brightness</label>
-            <input id="br" type="range" min={0.5} max={1.8} step={0.05} value={brightness} onChange={(e) => setBrightness(Number((e.target as HTMLInputElement).value))} />
-            <label class="field-label" for="ct">Contrast</label>
-            <input id="ct" type="range" min={0.5} max={2} step={0.05} value={contrast} onChange={(e) => setContrast(Number((e.target as HTMLInputElement).value))} />
-            <div class="glass list" style="margin-top:12px">
-              <div class="lrow"><span class="grow">Lighten for paper</span><Toggle label="Lighten for paper" checked={lighten} onChange={setLighten} /></div>
-              <div class="lrow"><span class="grow">Invert</span><Toggle label="Invert" checked={invert} onChange={setInvert} /></div>
-              <button class="lrow" onClick={() => setRotate((rotate + 90) % 360)}><span class="grow">Rotate</span><span class="meta">{rotate}°</span></button>
+            {pv ? <img src={pv.url} alt="Your photo as it will print" style={{ display: "block", width: "100%", imageRendering: "pixelated", opacity: loading ? 0.6 : 1 }} />
+              : <div class="shim" style="height:200px" />}
+            <div class="r-s r-c" style="margin-top:8px;font-family:VT323,monospace">{style === "photo" ? "PHOTO DITHER" : style === "sharp" ? "SHARP" : "HALFTONE"} · 384 DOTS</div>
+            <div style="display:flex;flex-direction:column;gap:2px;margin-top:10px;font-size:12px;color:#3A3C40">
+              <label for="br" style="font-weight:600">Brightness</label>
+              <input id="br" type="range" min={0.5} max={1.8} step={0.05} value={brightness} style="accent-color:#121315" onChange={(e) => setBrightness(Number((e.target as HTMLInputElement).value))} />
+              <label for="ct" style="font-weight:600">Contrast</label>
+              <input id="ct" type="range" min={0.5} max={2} step={0.05} value={contrast} style="accent-color:#121315" onChange={(e) => setContrast(Number((e.target as HTMLInputElement).value))} />
             </div>
-            {dense && !lighten && (
-              <Banner kind="warn" action={<button class="btn small" onClick={() => setLighten(true)}>Lighten</button>}>
-                This picture is very dark. Dark prints can stick or streak on thermal paper.
-              </Banner>
-            )}
-            <label class="field-label" for="icap">Caption (optional)</label>
-            <input id="icap" class="input" value={caption} maxLength={80} onInput={(e) => setCaption((e.target as HTMLInputElement).value)} />
           </>
         )}
-        {!src && <div class="empty"><IconImage /><p>Take or choose a picture to print it in black and white.</p></div>}
-      </div>
-      <div>
-        {src && <AsPrinted doc={doc} />}
-        <PrintBar disabled={!src} copies={copies} setCopies={setCopies} onPrint={() => printWithMoment(doc, caption.trim() || "Picture", copies)} />
       </div>
     </div>
+  );
+  return (
+    <>
+      {err && <Banner>{err}</Banner>}
+      {dense && !lighten && src && (
+        <Banner kind="warn" action={<button class="btn" onClick={() => setLighten(true)}>Lighten</button>}>
+          This picture is very dark. Dark prints can stick or streak on thermal paper.
+        </Banner>
+      )}
+      <input id="pic" type="file" accept="image/*" capture="environment" class="sr-only" onChange={onFile} />
+      <input id="pic2" type="file" accept="image/*" class="sr-only" onChange={onFile} />
+      <Split view={props.view} wide={props.wide} doc={doc} edit={edit}
+        side={src ? <SideButtons from={from} onFrom={setFrom} onClear={() => setSrc(null)} /> : undefined} />
+      <Toolbar label="Picture tools">
+        <div class="chips" style="gap:4px">
+          <label for="pic" class="ib" aria-label="Take a photo"><IconCamera class="i" /></label>
+          {([["photo", "Photo dither"], ["sharp", "Sharp"], ["halftone", "Halftone"]] as const).map(([v, l]) => (
+            <button class={`chip ${style === v ? "on" : ""}`} aria-pressed={style === v} style={{ height: "44px", padding: "0 12px", fontSize: "13px", color: style === v ? undefined : "var(--muted-sm)", border: 0 }} onClick={() => setStyle(v)}>{l}</button>
+          ))}
+          {style === "photo" && <button class={`chip ${dither === "atkinson" ? "on" : ""}`} aria-pressed={dither === "atkinson"} style="height:44px;padding:0 12px;font-size:13px;border:0" onClick={() => setDither(dither === "floyd" ? "atkinson" : "floyd")}>Crisp</button>}
+          <button class={`chip ${lighten ? "on" : ""}`} aria-pressed={lighten} style="height:44px;padding:0 12px;font-size:13px;border:0" onClick={() => setLighten(!lighten)}>Lighten</button>
+          <button class={`chip ${invert ? "on" : ""}`} aria-pressed={invert} style="height:44px;padding:0 12px;font-size:13px;border:0" onClick={() => setInvert(!invert)}>Invert</button>
+          <button class="chip" style="height:44px;padding:0 12px;font-size:13px;border:0" onClick={() => setRotate((rotate + 90) % 360)}>Rotate {rotate}°</button>
+        </div>
+      </Toolbar>
+      <ActionRow doc={doc} title="Picture" disabled={!src} />
+    </>
   );
 }

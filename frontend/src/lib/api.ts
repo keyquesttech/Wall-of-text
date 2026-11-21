@@ -15,7 +15,8 @@ export type Block =
   | { type: "datetime"; format?: string; size?: Size; align?: Align }
   | { type: "image"; src: string; style?: "photo" | "sharp" | "halftone"; dither?: "floyd" | "atkinson" | "ordered"; brightness?: number; contrast?: number; invert?: boolean; lighten?: boolean; rotate?: number }
   | { type: "drawing"; src: string }
-  | { type: "columns"; left: string; right: string; size?: Size; font?: string };
+  | { type: "columns"; left: string; right: string; size?: Size; font?: string }
+  | { type: "sticker"; name: string; size?: "S" | "M" | "L"; align?: Align };
 
 export interface Doc {
   blocks: Block[];
@@ -151,15 +152,15 @@ export async function preview(doc: Doc, signal?: AbortSignal): Promise<Preview> 
 }
 
 export const api = {
-  print: (document: Doc, copies = 1, title?: string) =>
-    send<{ job: Job; warnings: string[]; printer: PrinterStatus }>("POST", "/api/print", { document, copies, title }),
+  print: (document: Doc, copies = 1, title?: string, extra_feed = 0) =>
+    send<{ job: Job; warnings: string[]; printer: PrinterStatus }>("POST", "/api/print", { document, copies, title, extra_feed }),
   queue: () => get<{ jobs: Job[]; printer: PrinterStatus }>("/api/queue"),
   cancel: (id: number) => send("POST", `/api/queue/${id}/cancel`),
   cancelAll: () => send("POST", "/api/queue/cancel-all"),
   retry: (id: number) => send<{ job: Job }>("POST", `/api/jobs/${id}/retry`),
   reprint: (id: number) => send<{ job: Job }>("POST", `/api/history/${id}/reprint`),
-  history: (source?: string, before?: number) =>
-    get<{ items: Job[] }>(`/api/history?limit=40${source ? `&source=${source}` : ""}${before ? `&before=${before}` : ""}`),
+  history: (source?: string, before?: number, q?: string) =>
+    get<{ items: Job[] }>(`/api/history?limit=40${source ? `&source=${source}` : ""}${before ? `&before=${before}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`),
   historyItem: (id: number) => get<Job & { document: Doc | null }>(`/api/history/${id}`),
   deleteHistory: (id: number) => send("DELETE", `/api/history/${id}`),
   clearHistory: () => send("DELETE", "/api/history"),

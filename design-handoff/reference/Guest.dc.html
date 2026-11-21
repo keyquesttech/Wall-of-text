@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Leave a note</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./wp.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Silkscreen&amp;family=Space+Mono:wght@400;700&amp;family=VT323&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<main class="wp phone" style="width: 390px; height: 844px; background: #121315; font-family: Inter, sans-serif">
+<div class="blob g" style="width: 320px; height: 320px; left: -110px; top: 40px"></div>
+<div class="blob p s" style="width: 300px; height: 300px; right: -130px; bottom: 120px"></div>
+<div class="col" style="position: absolute; inset: 0; padding: 64px 20px 34px; gap: 16px">
+  <div class="rowf" style="gap: 10px">
+    <span class="dot"></span><span class="cap" style="color: #C9CDD4">Wall Printer · printer.local/note</span>
+  </div>
+  <h1 class="h1" style="font-size: 44px; line-height: 46px">Leave a note</h1>
+  <p style="font-size: 17px; line-height: 24px; color: #C9CDD4">It prints on the little printer by the door. Short and sweet works best.</p>
+
+  <div class="rwrap">
+    <div class="receipt" style="min-height: 250px; font-size: 26px; line-height: 1.1; padding: 18px 18px 30px">
+      <label for="note" class="r-s" style="display: block; color: #55575C">YOUR NOTE</label>
+      <textarea id="note" rows="5" placeholder="Thanks for dinner! Left you some cake in the fridge" style="width: 100%; border: 0; background: transparent; resize: none; font: inherit; color: #0E0E0E; outline: none; margin-top: 6px"></textarea>
+      <div class="r-hr"></div>
+      <div class="r-s">from: ________</div>
+    </div>
+  </div>
+
+  <div class="glass" style="border-radius: 18px; padding: 4px 4px 4px 16px; display: flex; align-items: center; gap: 8px">
+    <label for="gname" class="cap" style="color: #C9CDD4; white-space: nowrap">Your name</label>
+    <input id="gname" placeholder="e.g. Sam" style="flex: 1; min-width: 0; height: 44px; border: 0; background: transparent; outline: none; font-size: 16px; color: #ECEEF2">
+  </div>
+
+  <div class="rowf" style="gap: 8px">
+    <span class="cap" style="margin-right: 4px">Add</span>
+    <button class="glass ib" aria-label="Add a heart sticker"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg></button>
+    <button class="glass ib" aria-label="Add a smiley sticker"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M8.5 14a4 4 0 0 0 7 0M9 9.5v.5M15 9.5v.5"></path></svg></button>
+    <button class="glass ib" aria-label="Add a star sticker"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"></path></svg></button>
+    <button class="glass ib" aria-label="Draw instead"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16z"></path></svg></button>
+  </div>
+
+  <div style="flex: 1"></div>
+  <button class="btn-print" style="width: 100%">
+    <svg class="i" viewBox="0 0 24 24" aria-hidden="true" style="stroke-width: 2.2"><path d="M4 12l16-8-6 16-2.5-6.5z"></path></svg>Leave note
+  </button>
+  <p class="cap" style="text-align: center">Notes wait for a quick OK from the people who live here, then print.</p>
+</div>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

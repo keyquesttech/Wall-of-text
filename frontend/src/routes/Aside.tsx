@@ -23,7 +23,7 @@ export function Aside() {
       <StatusPill />
       <p class="dim small" style="margin:10px 6px 0">Paper: about {printer.value?.paper_percent ?? 100}% left</p>
       <h2 class="section">Queue</h2>
-      <div class="glass list">
+      <div class="glass grp">
         {pendingJobs.value.length === 0 && <div class="lrow dim">Nothing waiting.</div>}
         {pendingJobs.value.map((j) => (
           <div class="lrow">
@@ -38,11 +38,11 @@ export function Aside() {
       {inboxWaiting.value > 0 && (
         <>
           <h2 class="section">Waiting for your OK</h2>
-          <div class="glass list"><a class="lrow" href="/settings/access"><span class="grow">{inboxWaiting.value} message{inboxWaiting.value === 1 ? "" : "s"}</span><span class="meta">Review</span></a></div>
+          <div class="glass grp"><a class="lrow" href="/settings/access"><span class="grow">{inboxWaiting.value} message{inboxWaiting.value === 1 ? "" : "s"}</span><span class="meta">Review</span></a></div>
         </>
       )}
       <h2 class="section">Recently printed</h2>
-      <div class="glass list">
+      <div class="glass grp">
         {recent.length === 0 && <div class="lrow dim">Nothing yet.</div>}
         {recent.map((j) => (
           <a class="lrow" href={`/history/${j.id}`}>
