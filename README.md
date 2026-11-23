@@ -4,6 +4,7 @@ A thermal "wall printer" on a Raspberry Pi 4. Phones and laptops on the home
 Wi-Fi open `http://walloftext.local/` to print notes, schedules and messages.
 
 - Plan: [BUILD_PLAN.md](BUILD_PLAN.md) (backend, Pi, phases) and `design-handoff/HANDOFF.md` (UI spec, not in this repo yet)
+- Project context / hand-over: [CONTEXT.md](CONTEXT.md)
 - Progress: [docs/PROGRESS.md](docs/PROGRESS.md)
 - Phase 0 hardware spikes: [spikes/README.md](spikes/README.md)
 - What still needs trying on the real Pi: [docs/PI_TESTING.md](docs/PI_TESTING.md)
