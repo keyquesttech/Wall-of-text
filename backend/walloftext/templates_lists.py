@@ -1,4 +1,4 @@
-"""Templates (built-in fill-ins + your own) and the shared shopping list (Phase 7)."""
+"""Templates (built-in fill-ins + your own) and the shared List (Create › List; stored as the "shopping" list)."""
 from __future__ import annotations
 
 import copy
@@ -134,6 +134,14 @@ class Lists:
         from datetime import datetime
         return {"blocks": [{"type": "slip", "template": "shopping",
                             "data": {"items": self.open_items(name), "now": datetime.now().isoformat(timespec="minutes")}}]}
+
+    def print(self, name: str, source: str, title: str | None = None) -> int | None:
+        """Print the open items; they are removed from the list once the print comes out."""
+        open_rows = [i for i in self.items(name) if not i["done"]]
+        if not open_rows:
+            return None
+        return self.svc.print_document(self.document(name), source, title or f"{name.capitalize()} list",
+                                       meta={"clear_list_items": [i["id"] for i in open_rows], "list": name})
 
     def publish(self, name: str) -> None:
         self.svc.events.publish("list", {"list": name})

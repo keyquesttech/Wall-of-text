@@ -1,9 +1,9 @@
-// The shared shopping list: everyone on the Wi-Fi adds to it; print it when you go out.
-import { useEffect, useState } from "preact/hooks";
-import { get, send, type Job } from "../../lib/api";
+// The List: one shared checklist everyone on the Wi-Fi adds to; printing it empties it (a one-off print).
+import { useEffect, useMemo, useState } from "preact/hooks";
+import { get, send, type Doc, type Job } from "../../lib/api";
 import { lastJobEvent } from "../../lib/state";
 import { IconPlus, IconTrash } from "../../components/icons";
-import { startMoment } from "../../components/printer";
+import { AsPrinted, startMoment } from "../../components/printer";
 import { toast } from "../../components/ui";
 
 interface Item { id: number; text: string; done: boolean }
@@ -24,10 +24,13 @@ export function ListMode(props: { onPrinted?: () => void } = {}) {
   };
   const open = items.filter((i) => !i.done);
   const done = items.filter((i) => i.done);
+  // the same slip the printer makes (server-rendered "As printed" preview)
+  const doc: Doc = useMemo(() => ({ blocks: [{ type: "slip", template: "shopping", data: { items: open.map((i) => i.text) } }] } as unknown as Doc),
+    [open.map((i) => i.text).join("\n")]);
   return (
     <>
       <form class="row" onSubmit={add} style="margin:8px 0 12px">
-        <input class="input grow" value={text} maxLength={120} placeholder="Add to the shopping list" aria-label="New item"
+        <input class="input grow" value={text} maxLength={120} placeholder="Add to the list" aria-label="New item"
           onInput={(e) => setText((e.target as HTMLInputElement).value)} />
         <button class="ib tile" aria-label="Add"><IconPlus class="i" /></button>
       </form>
@@ -42,14 +45,21 @@ export function ListMode(props: { onPrinted?: () => void } = {}) {
           <button class="btn btn-ghost block" style="margin-top:8px" onClick={() => send("POST", "/api/lists/shopping/clear-done").then(load)}>Clear ticked items</button>
         </>
       )}
+      {open.length > 0 && (
+        <>
+          <h2 class="section">As printed</h2>
+          <div style="margin-top:8px"><AsPrinted doc={doc} /></div>
+        </>
+      )}
       <button class="btn-green block" style="margin-top:16px;width:100%" disabled={open.length === 0} onClick={async () => {
         try {
           const r = await send<{ job: Job }>("POST", "/api/lists/shopping/print");
           startMoment(r.job, null);
+          toast("Printing. The list empties once the slip is out.");
           props.onPrinted?.();
         } catch (e) { toast((e as Error).message); }
       }}>Print the list</button>
-      <p class="dim tiny" style="margin:10px 6px">Anyone signed in on your Wi-Fi can add to this list. Morning routines can include it too.</p>
+      <p class="dim tiny" style="margin:10px 6px">Anyone signed in on your Wi-Fi can add to this list. When you print it, the printed items are removed once the slip comes out; ticked items and anything added meanwhile stay.</p>
     </>
   );
 }

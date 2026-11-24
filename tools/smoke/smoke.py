@@ -45,6 +45,8 @@ def run(viewport, tag):
         page.on("pageerror", lambda e: errors.append(f"{tag}: {e}"))
         page.on("console", lambda m: m.type == "error" and "401" not in m.text and errors.append(f"{tag} console: {m.text}"))
         sign_in(page)
+        # quiet hours (22:00-07:30 by default) would hold the remote message: run the same at any hour
+        page.request.patch(args.base + "/api/settings", data={"schedules": {"quiet_hours": {"enabled": False}}})
         wide = viewport["width"] >= 1024
         def as_printed():
             if not wide:
@@ -191,15 +193,17 @@ def run(viewport, tag):
         shot(page, f"{tag}-62-template")
         page.click(".sheetf button.btn-print")
         printed_toast()
-        # Shopping list chip: add two items and print
-        page.click(".chip:has-text('Shopping list')")
+        # List mode: add two items, see the preview, print; the list empties once printed
+        page.goto(args.base + "/create/list")
         for item in ("Milk", "Bread"):
             page.fill("input[aria-label='New item']", item + " " + tag)
             page.keyboard.press("Enter")
             expect(page.locator(f"text={item} {tag}")).to_be_visible()
+        expect(page.locator(".receipt.img img")).to_be_visible(timeout=10000)
         shot(page, f"{tag}-63-list")
         page.click("button:has-text('Print the list')")
         printed_toast()
+        expect(page.locator(f"text=Milk {tag}")).to_have_count(0, timeout=10000)
         # quick action chip
         page.click(".chip:has-text('Fortune')")
         expect(page.locator(".toastf")).to_contain_text("fortune")

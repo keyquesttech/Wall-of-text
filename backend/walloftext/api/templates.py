@@ -124,5 +124,7 @@ async def clear_done(name: str, request: Request):
 @router.post("/lists/{name}/print", status_code=201)
 async def print_list(name: str, request: Request):
     svc = request.app.state.svc
-    jid = svc.print_document(svc.extras["lists"].document(name), "Manual", f"{name.capitalize()} list")
+    jid = svc.extras["lists"].print(name, "Manual", "List" if name == "shopping" else None)
+    if jid is None:
+        return JSONResponse({"error": "empty", "message": "The list is empty."}, status_code=409)
     return {"job": svc.queue.get(jid)}

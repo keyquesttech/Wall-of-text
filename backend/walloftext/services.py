@@ -163,6 +163,8 @@ def build(settings: Settings | None = None, nm=None) -> Services:
     svc.extras["scheduler"] = Scheduler(svc)
     from .usb_backup import UsbBackup
     svc.extras["usb_backup"] = UsbBackup(svc)
+    from .restarts import ScheduledRestart
+    svc.extras["restart"] = ScheduledRestart(svc)
     from .remote.inbox import Inbox
 
     svc.extras["inbox"] = Inbox(svc)

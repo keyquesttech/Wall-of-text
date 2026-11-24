@@ -111,3 +111,45 @@ def test_scheduler_trusts_a_clock_set_by_hand_this_boot(svc):
     assert sch.synced() is True
     svc.store.set("manual_clock_boot", "an-earlier-boot")  # set before a power cut: stale
     assert sch.synced() is False
+
+
+def test_scheduled_restart(svc):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from walloftext.restarts import ScheduledRestart
+
+    ldn = ZoneInfo("Europe/London")
+    t = {"now": datetime(2026, 11, 22, 3, 0, tzinfo=ldn).timestamp()}  # Sunday 03:00
+    reboots = []
+    svc.system.uptime_s = lambda: 3600
+    r = ScheduledRestart(svc, clock=lambda: t["now"], reboot=lambda: reboots.append(t["now"]))
+    svc.app_settings.patch({"restart": {"enabled": True, "frequency": "weekly", "weekday": 6, "time": "04:00"}})
+    assert r.tick() is None  # switched on at 03:00: nothing due yet
+    assert r.status()["next"] == "2026-11-22T04:00+00:00"
+    t["now"] += 3600 + 30  # 04:00:30
+    svc.queue.log_missed("x", "x", "x")  # a finished job doesn't block
+    assert r.tick() == "restarted" and len(reboots) == 1
+    t["now"] += 60
+    assert r.tick() is None and len(reboots) == 1  # once per scheduled time
+    # next week, busy printing at 04:00: waits, then skips after 2 hours
+    t["now"] = datetime(2026, 11, 29, 4, 1, tzinfo=ldn).timestamp()
+    svc.queue.active_id = 99
+    assert r.tick() == "waiting"
+    t["now"] += 2 * 3600 + 60
+    assert r.tick() == "skipped" and len(reboots) == 1
+    svc.queue.active_id = None
+
+
+def test_switching_restart_on_late_never_reboots_at_once(svc):
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from walloftext.restarts import ScheduledRestart
+
+    t = datetime(2026, 11, 22, 4, 30, tzinfo=ZoneInfo("Europe/London")).timestamp()  # 30 min after 04:00
+    reboots = []
+    svc.system.uptime_s = lambda: 3600
+    r = ScheduledRestart(svc, clock=lambda: t, reboot=lambda: reboots.append(1))
+    svc.app_settings.patch({"restart": {"enabled": True, "frequency": "daily", "time": "04:00"}})
+    assert r.tick() is None and reboots == []

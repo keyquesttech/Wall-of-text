@@ -189,6 +189,9 @@ class Scheduler:
                 usb = self.svc.extras.get("usb_backup")
                 if usb is not None and not self.waiting_for_clock:
                     await usb.tick()
+                rst = self.svc.extras.get("restart")
+                if rst is not None and not self.waiting_for_clock:
+                    await asyncio.to_thread(rst.tick)
             except asyncio.CancelledError:
                 raise
             except Exception:

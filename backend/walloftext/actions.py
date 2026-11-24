@@ -29,7 +29,7 @@ ACTIONS = {
     "agenda_today": "Today's agenda",
     "random_fortune": "Random fortune",
     "cancel_queue": "Cancel the queue",
-    "shopping_list": "Print the shopping list",
+    "shopping_list": "Print the list",
 }
 
 FORTUNES = Path(__file__).parent / "sources" / "fortunes.json"
@@ -178,8 +178,9 @@ async def run(svc: "Services", action: str, source: str = "Button") -> str:
         lists = svc.extras.get("lists")
         if lists is None:
             return "Lists aren't available."
-        svc.print_document(lists.document("shopping"), source, "Shopping list")
-        return "Printing the shopping list."
+        if lists.print("shopping", source, "List") is None:
+            return "The list is empty."
+        return "Printing the list."
     if action == "cancel_queue":
         n = svc.queue.cancel_all()
         return f"Cancelled {n} print{'s' if n != 1 else ''}."

@@ -165,6 +165,19 @@ class PrintQueue:
             "DELETE FROM jobs WHERE id=? AND state NOT IN ('printing','queued','held')", (job_id,))
         return cur.rowcount > 0
 
+    def _clear_printed_list(self, job: dict) -> None:
+        """A List print removes the items it printed, once it is on paper. Items added
+        while it was waiting or printing stay; a failed print leaves the list alone."""
+        try:
+            meta = json.loads(job.get("meta") or "{}") or {}
+        except (TypeError, ValueError):
+            return
+        ids = [int(i) for i in meta.get("clear_list_items") or [] if str(i).isdigit()]
+        if not ids:
+            return
+        self.store.conn().execute(f"DELETE FROM list_items WHERE id IN ({','.join('?' * len(ids))})", ids)
+        self.events.publish("list", {"list": meta.get("list", "shopping")})
+
     def clear_history(self) -> int:
         return self.store.conn().execute(
             "DELETE FROM jobs WHERE state NOT IN ('printing','queued','held')").rowcount
@@ -356,6 +369,8 @@ class PrintQueue:
             self.store.set("rows_since_new_roll", str(used))
         c.execute("UPDATE jobs SET state=?, error=?, finished_at=?, progress=? WHERE id=?",
                   (state, err, self.clock(), 100 if state == "done" else self.active_progress, jid))
+        if state == "done":
+            self._clear_printed_list(job)
         self.active_id = None
         self._publish(jid)
         self._publish_status()

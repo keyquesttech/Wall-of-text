@@ -6,7 +6,7 @@ import { useLocation, useRoute } from "preact-iso";
 import { get, send, type Doc } from "../lib/api";
 import { settings } from "../lib/state";
 import {
-  IconAlarm, IconCalendar, IconCart, IconCloud, IconDown, IconHourglass, IconPlus, IconQuote, IconRoutine,
+  IconAlarm, IconCalendar, IconCloud, IconDown, IconHourglass, IconPlus, IconQuote, IconRoutine,
   IconSun, IconTasks, IconTrash, IconUp, IconCreate,
 } from "../components/icons";
 import { StatusPill } from "../components/printer";
@@ -27,7 +27,7 @@ const DAYN = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 
 const SECTION_ICON: Record<string, (p: any) => any> = {
   weather: IconCloud, agenda: IconCalendar, tasks: IconTasks, fortune: IconQuote, quote: IconQuote, countdown: IconHourglass,
-  shopping: IconCart, message: IconCreate, date: IconSun, divider: IconRoutine,
+  message: IconCreate, date: IconSun, divider: IconRoutine,
 };
 
 export function whenText(s: { time: string | null; days: number[]; once?: string | null }) {
@@ -247,7 +247,6 @@ const STARTERS: { id: string; name: string; Icon: (p: any) => any; sections: Sec
   { id: "agenda", name: "Calendar", Icon: IconCalendar, sections: [{ type: "agenda" }], defName: "Today's agenda" },
   { id: "tasks", name: "Tasks", Icon: IconTasks, sections: [{ type: "tasks" }], defName: "To do" },
   { id: "fortune", name: "Fortune", Icon: IconQuote, sections: [{ type: "fortune" }], defName: "Daily fortune" },
-  { id: "shopping", name: "Shopping list", Icon: IconCart, sections: [{ type: "shopping", skip_empty: true }], defName: "Shopping list" },
   { id: "countdown", name: "Countdown", Icon: IconHourglass, sections: [{ type: "countdown", date: "", label: "" }], defName: "Countdown" },
 ];
 type Freq = "daily" | "weekdays" | "weekends" | "weekly" | "custom";

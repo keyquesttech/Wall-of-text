@@ -135,6 +135,16 @@ MIGRATIONS: list[str] = [
     """
     ALTER TABLE schedules ADD COLUMN once_on TEXT;
     """,
+    # 10: the List is a one-off print, not a schedule block: drop it from saved schedules and
+    # switch off any schedule that printed nothing else.
+    """
+    UPDATE schedules SET enabled = 0
+    WHERE EXISTS (SELECT 1 FROM json_each(schedules.sections) WHERE json_extract(value, '$.type') = 'shopping')
+      AND NOT EXISTS (SELECT 1 FROM json_each(schedules.sections) WHERE json_extract(value, '$.type') IS NOT 'shopping');
+    UPDATE schedules SET sections = (SELECT json_group_array(json(value)) FROM json_each(schedules.sections)
+                                     WHERE json_extract(value, '$.type') IS NOT 'shopping')
+    WHERE EXISTS (SELECT 1 FROM json_each(schedules.sections) WHERE json_extract(value, '$.type') = 'shopping');
+    """,
 ]
 
 

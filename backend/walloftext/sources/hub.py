@@ -31,7 +31,6 @@ SECTION_TYPES = {
     "fortune": "Fortune",
     "quote": "Your own line",
     "countdown": "Countdown",
-    "shopping": "Shopping list",
     "divider": "Divider",
     "message": "My message",
 }
@@ -271,12 +270,6 @@ class Sources:
             return [{"type": "slip", "template": "countdown",
                      "data": {"date": sec["date"], "label": sec.get("label"), "set_on": sec.get("set_on"),
                               "tip": sec.get("tip"), "now": stamp}}]
-        if t == "shopping":
-            lst = self.svc.extras.get("lists")
-            items = lst.open_items("shopping") if lst else []
-            if not items and sec.get("skip_empty", True):
-                return []
-            return [{"type": "slip", "template": "shopping", "data": {"items": items, "now": stamp}}]
         if t == "divider":
             return []  # sections are always separated by a cut rule now
         if t == "message":

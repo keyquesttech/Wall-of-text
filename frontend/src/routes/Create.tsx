@@ -214,7 +214,7 @@ export function Create(props: { mode?: string }) {
       {mode === "text" && <TextMode view={view} wide={wide} />}
       {mode === "draw" && <DrawMode view={view} wide={wide} />}
       {mode === "image" && <ImageMode view={view} wide={wide} />}
-      {mode === "list" && <section class="glass card" aria-label="Shopping list"><h2 class="h3" style="margin:0 0 4px">Shopping list</h2><p class="cap" style="margin:0 0 10px">Shared by everyone on the Wi-Fi. Add things now, print it on the way out.</p><ListMode /></section>}
+      {mode === "list" && <section class="glass card" aria-label="List"><h2 class="h3" style="margin:0 0 4px">List</h2><p class="cap" style="margin:0 0 10px">Shared by everyone on the Wi-Fi. Add things, print it once, and it empties.</p><ListMode /></section>}
       {mode === "templates" && <TemplatesMode onNew={() => { setMode("text"); setView("edit"); toast("Write your print, then tap the bookmark beside the paper to save it as a template."); }} />}
     </>
   );

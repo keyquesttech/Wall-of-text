@@ -1,4 +1,4 @@
-"""Phase 7: templates, shared list, shopping list action and routine section."""
+"""Phase 7: templates, the shared List and its print action."""
 import time
 
 import pytest
@@ -67,15 +67,15 @@ def test_shopping_list_and_section(c):
     full = c.get(f"/api/history/{j['id']}").json()
     assert full["document"]["blocks"][0]["data"]["items"] == ["Bread"]
     r = c.post("/api/actions/shopping_list").json()
-    assert "shopping" in r["message"]
+    assert "list" in r["message"]
 
 
-async def test_shopping_section_skips_when_empty(c):
-    src = c.svc.extras["sources"]
-    assert await src.section_blocks({"type": "shopping"}, {}) == []
+async def test_list_is_not_a_schedule_block(c):
+    """The List is a one-off print: it can't be added to a schedule, and old blocks print nothing."""
     c.svc.extras["lists"].add("shopping", "Tea")
-    blocks = await src.section_blocks({"type": "shopping"}, {})
-    assert blocks[0]["template"] == "shopping" and blocks[0]["data"]["items"] == ["Tea"]
+    assert await c.svc.extras["sources"].section_blocks({"type": "shopping"}, {}) == []
+    r = c.post("/api/schedules", json={"name": "x", "time": "07:00", "sections": [{"type": "shopping"}]})
+    assert r.status_code == 422
 
 
 def test_thumb_search_extra_feed_and_message_section(c):
@@ -106,3 +106,23 @@ def test_installed_package_ships_data_files(tmp_path):
     wheel = next(tmp_path.glob("walloftext-*.whl"))
     names = zipfile.ZipFile(wheel).namelist()
     assert "walloftext/sources/fortunes.json" in names
+
+
+def test_printed_shopping_list_is_cleared_once_on_paper(c):
+    lists = c.svc.extras["lists"]
+    for t in ("Eggs", "Rice"):
+        c.post("/api/lists/shopping", json={"text": t})
+    done = c.post("/api/lists/shopping", json={"text": "Tea"}).json()
+    c.patch(f"/api/lists/items/{done['id']}", json={"done": True})
+    j = c.post("/api/lists/shopping/print").json()["job"]
+    c.post("/api/lists/shopping", json={"text": "Added while printing"})
+    for _ in range(100):
+        if c.get(f"/api/history/{j['id']}").json()["state"] == "done":
+            break
+        time.sleep(0.05)
+    time.sleep(0.1)
+    left = [i["text"] for i in lists.items("shopping")]
+    # the printed items are gone; the ticked one (not printed) and the new one stay
+    assert left == ["Added while printing", "Tea"]
+    assert c.post("/api/lists/todo/print").status_code == 409  # nothing to print
+

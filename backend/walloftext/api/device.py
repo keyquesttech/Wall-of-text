@@ -36,6 +36,7 @@ async def device(request: Request):
         "uptime_s": sysi.uptime_s(),
         "disk": sysi.disk(),
         "clock_synced": await asyncio.to_thread(sysi.clock_synced),
+        "restart": svc.extras["restart"].status() if "restart" in svc.extras else None,
         "printer": svc.queue.status(),
         "hw": svc.settings.hw,
     }

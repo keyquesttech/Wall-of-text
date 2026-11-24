@@ -1,5 +1,16 @@
 # Progress
 
+## 24 Nov 2026 (late): List, scheduled restarts
+- **List** (was "Shopping list"): Create › List shows the "As printed" preview, and printing it
+  removes the printed items once the slip is out (ticked items and later additions stay; a failed
+  print keeps the list). It's a one-off print now: the quick chip and the schedule/routine block
+  are gone (migration 10 strips old blocks). The printed slip says LIST. The arcade button action
+  is now "Print the list". Stored as the "shopping" list internally.
+- **Scheduled restart** (Settings › Device): daily or weekly at a set time (default off, Sun 04:00).
+  Waits while anything prints or is queued; skipped if more than 2 h late or the Pi only just
+  started; switching it on never restarts straight away (`restarts.py`).
+- Smoke test now switches quiet hours off, so it passes at any hour.
+
 ## 24 Nov 2026 (night): fortunes, previews, paper, schedules, clock
 - **Fortunes:** Settings › Fortunes uploads a CSV (or plain text, one per line), replace or add,
   download as CSV, built-in fortunes on/off. Picks are fair: each fortune prints once per round,

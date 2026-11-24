@@ -232,6 +232,27 @@ async def test_routine_doc_sections(env):
     assert img.width == 384
 
 
+def test_migration_drops_list_blocks(tmp_path):
+    """Migration 10: List blocks leave saved schedules; a List-only schedule is switched off."""
+    import sqlite3
+
+    from walloftext.store.db import MIGRATIONS, Store
+
+    c = sqlite3.connect(tmp_path / "w.db", isolation_level=None)
+    for sql in MIGRATIONS[:9]:
+        for stmt in [x for x in sql.split(";") if x.strip()]:
+            c.execute(stmt)
+    c.execute("PRAGMA user_version=9")
+    c.execute("INSERT INTO schedules(id,name,sections,created_at) VALUES('a','A','[{\"type\":\"date\"},{\"type\":\"shopping\"}]',0)")
+    c.execute("INSERT INTO schedules(id,name,sections,created_at) VALUES('b','B','[{\"type\":\"shopping\"}]',0)")
+    c.close()
+    st = Store(tmp_path / "w.db")
+    st.migrate()
+    got = {r["id"]: r for r in st.conn().execute("SELECT * FROM schedules")}
+    assert json.loads(got["a"]["sections"]) == [{"type": "date"}] and got["a"]["enabled"] == 1
+    assert got["b"]["enabled"] == 0 and got["b"]["sections"] == "[]"
+
+
 def test_migration_drops_google_tasks(tmp_path):
     """Saved schedules lose their Google Tasks blocks and condition; a Tasks-only one is switched off."""
     from walloftext.store.db import MIGRATIONS, Store

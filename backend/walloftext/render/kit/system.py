@@ -56,18 +56,19 @@ def message(data: dict, now: datetime) -> list:
 
 
 def shopping(data: dict, now: datetime) -> list:
+    """The List (Create › List): a one-off checklist, every item with a box to tick."""
     items = [i for i in data.get("items") or [] if str(i).strip()]
-    sections = data.get("sections") or ([("TO BUY", items)] if items else [])
+    sections = data.get("sections") or ([("", items)] if items else [])
     n = sum(len(s[1]) for s in sections)
-    blocks = [Header("SHOPPING LIST", dt_label(now)),
-              Band(Text("SHOPPING", T.T_XL, align="center"), (10, 8, 8, 8)),
-              Row((Text("This week", T.T_L), "flex"), Text(f"{n} item{'s' if n != 1 else ''}", T.T_M)),
+    blocks = [Header("LIST", dt_label(now)),
+              Band(Text("LIST", T.T_XL, align="center"), (10, 8, 8, 8)),
+              Row((Text(f"{n} item{'s' if n != 1 else ''}", T.T_L), "flex")),
               Rule("hr2")]
     if not n:
         blocks.append(Text("Nothing on the list.", T.T_M))
     for name, its in sections:
-        blocks.append(Col(SectionRule(name), *[Row(Checkbox(), (Text(str(i), T.T_M, max_lines=2), "flex"))
-                                                for i in its], gap=8))
+        rows = [Row(Checkbox(), (Text(str(i), T.T_M, max_lines=2), "flex")) for i in its]
+        blocks.append(Col(SectionRule(name), *rows, gap=8) if name else Col(*rows, gap=8))
     return blocks
 
 

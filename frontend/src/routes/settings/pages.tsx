@@ -812,6 +812,47 @@ function UsbBackupGroup() {
   );
 }
 
+/** Restart on a schedule (backend restarts.py). */
+function RestartGroup(props: { next: string | null; last: { at: number; ok: boolean; message: string } | null }) {
+  const [s, patch] = useSettings();
+  if (!s) return null;
+  const r = s.restart ?? { enabled: false, frequency: "weekly", weekday: 6, time: "04:00" };
+  const next = props.next ? new Date(props.next).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : null;
+  return (
+    <>
+      <h2 class="section">Scheduled restart</h2>
+      <div class="glass grp">
+        <ToggleRow label="Restart on a schedule" sub="A fresh start now and then keeps the printer and Wi-Fi reliable." checked={r.enabled}
+          onChange={(v) => patch({ restart: { enabled: v } })} />
+        {r.enabled && (
+          <>
+            <div class="lrow col">
+              <Seg label="How often" value={r.frequency} onChange={(v) => patch({ restart: { frequency: v } })}
+                options={[{ value: "daily", label: "Every day" }, { value: "weekly", label: "Once a week" }]} />
+            </div>
+            {r.frequency === "weekly" && (
+              <div class="lrow"><span style="flex:none">Day</span>
+                <select class="input" style="flex:1;min-width:0;max-width:220px;margin-left:auto" aria-label="Restart day" value={String(r.weekday)}
+                  onChange={(e) => patch({ restart: { weekday: Number((e.target as HTMLSelectElement).value) } })}>
+                  {WEEKDAYS.map((n, i) => <option value={String(i)}>{n}</option>)}
+                </select>
+              </div>
+            )}
+            <div class="lrow"><span class="grow">Time</span>
+              <input type="time" class="input" style="width:130px" aria-label="Restart time" value={r.time}
+                onChange={(e) => patch({ restart: { time: (e.target as HTMLInputElement).value || "04:00" } })} />
+            </div>
+          </>
+        )}
+      </div>
+      <p class="dim tiny" style="margin:8px 6px">
+        {r.enabled && next ? `Next restart: ${next}. ` : ""}It takes about a minute and never interrupts a print: it waits until nothing is printing. If the printer was off or busy for more than 2 hours after the set time, that restart is skipped.
+        {props.last ? ` Last: ${props.last.message} (${timeAgo(props.last.at)}).` : ""}
+      </p>
+    </>
+  );
+}
+
 function DevicePage() {
   const back = useBack();
   const [d, setD] = useState<any>(null);
@@ -856,6 +897,7 @@ function DevicePage() {
       <input ref={file} id="restore" type="file" accept=".zip,application/zip" class="sr-only" onChange={restore} />
       <p class="dim tiny" style="margin:8px 6px">Backups hold settings, schedules, templates, lists and uploaded fonts. Passwords and connection secrets are never included.</p>
       <UsbBackupGroup />
+      <RestartGroup next={d?.restart?.next ?? null} last={d?.restart?.last ?? null} />
       <h2 class="section">Power</h2>
       <div class="glass grp">
         <button class="lrow" onClick={() => setConfirm("restart")}>Restart</button>

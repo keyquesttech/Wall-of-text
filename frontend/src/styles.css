@@ -139,7 +139,7 @@ label.btn, label.btn-green { cursor: pointer; }
 .seg button[aria-pressed="true"], .seg button[aria-selected="true"] { color: var(--hi); }
 .seg.fit { width: auto; display: inline-grid; }
 /* five tabs (Create modes) on a 360-390 px phone: shrink the label a little rather than clip it */
-.seg button { font-size: clamp(12.5px, 3.5vw, 14px); padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seg button { font-size: clamp(11.5px, 3.2vw, 14px); letter-spacing: -.01em; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .linkbtn { color: var(--green); text-decoration: underline; font-weight: 600; padding: 4px 0; }
 
 /* --------------------------------------------------------------- inputs */
