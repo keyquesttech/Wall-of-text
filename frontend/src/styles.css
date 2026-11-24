@@ -226,11 +226,12 @@ img.zoomable { cursor: zoom-in; }
 draw-surface, canvas.draw { touch-action: none; display: block; width: 100%; background: var(--paper); cursor: crosshair; image-rendering: pixelated; }
 .create-grid { display: grid; gap: 12px; }
 @media (min-width: 1024px) {
-  .create-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .create-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(min(100%, 414px), 1fr); gap: 16px; align-items: start; }  /* 384 dots + the canvas padding: As printed at 1:1 */
 }
 
 /* Templates gallery */
 .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 12px; align-content: start; width: 100%; }
+@media (min-width: 768px) { .tgrid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); } }
 .tcard { display: flex; flex-direction: column; gap: 6px; text-align: left; }
 .tcard .receipt { height: 96px; padding: 8px 8px 16px; overflow: hidden; }
 .tcard .receipt img { width: 100%; display: block; }
@@ -238,7 +239,7 @@ draw-surface, canvas.draw { touch-action: none; display: block; width: 100%; bac
 
 /* -------------------------------------------------------------- History */
 .hgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-@media (min-width: 768px) { .hgrid { gap: 12px; } }
+@media (min-width: 768px) { .hgrid { gap: 12px; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); } }
 .hcard { display: flex; flex-direction: column; padding: 10px; gap: 8px; border-radius: 18px !important; text-align: left; }
 .hcard .receipt { height: 96px; padding: 6px 6px 16px; overflow: hidden; }
 .hcard .receipt img { width: 100%; display: block; }
