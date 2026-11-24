@@ -127,8 +127,8 @@ function ButtonPage() {
       <div class="glass grp">
         {(["single", "double", "long"] as const).map((g) => (
           <div class="lrow">
-            <span class="grow">{g === "single" ? "Press" : g === "double" ? "Double press" : "Long press"}</span>
-            <select class="input" style="width:auto;max-width:60%" aria-label={`${g} press action`} value={s.button[g]}
+            <span style="flex:none">{g === "single" ? "Press" : g === "double" ? "Double press" : "Long press"}</span>
+            <select class="input" style="flex:1;min-width:0;max-width:260px;margin-left:auto;text-overflow:ellipsis" aria-label={`${g} press action`} value={s.button[g]}
               onChange={(e) => patch({ button: { [g]: (e.target as HTMLSelectElement).value } })}>
               {actions.map((a) => <option value={a.id}>{a.label}</option>)}
             </select>

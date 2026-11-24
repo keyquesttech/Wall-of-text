@@ -58,7 +58,7 @@ input[type=text], input[type=password], input[type=email], textarea.input {
 input:focus, textarea.input:focus { border-color: rgba(57, 255, 136, .6); }
 :focus-visible { outline: 2px solid var(--green, #39FF88); outline-offset: 2px; }
 .field input { padding-right: 76px; }
-.field .show { position: absolute; right: 6px; top: 7px; height: 38px; padding: 0 12px; border-radius: 12px; border: 0; background: rgba(201, 205, 212, .12); color: var(--hi, #ECEEF2); font-size: 14px; font-weight: 600; }
+.field .show { position: absolute; right: 4px; top: 4px; height: 44px; min-width: 64px; padding: 0 12px; border-radius: 12px; border: 0; background: rgba(201, 205, 212, .12); color: var(--hi, #ECEEF2); font-size: 14px; font-weight: 600; }
 .check { display: flex; gap: 12px; align-items: center; margin: 6px 4px; font-size: 15px; color: var(--hi, #ECEEF2); }
 .check input { width: 22px; height: 22px; accent-color: var(--green, #39FF88); }
 
@@ -70,12 +70,19 @@ input:focus, textarea.input:focus { border-color: rgba(57, 255, 136, .6); }
 
 .sheet-backdrop { position: fixed; inset: 0; background: rgba(8, 8, 10, .6); display: none; align-items: flex-end; justify-content: center; z-index: 10; }
 .sheet-backdrop.open { display: flex; animation: fadein .2s both; }
-.sheet-backdrop .sheet { position: relative; width: 100%; max-width: 480px; max-height: 92vh; overflow: auto; padding: 10px 20px calc(28px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; background-color: rgba(28, 29, 33, .85) !important; }
+.sheet-backdrop .sheet { position: relative; width: 100%; max-width: 480px; max-height: 92vh; overflow: auto; padding: 10px 20px calc(28px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; background-color: rgba(28, 29, 33, .95) !important; }
 .sheet h1 { font-size: 22px; line-height: 28px; }
 
 .spinner { width: 48px; height: 48px; border-radius: 50%; border: 4px solid rgba(201, 205, 212, .16); border-top-color: var(--green, #39FF88); animation: spin 0.9s linear infinite; margin: 30px auto 10px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes fadein { from { opacity: 0; } }
+/* tablets and laptops: sit the card a little lower instead of hugging the top edge;
+   the sheet becomes a centred card rather than a bottom sheet */
+@media (min-width: 768px) {
+  main { padding-top: max(40px, 10vh); }
+  .sheet-backdrop { align-items: center; }
+  .sheet-backdrop .sheet { border-radius: 32px !important; }
+}
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } .blob { animation: none; } }
 .kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; padding: 14px 16px; font-size: 15px; margin: 0; }
 .kv dt { color: var(--muted, #8A8F98); } .kv dd { margin: 0; text-align: right; overflow-wrap: anywhere; color: var(--hi, #ECEEF2); }

@@ -70,6 +70,14 @@ function Unreachable() {
   );
 }
 
+/** The main column. Its width class follows the section: Create and History use wide
+ *  screens; Schedules and Settings are lists and forms, so they stay at a readable width. */
+function Main(props: { children: preact.ComponentChildren }) {
+  const { path } = useLocation();
+  const narrow = path.startsWith("/settings") || path.startsWith("/schedules");
+  return <main class={`main ${narrow ? "narrow" : "wide"}`} id="main" tabIndex={-1}>{props.children}</main>;
+}
+
 function NotFound() {
   return <div class="empty"><h1 class="h2">Not found</h1><a class="btn" href="/">Go to Create</a></div>;
 }
@@ -86,7 +94,7 @@ export function App() {
       <Blobs />
       <div class="app">
         <TabBar />
-        <main class="main" id="main" tabIndex={-1}>
+        <Main>
           <Router>
             <Route path="/" component={Create} />
             <Route path="/create/:mode" component={Create} />
@@ -95,7 +103,7 @@ export function App() {
             <Route path="/settings/:page?/:sub?" component={Settings} />
             <Route default component={NotFound} />
           </Router>
-        </main>
+        </Main>
         <Aside />
       </div>
       <StatusSheet />

@@ -1,7 +1,7 @@
 // Templates (HANDOFF 7.1): 2-column gallery of mini receipts; filter chips in the toolbar.
 import { useEffect, useState } from "preact/hooks";
 import { get, send, type Doc, type Job } from "../../lib/api";
-import { IconBookmark, IconTrash } from "../../components/icons";
+import { IconAlarm, IconBookmark, IconPrint2, IconTrash } from "../../components/icons";
 import { AsPrinted, startMoment } from "../../components/printer";
 import { Sheet, toast } from "../../components/ui";
 import { Toolbar } from "../Create";
@@ -74,8 +74,8 @@ function Filler({ t, onClose, onDeleted }: { t: Template; onClose: () => void; o
         ))}
         <AsPrinted doc={doc} />
         <div class="actrow">
-          <button class="btn-print" onClick={() => print().catch((e) => toast(e.message))}>Print</button>
-          <button class="btn-sched" onClick={() => { onClose(); openWizard(doc, t.name); }}>Schedule</button>
+          <button class="btn-print" onClick={() => print().catch((e) => toast(e.message))}><IconPrint2 class="i" />Print</button>
+          <button class="btn-sched" onClick={() => { onClose(); openWizard(doc, t.name); }}><IconAlarm class="i" />Schedule</button>
         </div>
         {!t.builtin && <button class="btn btn-danger" onClick={() => send("DELETE", `/api/templates/${t.id}`).then(onDeleted)}><IconTrash class="i" />Delete template</button>}
       </div>

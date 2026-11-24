@@ -3,7 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import { useLocation, useRoute } from "preact-iso";
 import { api, send, type Job } from "../lib/api";
 import { lastJobEvent, pendingJobs } from "../lib/state";
-import { IconAlert, IconBookmark, IconHistory, IconRefresh, IconSearch, IconTrash } from "../components/icons";
+import { IconAlert, IconBookmark, IconHistory, IconPrint2, IconRefresh, IconSearch, IconTrash } from "../components/icons";
 import { QueueCard, startMoment, StatusPill } from "../components/printer";
 import { Banner, Sheet, timeAgo, toast, Topbar } from "../components/ui";
 
@@ -152,7 +152,7 @@ function Detail(props: { id: number; onClose: () => void; onChanged: () => void 
             <div style="display:flex;justify-content:center"><div class="rwrap" style="max-width:300px"><div class="receipt bits img"><img src={`/api/history/${j.id}/image`} alt={`What was printed: ${j.title}`} /></div></div></div>
           )}
           {j.has_image && j.state === "failed" && <button class="btn-green" onClick={() => again(() => api.retry(j.id))}><IconRefresh class="i" />Try again</button>}
-          {j.has_image && j.state !== "failed" && <button class="btn-print" style="width:100%" onClick={() => again(() => api.reprint(j.id))}>Print again</button>}
+          {j.has_image && j.state !== "failed" && <button class="btn-print block" onClick={() => again(() => api.reprint(j.id))}><IconPrint2 class="i" />Print again</button>}
           {j.document && !saving && <button class="btn" onClick={() => setSaving(true)}><IconBookmark class="i" />Save as template</button>}
           {saving && (
             <div class="row">
