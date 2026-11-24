@@ -15,7 +15,17 @@ on a computer, in about 10 minutes. After that everything happens in the Wall of
    **Create**. Make sure the new project is selected at the top.
 3. Go to **APIs & Services › Library**. Search for **Google Calendar API**, open it and click
    **Enable**. Do the same for **Google Tasks API**.
-4. Go to **APIs & Services › OAuth consent screen** (on newer screens: **Google Auth Platform**).
+4. Go to **APIs & Services › OAuth consent screen** (on newer screens: **Google Auth Platform**)
+   and choose the **user type**. Wall of Text works the same with either.
+
+   **Internal** (only if your account is in a Google Workspace organisation, for example a
+   company domain):
+   - Choose **Internal**, enter an app name ("Wall of Text") and your email, and save.
+   - That's all: no home page, no test users, no publishing, no 7-day limit, and no
+     "unverified app" warning. Only accounts in your organisation can sign in, so you sign in
+     with that work account and print its calendar and tasks.
+
+   **External** (any Gmail account; Internal isn't offered to plain Gmail):
    - Choose **External**, enter an app name ("Wall of Text") and your email, and save.
    - On the **Branding** page, Google needs a home page and a privacy policy before it lets an
      External app go to production. Use the project's GitHub Pages:
@@ -26,10 +36,9 @@ on a computer, in about 10 minutes. After that everything happens in the Wall of
      (These pages live in this repo's `docs/` folder. GitHub Pages must be on: repo
      **Settings › Pages › Deploy from a branch › `main` / `/docs`**.)
    - Under **Test users** (or **Audience**), add your own Gmail address.
-   - Set **Publishing status** to **In production** (**Publish app**, then **Confirm** when Google
-     says the app needs verification; it works unverified for up to 100 users). This matters: in "Testing", Google ends the
-     sign-in after 7 days and your prints say "Sign in again". The app will be "unverified",
-     which is fine for your own use.
+   - Set **Publishing status** to **In production**: **Publish app**, then **Confirm** when Google
+     says the app needs verification. It works unverified for up to 100 users. This matters: in
+     "Testing", Google ends the sign-in after 7 days and your prints say "Sign in again".
 5. Go to **APIs & Services › Credentials › Create credentials › OAuth client ID**.
    - **Application type: Desktop app.** (Not "Web application": Google doesn't allow a web
      client to return to `walloftext.local`.)
@@ -39,8 +48,9 @@ on a computer, in about 10 minutes. After that everything happens in the Wall of
 
 1. Open http://walloftext.local/ and go to **Settings › Google**.
 2. Paste the **Client ID** and **Client secret**, then tap **Save and continue**.
-3. Tap **Sign in with Google** and choose your account.
-   - If Google says the app isn't verified, tap **Advanced › Go to Wall of Text (unsafe)**.
+3. Tap **Sign in with Google** and choose your account (with an Internal project, your account
+   in that organisation).
+   - External only: if Google says the app isn't verified, tap **Advanced › Go to Wall of Text (unsafe)**.
      It's your own project.
    - Tick the boxes for Calendar and Tasks and tap **Continue**.
 4. The next page says it **can't be reached** (its address starts
@@ -65,8 +75,9 @@ on a computer, in about 10 minutes. After that everything happens in the Wall of
 
 | Message | What to do |
 |---|---|
-| "Sign in again" | Google cancelled the sign-in (password change, 7-day "Testing" limit, or access removed). Check step 1.4 is **In production**, then tap **Sign in again**. |
+| "Sign in again" | Google cancelled the sign-in (password change, 7-day "Testing" limit on an External project, an admin policy on an Internal one, or access removed). For External, check step 1.4 is **In production**. Then tap **Sign in again**. |
 | "Turn on the Google Calendar API / Tasks API" | Step 1.3 was missed. Enable it, wait a minute, try again. |
 | "Google didn't accept the client ID or secret" | Copy both again from **Credentials** (step 1.5). |
 | "That sign-in has expired" | Tap **Sign in with Google** again and paste the new address straight away. |
+| Google's page says **"Access blocked: … can only be used within its organization"** (`org_internal`) | The project is Internal and you chose an account outside the organisation. Sign in with your organisation account, or switch the project to External (step 1.4). |
 | "Connected, but without calendar/tasks" | You un-ticked a box on Google's page. Disconnect, sign in again and tick both. |

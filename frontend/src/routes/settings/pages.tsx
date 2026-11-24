@@ -319,15 +319,26 @@ function googleMeta() {
   return g.connected ? (g.email ?? "Connected") : "Not connected";
 }
 
+const PAGES_HOME = "https://keyquesttech.github.io/Wall-of-text/";
+
 function GoogleSetupSteps() {
+  const [kind, setKind] = useState<"external" | "internal">("external");
   return (
-    <ol class="small steps">
-      <li>On a computer, open <span class="mono">console.cloud.google.com</span> and create a project (it's free).</li>
-      <li>In <b>APIs &amp; Services › Library</b>, turn on <b>Google Calendar API</b> and <b>Google Tasks API</b>.</li>
-      <li>In <b>OAuth consent screen</b>, choose <b>External</b>, add your Gmail address as a test user, then set the publishing status to <b>In production</b>. In "Testing", Google ends the sign-in after 7 days.</li>
-      <li>In <b>Credentials › Create credentials › OAuth client ID</b>, choose <b>Desktop app</b>.</li>
-      <li>Copy the <b>Client ID</b> and <b>Client secret</b> into the boxes below.</li>
-    </ol>
+    <div class="stack">
+      <Seg small label="Google account type" value={kind} onChange={setKind}
+        options={[{ value: "external", label: "Gmail account" }, { value: "internal", label: "Workspace account" }]} />
+      <ol class="small steps">
+        <li>On a computer, open <span class="mono">console.cloud.google.com</span>{kind === "internal" ? <> signed in with your <b>work</b> account</> : null} and create a project (it's free).</li>
+        <li>In <b>APIs &amp; Services › Library</b>, turn on <b>Google Calendar API</b> and <b>Google Tasks API</b>.</li>
+        {kind === "external" ? (
+          <li>In <b>OAuth consent screen</b>, choose <b>External</b>. On <b>Branding</b>, enter the home page <span class="mono">{PAGES_HOME}</span>, the privacy policy <span class="mono">{PAGES_HOME}privacy.html</span> and the authorized domain <span class="mono">keyquesttech.github.io</span>. Add your Gmail address as a test user, then <b>Publish app</b> and <b>Confirm</b>. Left in "Testing", Google ends the sign-in after 7 days.</li>
+        ) : (
+          <li>In <b>OAuth consent screen</b>, choose <b>Internal</b> and enter an app name and your email. Nothing else is needed: no home page, no publishing, no 7-day limit. Only accounts in your organisation can sign in.</li>
+        )}
+        <li>In <b>Credentials › Create credentials › OAuth client ID</b>, choose <b>Desktop app</b>.</li>
+        <li>Copy the <b>Client ID</b> and <b>Client secret</b> into the boxes below.</li>
+      </ol>
+    </div>
   );
 }
 
@@ -442,7 +453,7 @@ function GooglePage() {
           <h2 class="section">Step 2 of 2 · Sign in</h2>
           <div class="glass card stack">
             <ol class="small steps">
-              <li>Tap <b>Sign in with Google</b> and choose your account. If Google says the app isn't verified, tap <b>Advanced › Go to … (unsafe)</b>: it's your own project.</li>
+              <li>Tap <b>Sign in with Google</b> and choose your account (with an Internal project, your work account). If Google says the app isn't verified, tap <b>Advanced › Go to … (unsafe)</b>: it's your own project.</li>
               <li>Tick the boxes for Calendar and Tasks, then tap <b>Continue</b>.</li>
               <li>The next page says it <b>can't be reached</b>. That's expected. Copy the whole address from the address bar (it starts <span class="mono">{g.redirect_uri}</span>).</li>
               <li>Come back to this tab and paste it below.</li>
