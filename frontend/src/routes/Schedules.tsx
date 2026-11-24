@@ -7,10 +7,11 @@ import { get, send, type Doc } from "../lib/api";
 import { settings } from "../lib/state";
 import {
   IconAlarm, IconCalendar, IconCart, IconCloud, IconDown, IconHourglass, IconPin, IconPlus, IconQuote, IconRoutine,
-  IconSun, IconTrash, IconUp, IconX, IconCreate,
+  IconSun, IconTasks, IconTrash, IconUp, IconX, IconCreate,
 } from "../components/icons";
 import { StatusPill } from "../components/printer";
 import { Banner, Seg, Sheet, timeAgo, toast, Toggle, Topbar } from "../components/ui";
+import { googleState, loadGoogle } from "./settings/pages";
 
 export interface Section { type: string; [k: string]: any }
 export interface Condition { type: string; value?: number }
@@ -25,7 +26,7 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DAYN = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 const SECTION_ICON: Record<string, (p: any) => any> = {
-  weather: IconCloud, agenda: IconCalendar, fortune: IconQuote, quote: IconQuote, countdown: IconHourglass,
+  weather: IconCloud, agenda: IconCalendar, tasks: IconTasks, fortune: IconQuote, quote: IconQuote, countdown: IconHourglass,
   shopping: IconCart, message: IconCreate, date: IconSun, divider: IconRoutine,
 };
 
@@ -85,7 +86,7 @@ export function Schedules() {
         <Toggle pink label="Holiday mode" checked={holiday} onChange={(v) => send("PATCH", "/api/settings", { schedules: { holiday_mode: v } }).then((s) => (settings.value = s))} />
       </div>
       {data && data.items.length === 0 && <Empty onStarter={async () => {
-        const s = await send<Schedule>("POST", "/api/schedules", { name: "Morning briefing", time: "07:30", days: [0, 1, 2, 3, 4], sections: [{ type: "date" }, { type: "weather" }, { type: "agenda" }, { type: "fortune" }], conditions: [] });
+        const s = await send<Schedule>("POST", "/api/schedules", { name: "Morning briefing", time: "07:30", days: [0, 1, 2, 3, 4], sections: [{ type: "date" }, { type: "weather" }, { type: "agenda" }, { type: "tasks" }, { type: "fortune" }], conditions: [] });
         route(`/schedules/${s.id}`);
       }} />}
       {timed.length > 0 && <Timeline items={timed.filter((s) => s.enabled && !holiday)} />}
@@ -238,10 +239,11 @@ function firstRunText(time: string, days: number[]) {
 const SOURCES: { id: string; name: string; sub: string; Icon: (p: any) => any; sections: Section[]; defName: string }[] = [
   { id: "weather", name: "Weather", sub: "Today's forecast", Icon: IconCloud, sections: [{ type: "weather" }], defName: "Weather" },
   { id: "agenda", name: "Calendar agenda", sub: "What's on today", Icon: IconCalendar, sections: [{ type: "agenda" }], defName: "Today's agenda" },
+  { id: "tasks", name: "Tasks", sub: "Google Tasks to do", Icon: IconTasks, sections: [{ type: "tasks" }], defName: "To do" },
   { id: "countdown", name: "Countdown", sub: "Days until something", Icon: IconHourglass, sections: [{ type: "countdown", date: "", label: "" }], defName: "Countdown" },
   { id: "fortune", name: "Quote or fortune", sub: "A little line", Icon: IconQuote, sections: [{ type: "fortune" }], defName: "Daily fortune" },
   { id: "shopping", name: "Shopping list", sub: "If it has items", Icon: IconCart, sections: [{ type: "shopping", skip_empty: true }], defName: "Shopping list" },
-  { id: "routine", name: "Routine", sub: "Date, weather, agenda, quote", Icon: IconRoutine, sections: [{ type: "date" }, { type: "weather" }, { type: "agenda" }, { type: "fortune" }], defName: "Morning briefing" },
+  { id: "routine", name: "Routine", sub: "Date, weather, agenda, tasks, quote", Icon: IconRoutine, sections: [{ type: "date" }, { type: "weather" }, { type: "agenda" }, { type: "tasks" }, { type: "fortune" }], defName: "Morning briefing" },
 ];
 const STEP_NAMES = ["What", "When", "Options", "Preview"];
 const STEP_TITLES = ["What should it print?", "When should it print?", "Any options?", "Check and save"];
@@ -358,7 +360,9 @@ function Wizard({ init, onClose }: { init: WizardState; onClose: () => void }) {
                 </div>
               </>
             )}
+            {(src === "agenda" || src === "tasks") && <GoogleHint />}
             {src === "agenda" && <div class="glass grp">{condRow("has_events", "Only if there's something on", "Skip days with an empty calendar")}</div>}
+            {src === "tasks" && <div class="glass grp">{condRow("has_tasks", "Only if any are due", "Skip when there's nothing to do")}</div>}
             {src === "countdown" && (
               <div class="glass card stack">
                 <label class="field-label" for="cdl" style="margin-top:0">What are you counting down to?</label>
@@ -436,9 +440,9 @@ function Routine(props: { id: string; meta: ListResp | null; onDone: () => void 
   };
   const updSec = (i: number, p: Partial<Section>) => set({ sections: s.sections.map((x, k) => (k === i ? { ...x, ...p } : x)) });
   const condFor = (type: string) => {
-    const map: Record<string, string> = { weather: "rain_above", agenda: "has_events" };
+    const map: Record<string, string> = { weather: "rain_above", agenda: "has_events", tasks: "has_tasks" };
     const c = s.conditions.find((x) => x.type === map[type]);
-    return c ? (c.type === "rain_above" ? "If rain likely" : "Only if any events") : null;
+    return c ? (c.type === "rain_above" ? "If rain likely" : c.type === "has_events" ? "Only if any events" : "Only if any due") : null;
   };
   return (
     <>
@@ -536,3 +540,15 @@ function Routine(props: { id: string; meta: ListResp | null; onDone: () => void 
 }
 
 export type { ComponentChildren };
+
+/** In the wizard: Calendar and Tasks need the Google sign-in first. */
+function GoogleHint() {
+  useEffect(() => { loadGoogle(); }, []);
+  const g = googleState.value;
+  if (!g || g.connected) return null;
+  return (
+    <Banner action={<a class="btn small" href="/settings/google">Connect</a>}>
+      Connect your Google account first, or this prints "Google isn't connected".
+    </Banner>
+  );
+}

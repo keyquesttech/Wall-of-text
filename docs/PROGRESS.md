@@ -1,5 +1,17 @@
 # Progress
 
+## 24 Nov 2026 (later): Google Calendar and Tasks through Google's APIs
+- Google Tasks is back, and the calendar now uses the **Google Calendar API** instead of private
+  iCal links. One sign-in covers both: Settings › Google (`docs/GOOGLE_SETUP.md`).
+- Sign-in happens in the app from any phone or computer: paste the client ID and secret of your
+  own Google Cloud "Desktop app" client once, tap Sign in with Google, then paste back the address
+  the browser ends on (`http://127.0.0.1:53682/?code=…`). PKCE, state check, read-only scopes.
+  Secrets go to `secrets.json` (0600), never in backups. `tools/google_auth.py` is no longer needed.
+- Calendars and task lists to print are chosen in Settings › Google (default: main calendar,
+  first list). Declined and cancelled events are left out; Meet links come from the API.
+- Old iCal links are deleted from the stored settings at start. `icalendar` and
+  `recurring-ical-events` are no longer dependencies. The wizard warns when Google isn't connected.
+
 ## 24 Nov 2026: Google Tasks removed
 - Google Tasks is gone: the Tasks source, its token upload API and Settings page, the wizard's
   "Tasks" tile, the routine block, the "Only if any are due" condition, the To-do print template

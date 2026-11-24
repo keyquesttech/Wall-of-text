@@ -11,7 +11,8 @@ const MODES: Record<string, string> = { online: "Connected", connecting: "Connec
 
 export function Settings() {
   const { params } = useRoute();
-  const page = params.page || "";
+  // Calendars and Google Tasks used to be separate pages; both live on the Google page now.
+  const page = ["calendars", "tasks"].includes(params.page ?? "") ? "google" : params.page || "";
   const P = SETTINGS_PAGES.find((p) => p.id === page);
   if (P) return <P.Component />;
   return <SettingsIndex />;

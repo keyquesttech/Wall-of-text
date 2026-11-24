@@ -9,12 +9,13 @@ from datetime import datetime
 
 from PIL import Image
 
-from . import itinerary, system, weather
+from . import itinerary, system, todo, weather
 from .slip import render_slip
 
 TEMPLATES = {
     "weather_briefing": (weather.briefing, 14),
     "weather_now": (weather.weather_now, 14),
+    "todo": (todo.todo, 12),
     "itinerary": (itinerary.itinerary, 14),
     "note": (system.note, 14),
     "guest_note": (system.guest_note, 14),

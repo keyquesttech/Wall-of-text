@@ -13,9 +13,10 @@ The app is already built: the frontend, backend, queue, printer driver, schedule
 ## 1. What "done" looks like
 
 1. Every print is rendered by one shared **print kit** (fonts, type scale, tones, rules, boxes, icons, QR and end mark) on a 384-dot, 1-bit canvas, exactly as in `PRINT_TEMPLATES.md` sections 2–4.
-2. **Three data slips** follow their specs (a fourth, To do from Google Tasks, was removed on 24 Nov 2026):
+2. **Four data slips** follow their specs:
    - the weather briefing, in all 14 conditions (§5)
    - Weather now, printed by the button and the quick chip (§6)
+   - To do from Google Tasks, with its all-clear empty state (§7)
    - the itinerary from Google Calendar, with its free-day empty state (§8)
 3. **Every other slip** (notes, guest notes, remote messages, the shopping list, fortunes, countdowns and the test page) follows the design system (§8b).
 4. **Every printed copy ends with the end mark** (§4.7), added by the print pipeline. That includes Create prints and routines (one per routine).
@@ -30,8 +31,8 @@ The codebase was built from `BUILD_PLAN.md`, but names and structure may differ.
 - **The renderer.** Where documents become a 1-bit image: the `render/` module, the preview endpoint, and how the queue calls it.
 - **Current fonts and assets.** What's bundled now, and where it lives.
 - **The weather provider (Open-Meteo).** What fields it fetches today and how it caches them.
-- **The calendar source.** The iCal parser: what it returns.
-- **Who builds today's slips.** Which code currently produces the weather, agenda, note, guest, remote, shopping, fortune, countdown and test-page prints.
+- **The tasks and calendar sources.** The Google Tasks and Google Calendar API clients (`sources/google.py`): what they return.
+- **Who builds today's slips.** Which code currently produces the weather, tasks, agenda, note, guest, remote, shopping, fortune, countdown and test-page prints.
 - **The button and chip actions.** Where "Print weather now" and the quick chips are wired.
 - **Routines.** How they combine blocks into one job.
 
@@ -71,13 +72,14 @@ The foundation everything else uses. Suggested home: `render/kit/`, or whatever 
 - **Hooks:** the "Weather" schedule or routine source uses the briefing. The button's "Print weather now" action and the "Weather now" chip use Weather now. On provider failure, print "Weather unavailable" with the last cached time.
 - **Golden tests:** the sample, plus one briefing per condition built from the `D` table in `reference/Weather.dc.html`.
 
-### WP4: To-do slip (removed)
+### WP4: To-do slip
 
-Google Tasks and the To-do slip were removed on 24 Nov 2026.
+- **Normaliser:** from the Google Tasks client to `samples/tasks.json`. Read the due time from the start of the notes ("10:00 …") or an "@10:00" in the title, and strip it from the printed text (§7.1).
+- **Logic and templates:** Big 3 selection, the groups, numbering, due tags and the all-clear state (§7). Respect the schedule's "Only print if any are due" condition.
 
 ### WP5: Itinerary slip
 
-- **Normaliser:** from the iCal parser to `samples/calendar.json`. That covers all-day versus timed events, location splitting, attendee names, cleaned descriptions and conference links (§8.1).
+- **Normaliser:** from the Google Calendar API client to `samples/calendar.json`. That covers all-day versus timed events, location splitting, attendee names, cleaned descriptions and conference links (§8.1).
 - **Template:**
   - the timeline with an event ticket for each event
   - gap rows between events
@@ -102,6 +104,7 @@ Google Tasks and the To-do slip were removed on 24 Nov 2026.
   - 40-character titles
   - 3-line notes
   - 9 events, overlapping events, and an event that runs past midnight
+  - 12+ tasks
   - no attendees, no location
   - negative temperatures
   - a 0% rain day and a 100% rain day
@@ -126,6 +129,7 @@ Record the results in `docs/PROGRESS.md`. Tune printer settings (heat, band size
 - **Fonts:** Space Grotesk and JetBrains Mono only. Create-mode print fonts stay as they are.
 - **Footer:** none, on any slip. Context such as update time or list names goes in the header row.
 - **End mark:** one per printed copy and one per routine, added by the pipeline.
+- **Due times:** parsed from the task text, because the Tasks API drops them. With no time found, show the date tag only.
 - **Weather warnings:** none. Open-Meteo doesn't provide them.
 - **QR codes:** real codes, never the mockups' placeholder pattern.
 - **Sample content:** all names, places and forecasts in the mockups are sample data. Never hard-code them.

@@ -123,27 +123,7 @@ async def weather_now(request: Request):
     return {"forecast": f.to_dict() if f else None, "stale_minutes": stale}
 
 
-class CalendarBody(BaseModel):
-    url: str = Field(min_length=8, max_length=2000)
-
-
-@router.post("/sources/calendar/test")
-async def test_calendar(body: CalendarBody, request: Request):
-    from ..sources.calendar import fetch_ics, parse_events
-
-    src = request.app.state.svc.extras["sources"]
-    try:
-        ics = await fetch_ics(body.url, src.http)
-        from datetime import datetime
-        evs = await asyncio.to_thread(parse_events, ics, datetime.now(src.tz()).date(), src.tz())
-    except Exception:
-        return JSONResponse({"error": "bad_calendar",
-                             "message": "That link didn't give a calendar. Use the “Secret address in iCal format”."},
-                            status_code=422)
-    return {"ok": True, "today": [{"title": e.title, "time": e.label()} for e in evs[:10]]}
-
-
 @router.get("/sources/status")
 async def sources_status(request: Request):
     src = request.app.state.svc.extras["sources"]
-    return {"sources": src.status()}
+    return {"sources": src.status(), "google": src.google.status()}

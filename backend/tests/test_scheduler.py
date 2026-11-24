@@ -8,7 +8,6 @@ import pytest
 
 from walloftext.scheduler.engine import Scheduler, in_quiet
 from walloftext.services import build
-from walloftext.sources.calendar import parse_events
 from walloftext.sources.hub import Sources
 from walloftext.sources.weather import Forecast, OpenMeteo
 
@@ -225,67 +224,12 @@ async def test_routine_doc_sections(env):
         {"type": "quote", "text": "Be kind"}, {"type": "agenda"}, {"type": "tasks"}, {"type": "divider"}])
     texts = json.dumps(doc, ensure_ascii=False)
     kinds = [b.get("template") for b in doc["blocks"] if b["type"] == "slip"]
-    # a "tasks" block left over from before Google Tasks was removed prints nothing
-    assert kinds == ["date", "unavailable", "countdown", "fortune", "unavailable"]
-    assert sum(b["type"] == "cut" for b in doc["blocks"]) == 4
+    assert kinds == ["date", "unavailable", "countdown", "fortune", "unavailable", "unavailable"]
+    assert sum(b["type"] == "cut" for b in doc["blocks"]) == 5
     assert "Christmas" in texts and "Be kind" in texts
-    assert "Tasks" not in texts
+    assert "Google isn't connected" in texts
     img = svc.renderer.render(doc).image
     assert img.width == 384
-
-
-ICS = b"""BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//test//EN
-BEGIN:VEVENT
-UID:1
-DTSTART:20261120T090000Z
-DTEND:20261120T100000Z
-SUMMARY:Dentist
-LOCATION:High St
-END:VEVENT
-BEGIN:VEVENT
-UID:2
-DTSTART;VALUE=DATE:20261120
-DTEND;VALUE=DATE:20261121
-SUMMARY:Bin day
-END:VEVENT
-BEGIN:VEVENT
-UID:3
-DTSTART:20261113T180000Z
-DTEND:20261113T190000Z
-RRULE:FREQ=WEEKLY
-SUMMARY:Football
-END:VEVENT
-BEGIN:VEVENT
-UID:4
-DTSTART:20261121T090000Z
-SUMMARY:Tomorrow thing
-END:VEVENT
-END:VCALENDAR
-"""
-
-
-def test_ical_parsing_with_recurrence():
-    evs = parse_events(ICS, date(2026, 11, 20), LDN, "Home")
-    assert [e.title for e in evs] == ["Bin day", "Dentist", "Football"]
-    assert evs[0].all_day and evs[1].label() == "09:00" and evs[2].label() == "18:00"
-
-
-async def test_calendar_via_http_and_failure_line(env):
-    svc, *_ = env
-
-    def handler(req):
-        if "good" in str(req.url):
-            return httpx.Response(200, content=ICS)
-        return httpx.Response(404)
-
-    http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
-    src = Sources(svc, weather=FakeWeather(), http=http)
-    svc.app_settings.patch({"calendars": [{"id": "a", "name": "Home", "url": "https://x/good.ics"},
-                                          {"id": "b", "name": "Work", "url": "https://x/bad.ics"}]})
-    evs, errs = await src.events(date(2026, 11, 20))
-    assert len(evs) == 3 and errs == ["Calendar “Work” unavailable"]
 
 
 def test_migration_drops_google_tasks(tmp_path):

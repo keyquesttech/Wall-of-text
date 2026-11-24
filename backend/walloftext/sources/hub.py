@@ -3,7 +3,6 @@ them into print blocks. Every source failure becomes a plain line on paper,
 never a silent failure (BUILD_PLAN 7)."""
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import random
@@ -15,8 +14,9 @@ from zoneinfo import ZoneInfo
 import httpx
 
 from ..actions import fortunes
-from .calendar import Event, fetch_ics, owner_from_url, parse_events
-from .normalise import calendar_data
+from .calendar import Event
+from .google import GoogleAuth, GoogleCalendar, GoogleError, GoogleTasks
+from .normalise import any_due, calendar_data, tasks_data
 from .weather import CACHE_S, Forecast, OpenMeteo, WeatherProvider
 
 if TYPE_CHECKING:
@@ -28,6 +28,7 @@ SECTION_TYPES = {
     "date": "Date header",
     "weather": "Weather",
     "agenda": "Today's calendar",
+    "tasks": "Google Tasks",
     "fortune": "Fortune",
     "quote": "Your own line",
     "countdown": "Countdown",
@@ -43,11 +44,44 @@ class Sources:
         self.svc = svc
         self.weather_provider = weather or OpenMeteo(http)
         self.http = http
-        # Google Tasks was removed; don't leave its sign-in token lying around on the Pi.
+        self._google: GoogleAuth | None = None
+        # The old PC-made Tasks token is replaced by the in-app Google sign-in.
         (svc.settings.data_dir / "google-token.json").unlink(missing_ok=True)
         self._weather_cache: Forecast | None = None
         self._status: dict[str, dict] = {}
-        self._ics: dict[str, tuple[float, bytes]] = {}
+        self._drop_ical_links()
+
+    def _drop_ical_links(self) -> None:
+        """Calendars used to be private iCal links in the settings. They are secrets and no longer
+        used, so rewrite the stored settings without them."""
+        try:
+            raw = json.loads(self.svc.store.get(self.svc.app_settings.KEY, "{}") or "{}")
+        except ValueError:
+            return
+        if "calendars" in raw or "tasks" in raw:
+            raw.pop("calendars", None)
+            raw.pop("tasks", None)
+            self.svc.store.set(self.svc.app_settings.KEY, json.dumps(raw))
+
+    @property
+    def google(self) -> GoogleAuth:
+        if self._google is None:
+            from ..remote.secrets import Secrets
+            sec = self.svc.extras.get("secrets") or Secrets(self.svc.settings.data_dir / "secrets.json")
+            self._google = GoogleAuth(sec, self.http)
+        return self._google
+
+    @google.setter
+    def google(self, auth: GoogleAuth) -> None:
+        self._google = auth
+
+    @property
+    def tasks_api(self) -> GoogleTasks:
+        return GoogleTasks(self.google)
+
+    @property
+    def calendar_api(self) -> GoogleCalendar:
+        return GoogleCalendar(self.google)
 
     def tz(self) -> ZoneInfo:
         try:
@@ -129,32 +163,31 @@ class Sources:
         return {"blocks": [self.weather_slip(await self.weather(), template)]}
 
     # ---------------------------------------------------------- calendar --
-    async def _fetch_ics(self, url: str) -> bytes:
-        hit = self._ics.get(url)
-        if hit and time.time() - hit[0] < 600:
-            return hit[1]
-        ics = await fetch_ics(url, self.http)
-        self._ics[url] = (time.time(), ics)
-        return ics
+    async def chosen_calendars(self) -> list[dict]:
+        """[{id, name}] from Settings, or the account's main calendar when none are chosen."""
+        chosen = [c for c in self.svc.app_settings.get("google").get("calendars") or [] if c.get("id")]
+        if chosen:
+            return chosen
+        return [{"id": "primary", "name": self.google.status().get("email") or "Calendar"}]
 
     async def events(self, day: date | None = None, days: int = 1) -> tuple[list[Event], list[str]]:
         tz = self.tz()
         day = day or datetime.now(tz).date()
-        cals = self.svc.app_settings.get("calendars") or []
+        if not self.google.connected():
+            return [], ["Google isn't connected"]
         events: list[Event] = []
         errors: list[str] = []
-        for cal in cals:
-            if not cal.get("url"):
-                continue
+        for cal in await self.chosen_calendars():
             try:
-                ics = await self._fetch_ics(cal["url"])
-                events += await asyncio.to_thread(parse_events, ics, day, tz, cal.get("name", ""), days,
-                                                  owner_from_url(cal["url"]))
-                self._ok(f"calendar:{cal.get('id')}")
+                events += await self.calendar_api.events(cal["id"], cal.get("name", ""), day, tz, days)
+                self._ok("calendar")
+            except GoogleError as exc:
+                errors.append(f"Calendar “{cal.get('name') or 'calendar'}” unavailable")
+                self._fail("calendar", str(exc), reauth=exc.reauth)
             except Exception as exc:
                 log.warning("calendar %s failed: %s", cal.get("name"), exc)
                 errors.append(f"Calendar “{cal.get('name') or 'calendar'}” unavailable")
-                self._fail(f"calendar:{cal.get('id')}", "Can't read this calendar link.")
+                self._fail("calendar", "Can't reach Google Calendar.")
         events.sort(key=lambda e: (not e.all_day, e.start if isinstance(e.start, datetime) else datetime.min.replace(tzinfo=tz)))
         return events, errors
 
@@ -162,11 +195,11 @@ class Sources:
         """The itinerary (or the free-day slip, with the next event in 14 days)."""
         tz = self.tz()
         now = self._now()
-        cals = self.svc.app_settings.get("calendars") or []
-        if not cals:
+        if not self.google.connected():
             return {"type": "slip", "template": "unavailable",
-                    "data": {"source": "GOOGLE CALENDAR", "title": "No calendars yet", "now": now.replace(tzinfo=None).isoformat(),
-                             "text": "Add one in Settings › Connections."}}
+                    "data": {"source": "GOOGLE CALENDAR", "title": "Google isn't connected",
+                             "now": now.replace(tzinfo=None).isoformat(),
+                             "text": "Sign in in Settings › Connections › Google."}}
         ev, errs = evs or await self.events()
         upcoming: list[Event] = []
         if not ev:
@@ -174,13 +207,42 @@ class Sources:
             upcoming = sorted(later, key=lambda e: (e.start.date() if isinstance(e.start, datetime) else e.start,
                                                     not e.all_day,
                                                     e.start if isinstance(e.start, datetime) else datetime.min.replace(tzinfo=tz)))
+        cals = await self.chosen_calendars()
         data = calendar_data(ev, errs, now.date(), now, [c.get("name", "") for c in cals], upcoming)
         return {"type": "slip", "template": "itinerary", "data": data}
 
     async def agenda_doc(self) -> dict:
         return {"blocks": [await self.agenda_slip()]}
 
+    # ------------------------------------------------------------- tasks --
+    async def tasks(self) -> tuple[list[dict], str | None]:
+        if not self.google.connected():
+            return [], "Google isn't connected."
+        try:
+            lists = self.svc.app_settings.get("google").get("task_lists") or None
+            items = await self.tasks_api.tasks(lists)
+            self._ok("tasks")
+            return items, None
+        except GoogleError as exc:
+            self._fail("tasks", str(exc), reauth=exc.reauth)
+            return [], "Tasks unavailable"
+        except Exception as exc:
+            log.warning("tasks failed: %s", exc)
+            self._fail("tasks", "Can't reach Google Tasks.")
+            return [], "Tasks unavailable"
+
     # ---------------------------------------------------------- sections --
+    def tasks_slip(self, res: tuple[list[dict], str | None], title: str | None = None) -> dict:
+        items, err = res
+        now = self._now()
+        if err:
+            return {"type": "slip", "template": "unavailable",
+                    "data": {"source": "GOOGLE TASKS", "title": err, "now": now.replace(tzinfo=None).isoformat()}}
+        return {"type": "slip", "template": "todo", "data": tasks_data(items, now)}
+
+    def has_due_tasks(self, res: tuple[list[dict], str | None]) -> bool:
+        return any_due(res[0], self._now().date())
+
     async def section_blocks(self, sec: dict[str, Any], ctx: dict) -> list[dict]:
         """One routine section → kit slip blocks (PRINT_TEMPLATES 1, 8b)."""
         t = sec.get("type")
@@ -192,6 +254,8 @@ class Sources:
             return [self.weather_slip(ctx.get("weather") or await self.weather(), "weather_briefing")]
         if t == "agenda":
             return [await self.agenda_slip(ctx.get("events"))]
+        if t == "tasks":
+            return [self.tasks_slip(ctx.get("tasks") or await self.tasks(), sec.get("title"))]
         if t == "fortune":
             return [{"type": "slip", "template": "fortune",
                      "data": {"text": random.choice(fortunes(self.svc)), "now": stamp}}]

@@ -21,6 +21,7 @@ This is the build spec for the printed slips: the weather briefing, the weather 
 |---|---|---|---|
 | Schedule or routine with source **Weather** (the "weather briefing") | **Weather briefing**: one of 14 condition layouts | `Weather.dc.html` with `layout="hero"`, `cond=<condition>` | Never empty. If the provider is down, print "Weather unavailable" (BUILD_PLAN §7) |
 | Arcade button action **Print weather now**, and the "Weather now" quick chip | **Weather now**: today emphasised, next 12 hours, rest of the week | `Final-WeatherButton.dc.html` | Same as above |
+| Source **Google Tasks** | **To do**: Big 3 + checklist, every task in its own box | `Final-Todo.dc.html` | `Todo-AllClear.dc.html`, but only when the schedule's "Only print if any are due" condition is off. With it on, skip the print |
 | Source **Google Calendar agenda** | **Itinerary**: timeline, each event expanded as a ticket | `Final-Calendar.dc.html` | `Cal-Free.dc.html` (the free-day slip) |
 
 Inside a routine (for example "Morning briefing"), print each block's slip one after another. Put one dashed cut rule (section 4.3) between blocks, and print a single end mark (section 4.7) after the last block.
@@ -69,7 +70,7 @@ Build these once as small Python layout components. Each template is then a func
 
 ### 4.1 Header row (and no footer)
 
-- **Header row:** `px b` source name on the left ("WEATHER", "GOOGLE CALENDAR"); `px` date and time on the right ("MON 23 NOV · 07:30").
+- **Header row:** `px b` source name on the left ("WEATHER", "GOOGLE TASKS", "GOOGLE CALENDAR"); `px` date and time on the right ("MON 23 NOV · 07:30").
 - **No footer.** Slips have no footer row. Where a slip needs context (update time, lists, calendars), it goes in the header row's right side or the second header line.
 - **End mark:** always the very last thing on every slip (section 4.7).
 
@@ -223,9 +224,53 @@ Reference: `reference/Final-WeatherButton.dc.html`. Data: same as the briefing (
 4. The next 4 days, one row each: day (`t-l`, 52 wide), 40-dot icon, "11° / 7°" (`t-m` bold), then a 92-wide meter of rain chance with "Rain 80%" (13-dot type) under it. An `hrd` after each row.
 5. One summary line in `t-s`. Name the coldest night, and add "Frost likely {day} morning." when any day's min ≤ 0. Name the windiest day when gusts ≥ 60.
 
-## 7. To do (Google Tasks): removed
+## 7. To do (Google Tasks)
 
-Google Tasks was removed from the app on 24 Nov 2026 (its OAuth setup was too much hassle), so there is no To-do slip. The section number is kept so later references still match.
+Reference: `reference/Final-Todo.dc.html`. Data: `samples/tasks.json`. It merges the checklist and Big 3 designs: every task sits in a ticket box (4.4), and the tear-off tickets are gone.
+
+### 7.1 Data rules
+
+- Read the lists chosen in Settings with `tasks.list(showCompleted=false, showHidden=false)`. Order the tasks by list order, then by each task's `position`.
+- **Due time:** print it on every dated task ("10:00" today, "FRI 17:00" when late). The Tasks API returns `due` as a date only and drops the time set in the Tasks app, so read the time from the task itself: a time at the start of the notes ("10:00 Ask for Thursday") or after an `@` in the title ("Call landlord @10:00"). Strip it from the printed text. No time found → date tag only. The API also doesn't expose starred tasks, so don't print stars.
+- **Big 3:** the first 3 top-level tasks (no `parent`) that are overdue or due today, in that order. People choose the Big 3 by dragging tasks in Google Tasks.
+- **Groups**, for the remaining top-level tasks: OVERDUE, then DUE TODAY, then NO DATE (at most 5 tasks, then a "+N more" line in `t-s`). Tasks due on a later date are left out.
+- **Sub-tasks:** list them under their parent with small checkboxes, but only inside Big 3 boxes. Small boxes add "· {n} steps" to the meta line instead.
+- **Due tag:** "TODAY"; "{n} DAYS LATE" (or "1 DAY LATE") in an inverted `px b` tag; "ANY TIME" when there's no date. The due time sits just left of the tag: Space Grotesk bold, 20 in Big 3 boxes and 17 (`t-m`) in small boxes.
+- **Notes:** the first 2 lines, at most 80 characters, in `t-s`.
+- **Counts:** "{n} tasks · {m} late" counts the top-level tasks printed (the Big 3 plus the groups).
+
+### 7.2 Layout (12-dot gaps)
+
+1. Header: "GOOGLE TASKS" | "MON 23 NOV · 07:30".
+2. "TO DO" as an inverted `t-xl` band, centred, padding 10 / 8.
+3. A row: the list names joined with " + " (`t-l`) | "7 tasks · 2 late" (`t-m`).
+4. `hr2`.
+5. "THE BIG 3" (`t-xl`), with "Do these and the day is a win." (`t-m`) under it.
+6. 3 large ticket boxes:
+   - Number column: "NO." (`px`) over the digit (52, bold).
+   - Content column (padding 10 / 12 / 12, gaps 6):
+     - The title (`t-l`) with a large checkbox on the right, aligned to the top.
+     - Notes, if any.
+     - Sub-tasks, each a small checkbox and `t-m` text.
+     - A meta row: list name (`px`) | due time + due tag.
+7. `hr2`.
+8. For each group that has tasks:
+   - A section rule. Use an inverted "! OVERDUE" tag for the overdue group; plain `px b` "DUE TODAY" and "NO DATE" for the others.
+   - Small ticket boxes:
+     - Number column: a two-digit number ("04") at 24 bold.
+     - Content column: the title (`t-m` bold) with a small checkbox, over a meta row (list | due time + due tag).
+9. Progress: "PROGRESS" (`px`) | "0 / 7" (`t-m`), then one empty 18-dot cell per task (2-dot border, up to 12 cells; above 12, show the count only).
+10. Centred `t-s` line: "Big 3 = the first 3 late or due-today tasks, in your list order. Drag to reorder in Google Tasks."
+
+### 7.3 Nothing due
+
+Print `reference/Todo-AllClear.dc.html`:
+
+- a big tick-in-a-box drawing (150 dots)
+- "ALL CLEAR" (`t-xl`)
+- "Nothing due today and nothing late."
+- "COMING UP": the next 3 tasks that have a due date, as title | short date
+- an inverted "ENJOY THE DAY" band
 
 ## 8. Itinerary (Google Calendar)
 

@@ -20,7 +20,8 @@ DEFAULTS: dict[str, Any] = {
                   "holiday_mode": False, "daily_limit": 30},
     "history": {"max_items": 200, "max_days": 30},
     "weather": {"place": "", "lat": None, "lon": None, "units": "C"},
-    "calendars": [],  # [{id, name, url}]
+    # Google Calendar and Tasks (sources/google.py). Empty = the main calendar / the first task list.
+    "google": {"calendars": [], "task_lists": []},  # calendars: [{id, name}], task_lists: [id]
     "button": {"single": "reprint_last", "double": "weather_now", "long": "agenda_today"},
     "led": {"brightness": 60,
             "patterns": {"idle": "off", "printing": "blink", "message_waiting": "slow_pulse",

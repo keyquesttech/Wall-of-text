@@ -35,7 +35,7 @@ for a dated log `docs/PROGRESS.md`.
 - **Backend** `backend/walloftext/` (FastAPI, one process): `api/` routes, `auth/` (password file,
   sessions, lockout), `net/` (Wi-Fi state machine over nmcli, captive portal), `render/` (one renderer
   for preview and paper), `queue/` (persistent print queue + worker thread), `printer/` (USB ESC/POS
-  driver + mock), `scheduler/`, `sources/` (Open-Meteo weather, iCal, fortunes),
+  driver + mock), `scheduler/`, `sources/` (Open-Meteo weather, Google Calendar and Tasks APIs, fortunes),
   `remote/` (email IMAP, Telegram, approval inbox), `hw/` (button gestures, LED controller, stats),
   `templates_lists.py`, `actions.py` (quick actions shared by button and chips), `watchdog.py`.
 - **Frontend** `frontend/` (Preact + TypeScript + Vite). Base stylesheet is
@@ -55,8 +55,8 @@ for a dated log `docs/PROGRESS.md`.
 - **Phase 2** renderer, queue, preview/print API, app shell, Create.
 - **Phase 3** History, printer states, button gestures → actions, LED patterns.
 - **Phase 4** scheduler (NTP wait, missed-run policy, quiet hours, holiday mode, daily limit,
-  conditions), weather/calendar/countdown sources, routines.
-- **Phase 5** all Settings groups, guest page, shared "Waiting for your OK" list, backup/restore.
+  conditions), weather/calendar/Tasks/countdown sources, routines.
+- **Phase 5** all Settings groups, guest page, shared "Waiting for your OK" list, backup/restore. Google sign-in inside the app (`docs/GOOGLE_SETUP.md`).
 - **Phase 6** remote messages: email (IMAP app password) and Telegram bot, allowed senders,
   spoof check, never printed twice, approval, rate limits. SMS not built (paid). Setup steps:
   `docs/REMOTE_SETUP.md`.
@@ -112,7 +112,8 @@ Gotchas learned along the way:
 - Wire and test the **button and LED** (`spikes/button_led_test.py`), including the 30 s reset hold.
 - Try the **setup network and captive portal** with a phone (`spikes/hotspot_test.sh`, safe over Wi-Fi).
 - Check `walloftext.local` from Windows, iPhone and Android.
-- Connect real **Gmail / Telegram** accounts (`docs/REMOTE_SETUP.md`), weather place and calendars.
+- Connect real **Gmail / Telegram** accounts (`docs/REMOTE_SETUP.md`), weather place, and Google
+  (Settings › Google, `docs/GOOGLE_SETUP.md`).
 - Change the default passwords (`root` / `rootroot`) in Settings › Access.
 - 24-hour soak (`tools/soak.py`) and 20 power cycles (`docs/PI_TESTING.md`).
 - Optional: Phase 9 master image, SMS, HTTPS + service worker (not possible over plain HTTP).

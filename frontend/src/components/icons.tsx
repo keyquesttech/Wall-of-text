@@ -48,6 +48,7 @@ export const IconRedo = (p: P) => (<svg {...base} {...p}><path d="M15 7l5 5-5 5"
 export const IconSun = (p: P) => (<svg {...base} {...p}><path d="M3 20h18M6 20c0-6 3-11 6-14 3 3 6 8 6 14M12 6v14" /></svg>);
 export const IconPin = (p: P) => (<svg {...base} {...p}><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z" /><circle cx="12" cy="10" r="2" /></svg>);
 export const IconQuote = (p: P) => (<svg {...base} {...p}><path d="M7 7h4v4c0 3-2 5-4 6M14 7h4v4c0 3-2 5-4 6" /></svg>);
+export const IconTasks = (p: P) => (<svg {...base} {...p}><path d="M9 6h11M9 12h11M9 18h11" /><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2" /></svg>);
 export const IconRoutine = (p: P) => (<svg {...base} {...p}><rect x="4" y="4" width="16" height="5" rx="2" /><rect x="4" y="11" width="16" height="5" rx="2" /><path d="M8 20h8" /></svg>);
 export const IconHourglass = (p: P) => (<svg {...base} {...p}><path d="M7 3h10M7 21h10M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9" /></svg>);
 export const IconDevice = (p: P) => (<svg {...base} {...p}><rect x="3" y="7" width="18" height="10" rx="3" /><path d="M7 12h10" /></svg>);

@@ -280,6 +280,10 @@ draw-surface, canvas.draw { touch-action: none; display: block; width: 100%; bac
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; text-align: right; overflow-wrap: anywhere; color: var(--hi); }
 .card { padding: 16px; }
+.steps { margin: 0; padding-left: 22px; line-height: 1.5; color: var(--silver); }
+.steps li + li { margin-top: 6px; }
+.btn-green.disabled, a.btn-green[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+a.btn-green, a.btn { text-decoration: none; }
 
 /* ----------------------------------------------------------------- misc */
 .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 32px 16px; color: var(--silver); }

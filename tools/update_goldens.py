@@ -2,7 +2,7 @@
 """Regenerate the golden print images on purpose (backend/tests/golden/*.png).
 
     .venv/bin/python tools/update_goldens.py            # all
-    .venv/bin/python tools/update_goldens.py weather_*  # some (glob)
+    .venv/bin/python tools/update_goldens.py todo_*     # some (glob)
 
 Look at the changed PNGs before committing them: they are what the paper will show.
 """

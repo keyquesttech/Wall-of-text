@@ -17,6 +17,7 @@ from .api import backup as backup_api
 from .api import auth as auth_api
 from .api import dev as dev_api
 from .api import device as device_api
+from .api import google as google_api
 from .api import printing as printing_api
 from .api import remote as remote_api
 from .api import schedules as schedules_api
@@ -174,6 +175,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
     app.include_router(settings_api.router)
     app.include_router(actions_api.router)
     app.include_router(schedules_api.router)
+    app.include_router(google_api.router)
     app.include_router(access_api.router)
     app.include_router(backup_api.router)
     app.include_router(remote_api.router)

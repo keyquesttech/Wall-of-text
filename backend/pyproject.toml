@@ -19,8 +19,6 @@ dependencies = [
   "sse-starlette>=2",
   "python-multipart>=0.0.9",
   "fonttools>=4.40",
-  "icalendar>=5",
-  "recurring-ical-events>=2.1",
   "imap-tools>=1.5",
 ]
 

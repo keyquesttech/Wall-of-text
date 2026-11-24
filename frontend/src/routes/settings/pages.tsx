@@ -1,11 +1,12 @@
 // Settings sub-pages, grouped as in Settings › index. DESIGN REVIEW: built from the shared
 // components without the handoff's Settings mockups.
 import type { FunctionComponent } from "preact";
+import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { api, get, send, upload, type FontInfo } from "../../lib/api";
 import { inboxWaiting, printer, settings, wifi } from "../../lib/state";
 import { IconBulb, IconCalendar, IconClock, IconCloud, IconDevice, IconEye, IconFont, IconHistory, IconLock, IconMail, IconPlus, IconPrinter, IconTrash, IconWifi } from "../../components/icons";
-import { Banner, Seg, Sheet, timeAgo, toast, ToggleRow, Topbar } from "../../components/ui";
+import { Banner, Seg, Sheet, timeAgo, toast, Toggle, ToggleRow, Topbar } from "../../components/ui";
 import { AccessPage, useBack, WifiPage } from "../Settings";
 import { RemotePage } from "./remote";
 
@@ -294,48 +295,211 @@ function WeatherPage() {
   );
 }
 
-function CalendarsPage() {
+// ----------------------------------------------------------------- Google --
+// One Google sign-in for Calendar and Tasks (backend sources/google.py, docs/GOOGLE_SETUP.md).
+// Google only lets this kind of app return to a loopback address, so the sign-in ends on a page
+// that "can't be reached" and the person copies its address back here.
+interface GoogleStatus {
+  client: boolean; connected: boolean; email: string | null; client_id_hint: string; redirect_uri: string;
+  health: Record<string, { ok: boolean; message?: string; reauth?: boolean }>;
+  settings: { calendars: { id: string; name: string }[]; task_lists: string[] };
+}
+export const googleState = signal<GoogleStatus | null>(null);
+let googleLoading = false;
+export function loadGoogle() {
+  if (googleLoading) return Promise.resolve();
+  googleLoading = true;
+  return get<GoogleStatus>("/api/google").then((g) => { googleState.value = g; }).catch(() => {}).finally(() => { googleLoading = false; });
+}
+function googleMeta() {
+  if (!googleState.value) loadGoogle();
+  const g = googleState.value;
+  if (!g) return "";
+  if (Object.values(g.health ?? {}).some((h) => h.reauth)) return "Sign in again";
+  return g.connected ? (g.email ?? "Connected") : "Not connected";
+}
+
+function GoogleSetupSteps() {
+  return (
+    <ol class="small steps">
+      <li>On a computer, open <span class="mono">console.cloud.google.com</span> and create a project (it's free).</li>
+      <li>In <b>APIs &amp; Services › Library</b>, turn on <b>Google Calendar API</b> and <b>Google Tasks API</b>.</li>
+      <li>In <b>OAuth consent screen</b>, choose <b>External</b>, add your Gmail address as a test user, then set the publishing status to <b>In production</b>. In "Testing", Google ends the sign-in after 7 days.</li>
+      <li>In <b>Credentials › Create credentials › OAuth client ID</b>, choose <b>Desktop app</b>.</li>
+      <li>Copy the <b>Client ID</b> and <b>Client secret</b> into the boxes below.</li>
+    </ol>
+  );
+}
+
+function GooglePage() {
   const back = useBack();
-  const [s, patch] = useSettings();
-  const [adding, setAdding] = useState(false);
-  const [name, setName] = useState(""), [url, setUrl] = useState("");
+  const [, patch] = useSettings();
+  const g = googleState.value;
+  const [cid, setCid] = useState(""), [sec, setSec] = useState("");
+  const [editClient, setEditClient] = useState(false);
+  const [authUrl, setAuthUrl] = useState<string | null>(null);
+  const [pasted, setPasted] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  if (!s) return null;
-  const cals: any[] = s.calendars ?? [];
-  const add = async (e: Event) => {
+  const [cals, setCals] = useState<{ id: string; name: string; primary: boolean }[] | null>(null);
+  const [lists, setLists] = useState<{ id: string; title: string }[] | null>(null);
+  const [listErr, setListErr] = useState<string | null>(null);
+  const [confirmOff, setConfirmOff] = useState(false);
+  useEffect(() => { loadGoogle(); }, []);
+  const needsClient = !!g && (!g.client || editClient);
+  const needsSignIn = !!g && g.client && !g.connected && !editClient;
+  useEffect(() => { // get the Google address ready, so the button is a plain link (no pop-up blocker)
+    if (!needsSignIn) return;
+    send<{ url: string }>("POST", "/api/google/start").then((r) => setAuthUrl(r.url)).catch((e) => setErr(e.message));
+  }, [needsSignIn]);
+  useEffect(() => {
+    if (!g?.connected) return;
+    setListErr(null);
+    get<{ items: any[] }>("/api/google/calendars").then((r) => setCals(r.items)).catch((e) => setListErr(e.message));
+    get<{ items: any[] }>("/api/google/tasklists").then((r) => setLists(r.items)).catch((e) => setListErr(e.message));
+  }, [g?.connected, g?.email]);
+
+  const saveClient = async (e: Event) => {
+    e.preventDefault();
+    setBusy(true); setErr(null);
+    try { await send("PUT", "/api/google/client", { client_id: cid.trim(), client_secret: sec.trim() }); setCid(""); setSec(""); setEditClient(false); await loadGoogle(); }
+    catch (x) { setErr((x as Error).message); } finally { setBusy(false); }
+  };
+  const finish = async (e: Event) => {
     e.preventDefault();
     setBusy(true); setErr(null);
     try {
-      const r = await send<{ today: { title: string; time: string }[] }>("POST", "/api/sources/calendar/test", { url });
-      await patch({ calendars: [...cals, { id: Math.random().toString(36).slice(2, 10), name: name || "Calendar", url }] });
-      toast(`Added. ${r.today.length} event${r.today.length === 1 ? "" : "s"} today.`);
-      setAdding(false); setName(""); setUrl("");
+      const r = await send<{ email: string | null; missing: string[] }>("POST", "/api/google/finish", { response: pasted.trim() });
+      setPasted("");
+      toast(r.missing.length ? `Connected, but without ${r.missing.join(" and ")}. Sign in again and tick every box.` : `Connected${r.email ? ` as ${r.email}` : ""}`);
+      await loadGoogle();
     } catch (x) { setErr((x as Error).message); } finally { setBusy(false); }
   };
+  const disconnect = async (forgetClient: boolean) => {
+    await send("DELETE", `/api/google${forgetClient ? "?forget_client=true" : ""}`);
+    setConfirmOff(false); setCals(null); setLists(null); setAuthUrl(null);
+    await loadGoogle();
+    toast(forgetClient ? "Google project removed" : "Disconnected from Google");
+  };
+
+  if (!g) return (<><Topbar title="Google" back={back} /><div class="shim" style="height:180px" /></>);
+  const chosenCals = g.settings.calendars ?? [];
+  const primary = cals?.find((c) => c.primary);
+  const calOn = (id: string) => (chosenCals.length ? chosenCals.some((c) => c.id === id) : id === primary?.id);
+  const setCal = async (c: { id: string; name: string }, on: boolean) => {
+    const cur = chosenCals.length ? chosenCals : primary ? [{ id: primary.id, name: primary.name }] : [];
+    const next = on ? [...cur.filter((x) => x.id !== c.id), { id: c.id, name: c.name }] : cur.filter((x) => x.id !== c.id);
+    if (!next.length) { toast("Keep at least one calendar on."); return; }
+    await patch({ google: { calendars: next } });
+    await loadGoogle();
+  };
+  const chosenLists = g.settings.task_lists ?? [];
+  const listOn = (id: string) => (chosenLists.length ? chosenLists.includes(id) : id === lists?.[0]?.id);
+  const setList = async (id: string, on: boolean) => {
+    const cur = chosenLists.length ? chosenLists : lists?.[0] ? [lists[0].id] : [];
+    const next = on ? [...cur.filter((x) => x !== id), id] : cur.filter((x) => x !== id);
+    if (!next.length) { toast("Keep at least one list on."); return; }
+    await patch({ google: { task_lists: next } });
+    await loadGoogle();
+  };
+  const reauth = Object.values(g.health ?? {}).find((h) => h.reauth);
+
   return (
     <>
-      <Topbar title="Calendars" back={back} />
-      <div class="glass grp">
-        {cals.length === 0 && <div class="lrow dim">No calendars yet.</div>}
-        {cals.map((c) => (
-          <div class="lrow">
-            <div class="grow"><div class="title">{c.name}</div><div class="sub">{c.url.replace(/^https?:\/\//, "").slice(0, 40)}…</div></div>
-            <button class="icon-btn" aria-label={`Remove ${c.name}`} onClick={() => patch({ calendars: cals.filter((x) => x.id !== c.id) })}><IconTrash /></button>
+      <Topbar title="Google" back={back} />
+      <p class="cap" style="margin:-4px 4px 0">Your calendars and tasks, read straight from Google. Wall of Text can only read them, never change them.</p>
+      {reauth && g.connected && (
+        <Banner action={<button class="btn small" onClick={() => disconnect(false)}>Sign in again</button>}>{reauth.message ?? "Google stopped accepting the sign-in."}</Banner>
+      )}
+      {err && <Banner>{err}</Banner>}
+
+      {needsClient && (
+        <>
+          <h2 class="section">Step 1 of 2 · Your Google project</h2>
+          <div class="glass card stack">
+            <p style="margin:0">Google needs a free project of your own before an app like this can read your calendar and tasks. It takes about 10 minutes, once.</p>
+            <GoogleSetupSteps />
+            <form class="stack" onSubmit={saveClient}>
+              <div>
+                <label class="field-label" for="gcid">Client ID</label>
+                <input id="gcid" class="input" value={cid} autoComplete="off" spellcheck={false} placeholder="1234…apps.googleusercontent.com" onInput={(e) => setCid((e.target as HTMLInputElement).value)} />
+              </div>
+              <div>
+                <label class="field-label" for="gsec">Client secret</label>
+                <input id="gsec" class="input" type="password" value={sec} autoComplete="off" spellcheck={false} placeholder="GOCSPX-…" onInput={(e) => setSec((e.target as HTMLInputElement).value)} />
+              </div>
+              <div class="row">
+                {editClient && <button type="button" class="btn grow" onClick={() => setEditClient(false)}>Cancel</button>}
+                <button class="btn-green grow" disabled={busy || cid.trim().length < 20 || sec.trim().length < 10}>{busy ? "Saving…" : "Save and continue"}</button>
+              </div>
+            </form>
           </div>
-        ))}
-        <button class="lrow" onClick={() => setAdding(true)}><IconPlus width={18} /><span class="grow">Add a calendar</span></button>
-      </div>
-      <p class="dim tiny" style="margin:10px 6px">In Google Calendar on a computer: Settings › your calendar › Integrate calendar › "Secret address in iCal format". Copy that link here. Anyone with the link can read the calendar, so keep it private. Any other .ics link works too.</p>
-      <Sheet open={adding} onClose={() => setAdding(false)} title="Add a calendar">
-        <form onSubmit={add}>
-          {err && <Banner>{err}</Banner>}
-          <label class="field-label" for="cname">Name</label>
-          <input id="cname" class="input" value={name} maxLength={30} placeholder="Family" onInput={(e) => setName((e.target as HTMLInputElement).value)} />
-          <label class="field-label" for="curl">Secret iCal link</label>
-          <input id="curl" class="input" value={url} placeholder="https://calendar.google.com/calendar/ical/…/basic.ics" onInput={(e) => setUrl((e.target as HTMLInputElement).value.trim())} />
-          <button class="btn btn-green block" style="margin-top:14px" disabled={busy || url.length < 10}>{busy ? "Checking…" : "Add"}</button>
-        </form>
+        </>
+      )}
+
+      {needsSignIn && (
+        <>
+          <h2 class="section">Step 2 of 2 · Sign in</h2>
+          <div class="glass card stack">
+            <ol class="small steps">
+              <li>Tap <b>Sign in with Google</b> and choose your account. If Google says the app isn't verified, tap <b>Advanced › Go to … (unsafe)</b>: it's your own project.</li>
+              <li>Tick the boxes for Calendar and Tasks, then tap <b>Continue</b>.</li>
+              <li>The next page says it <b>can't be reached</b>. That's expected. Copy the whole address from the address bar (it starts <span class="mono">{g.redirect_uri}</span>).</li>
+              <li>Come back to this tab and paste it below.</li>
+            </ol>
+            <a class={`btn-green block ${authUrl ? "" : "disabled"}`} href={authUrl ?? undefined} target="_blank" rel="noopener noreferrer"
+              aria-disabled={!authUrl} onClick={(e) => { if (!authUrl) e.preventDefault(); }}>Sign in with Google</a>
+            <form class="stack" onSubmit={finish}>
+              <div>
+                <label class="field-label" for="gpaste">Address of the page Google opened</label>
+                <textarea id="gpaste" class="input" style="min-height:84px" value={pasted} spellcheck={false} autoComplete="off"
+                  placeholder={`${g.redirect_uri}?state=…&code=…`} onInput={(e) => setPasted((e.target as HTMLTextAreaElement).value)} />
+              </div>
+              <button class="btn-green block" disabled={busy || pasted.trim().length < 10}>{busy ? "Connecting…" : "Connect"}</button>
+            </form>
+            <button class="btn btn-ghost block" onClick={() => setEditClient(true)}>Use a different client ID</button>
+          </div>
+        </>
+      )}
+
+      {g.connected && !editClient && (
+        <>
+          <div class="glass tg card row" style="gap:12px">
+            <span class="ico g"><IconCalendar class="i" /></span>
+            <div class="grow"><div class="h3">Connected</div><div class="cap" style="overflow-wrap:anywhere">{g.email ?? "Google account"}</div></div>
+          </div>
+          {listErr && <Banner>{listErr}</Banner>}
+          <h2 class="section">Calendars to print</h2>
+          <div class="glass grp">
+            {cals === null && !listErr && <div class="lrow"><div class="shim grow" style="height:20px" /></div>}
+            {cals?.map((c) => (
+              <div class="lrow"><span class="grow">{c.name}{c.primary && <span class="cap"> · main</span>}</span>
+                <Toggle label={`Print ${c.name}`} checked={calOn(c.id)} onChange={(v) => setCal(c, v)} />
+              </div>
+            ))}
+          </div>
+          <h2 class="section">Task lists to print</h2>
+          <div class="glass grp">
+            {lists === null && !listErr && <div class="lrow"><div class="shim grow" style="height:20px" /></div>}
+            {lists?.length === 0 && <div class="lrow dim">No task lists in this account.</div>}
+            {lists?.map((l) => (
+              <div class="lrow"><span class="grow">{l.title}</span>
+                <Toggle label={`Print ${l.title}`} checked={listOn(l.id)} onChange={(v) => setList(l.id, v)} />
+              </div>
+            ))}
+          </div>
+          <button class="btn btn-danger block" onClick={() => setConfirmOff(true)}>Disconnect Google</button>
+        </>
+      )}
+      {g.client && !needsClient && (
+        <p class="dim tiny" style="margin:4px 6px">Google project: <span class="mono">{g.client_id_hint}</span></p>
+      )}
+      <Sheet open={confirmOff} onClose={() => setConfirmOff(false)} title="Disconnect Google?">
+        <p>Schedules with your calendar or tasks will print "Google isn't connected" until you sign in again.</p>
+        <div class="stack" style="margin-top:12px">
+          <button class="btn btn-danger block" onClick={() => disconnect(false)}>Disconnect</button>
+          <button class="btn block" onClick={() => disconnect(true)}>Disconnect and remove the project</button>
+        </div>
       </Sheet>
     </>
   );
@@ -527,7 +691,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   { id: "schedules", Icon: IconClock, title: "Schedules", group: "Printing", Component: SchedulePrefs, meta: () => (settings.value?.schedules?.holiday_mode ? "Holiday mode" : settings.value?.schedules?.quiet_hours?.enabled ? `Quiet ${settings.value.schedules.quiet_hours.start}–${settings.value.schedules.quiet_hours.end}` : "") },
   { id: "history", Icon: IconHistory, title: "History", group: "Printing", Component: HistoryPrefs },
   { id: "weather", Icon: IconCloud, title: "Weather", group: "Connections", Component: WeatherPage, meta: () => settings.value?.weather?.place || "Not set" },
-  { id: "calendars", Icon: IconCalendar, title: "Calendars", group: "Connections", Component: CalendarsPage, meta: () => `${settings.value?.calendars?.length ?? 0}` },
+  { id: "google", Icon: IconCalendar, title: "Google", group: "Connections", Component: GooglePage, meta: googleMeta },
   { id: "remote", Icon: IconMail, title: "Remote messages", group: "Connections", Component: RemotePage },
   { id: "access", Icon: IconLock, title: "Access", group: "Access", Component: AccessPage, meta: () => (inboxWaiting.value ? `${inboxWaiting.value} waiting` : "") },
   { id: "wifi", Icon: IconWifi, title: "Wi-Fi", group: "Device", Component: WifiPage, meta: () => wifi.value?.ssid ?? "" },
