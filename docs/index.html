@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wall of Text: a wall-mounted receipt printer</title>
+<meta name="description" content="Wall of Text is a home-made receipt printer on the wall, run by a Raspberry Pi, that prints notes, weather, your calendar and your to-do list.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header><img src="icon.svg" alt=""><a href="./">Wall of Text</a></header>
+  <h1>A receipt printer on the wall.</h1>
+  <p class="lead">Wall of Text is a small thermal printer on a home wall, run by a Raspberry Pi. People in the home use a web app on their phones to print notes, drawings and photos, and to schedule prints such as a morning briefing.</p>
+
+  <div class="receipt" aria-label="Example print">
+    <b>MON 23 NOV</b>
+    ☐ Water the plants<br>
+    ☐ Call the landlord @10:00<br>
+    09:30 Team stand-up<br>
+    13:00 Lunch with Sam
+  </div>
+
+  <h2>Google Calendar and Google Tasks</h2>
+  <p>If you choose to connect a Google account, Wall of Text can print today's events from your Google Calendar and open tasks from your Google Tasks lists. It asks Google for <strong>read-only</strong> access and never creates, changes or deletes anything in your account.</p>
+  <p>Wall of Text is not a hosted service. Each printer runs on its owner's own Raspberry Pi at home, with a Google Cloud project that the owner creates for it. No company or server in between ever sees your calendar or tasks. See the <a href="privacy.html">privacy policy</a>.</p>
+
+  <h2>Source code</h2>
+  <p>The software is open source on GitHub: <a href="https://github.com/keyquesttech/Wall-of-text">keyquesttech/Wall-of-text</a>.</p>
+
+  <footer><a href="privacy.html">Privacy policy</a> · <a href="https://github.com/keyquesttech/Wall-of-text">GitHub</a></footer>
+</main>
+</body>
+</html>

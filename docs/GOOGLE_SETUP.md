@@ -17,8 +17,17 @@ on a computer, in about 10 minutes. After that everything happens in the Wall of
    **Enable**. Do the same for **Google Tasks API**.
 4. Go to **APIs & Services › OAuth consent screen** (on newer screens: **Google Auth Platform**).
    - Choose **External**, enter an app name ("Wall of Text") and your email, and save.
+   - On the **Branding** page, Google needs a home page and a privacy policy before it lets an
+     External app go to production. Use the project's GitHub Pages:
+     - Application home page: `https://keyquesttech.github.io/Wall-of-text/`
+     - Privacy policy: `https://keyquesttech.github.io/Wall-of-text/privacy.html`
+     - Authorized domain: `keyquesttech.github.io`
+
+     (These pages live in this repo's `docs/` folder. GitHub Pages must be on: repo
+     **Settings › Pages › Deploy from a branch › `main` / `/docs`**.)
    - Under **Test users** (or **Audience**), add your own Gmail address.
-   - Set **Publishing status** to **In production**. This matters: in "Testing", Google ends the
+   - Set **Publishing status** to **In production** (**Publish app**, then **Confirm** when Google
+     says the app needs verification; it works unverified for up to 100 users). This matters: in "Testing", Google ends the
      sign-in after 7 days and your prints say "Sign in again". The app will be "unverified",
      which is fine for your own use.
 5. Go to **APIs & Services › Credentials › Create credentials › OAuth client ID**.

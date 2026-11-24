@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy policy · Wall of Text</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header><img src="icon.svg" alt=""><a href="./">Wall of Text</a></header>
+  <h1>Privacy policy</h1>
+  <p>Last updated: 24 November 2026</p>
+
+  <p>Wall of Text is software for a home receipt printer. It runs on the owner's own Raspberry Pi, on their home network. There is no Wall of Text server, account or cloud service. This policy explains what the software does with your data, in particular data from Google.</p>
+
+  <h2>What data from Google it uses</h2>
+  <p>Only if the printer's owner connects a Google account, and only with read-only permission:</p>
+  <ul>
+    <li><strong>Google Calendar</strong> (<code>calendar.readonly</code>): the list of your calendars, and the events of the calendars you choose: title, time, location, description, video-call link and the names of other guests.</li>
+    <li><strong>Google Tasks</strong> (<code>tasks.readonly</code>): the names of your task lists, and the open tasks in the lists you choose: title, notes and due date.</li>
+    <li><strong>Your email address</strong> (<code>openid</code>, <code>email</code>): only to show which Google account is connected.</li>
+  </ul>
+
+  <h2>How it is used</h2>
+  <ul>
+    <li>Events and tasks are read when something is printed (for example a scheduled morning briefing or a "Today's agenda" button press) and when you open the Google settings page. They are used <strong>only to lay out and print the slip</strong> and to show a preview of it in the app on your home network.</li>
+    <li>Calendar and task data is not saved on the Pi, except as part of the printed slip's image in the printer's own print history, which you can delete in the app and which is removed automatically after the time you set (30 days by default).</li>
+    <li>Nothing is ever created, changed or deleted in your Google account.</li>
+  </ul>
+
+  <h2>Who it is shared with</h2>
+  <p>Nobody. Your data goes only from Google to the Raspberry Pi in your home. It is not sent to the developers, to analytics or advertising services, or to any other third party, and it is not used to train AI models. Wall of Text has no tracking or analytics.</p>
+  <p>Wall of Text's use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+
+  <h2>How the sign-in is stored</h2>
+  <p>The Google sign-in (a refresh token) and the Google Cloud client secret are stored only on the Pi, in a file that only the Wall of Text service can read. They are never included in backups, logs or the source code.</p>
+
+  <h2>How to remove access</h2>
+  <ul>
+    <li>In the app: <strong>Settings › Google › Disconnect Google</strong>. This deletes the sign-in from the Pi and asks Google to cancel it.</li>
+    <li>At any time in your Google account: <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.</li>
+  </ul>
+
+  <h2>Other data</h2>
+  <p>Notes, drawings, photos, schedules, settings and print history that you create in the app stay on the Pi in your home. Weather comes from <a href="https://open-meteo.com/">Open-Meteo</a>, which is sent only the location you set.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about this policy: open an issue at <a href="https://github.com/keyquesttech/Wall-of-text/issues">github.com/keyquesttech/Wall-of-text/issues</a>.</p>
+
+  <footer><a href="./">Home</a> · <a href="https://github.com/keyquesttech/Wall-of-text">GitHub</a></footer>
+</main>
+</body>
+</html>
