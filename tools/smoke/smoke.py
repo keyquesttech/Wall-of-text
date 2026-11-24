@@ -92,19 +92,27 @@ def run(viewport, tag):
         expect(page.locator("button:has-text('Add to queue')")).to_be_visible()
         shot(page, f"{tag}-12-offline-banner")
         page.request.post(args.base + "/api/dev/net-state", data={"printer_offline": False})
-        # Schedules: the 4-step wizard, then the routine builder
+        # Schedules: New opens the editor (like "Start from Morning briefing")
         page.goto(args.base + "/schedules")
         page.click("button.btn-pink:has-text('New')")
-        page.click(".wtile:has-text('Quote or fortune')")
-        shot(page, f"{tag}-19-wizard")
-        page.click(".sheetf button.btn-pink")
+        page.wait_for_url("**/schedules/new")
+        page.click(".chip:has-text('Fortune')")
+        expect(page.locator("#sname")).to_have_value("Daily fortune")
         page.click(".chip:has-text('Weekdays')")
-        page.click(".sheetf button.btn-pink")
-        page.click(".sheetf button.btn-pink")
-        expect(page.locator("#wname")).to_have_value("Daily fortune")
-        expect(page.locator(".sheetf .receipt img")).to_be_visible(timeout=10000)
-        page.click(".sheetf button.btn-pink")
+        expect(page.locator(".receipt.img img")).to_be_visible(timeout=10000)
+        shot(page, f"{tag}-19-new-schedule")
+        page.click("button.btn-pink:has-text('Save schedule')")
         expect(page.locator(".toastf")).to_contain_text("Scheduled for")
+        page.wait_for_url(args.base + "/schedules")
+        # Create's Schedule button: just this message
+        page.goto(args.base + "/")
+        page.fill("#note", "Bins out tonight")
+        page.click("button.btn-sched")
+        expect(page.locator(".sheetf h2")).to_have_text("Schedule this message")
+        page.click(".sheetf button:has-text('Tomorrow')")
+        page.click(".sheetf button.btn-pink:has-text('Save schedule')")
+        expect(page.locator(".toastf")).to_contain_text("Scheduled for tomorrow")
+        page.goto(args.base + "/schedules")
         page.locator(".scard button.row").first.click()
         page.wait_for_url("**/schedules/*")
         expect(page.locator("#sname")).to_have_value("Daily fortune")
@@ -116,8 +124,8 @@ def run(viewport, tag):
         page.wait_for_timeout(400)
         shot(page, f"{tag}-21-schedules")
         # every settings page renders without errors
-        for sp in ["printer", "fonts", "button", "schedules", "history", "weather", "google",
-                   "remote", "access", "wifi", "device", "display"]:
+        for sp in ["printer", "fonts", "button", "schedules", "history", "fortunes", "weather", "google",
+                   "remote", "access", "wifi", "device", "time", "display"]:
             page.goto(args.base + "/settings/" + sp)
             expect(page.locator("h1")).not_to_have_text("Not found")
             page.wait_for_timeout(250)

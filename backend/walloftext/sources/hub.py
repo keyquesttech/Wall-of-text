@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import json
 import logging
-import random
 import time
 from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Any
@@ -13,7 +12,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
-from ..actions import fortunes
+from ..actions import pick_fortune
 from .calendar import Event
 from .google import GoogleAuth, GoogleCalendar, GoogleError, GoogleTasks
 from .normalise import any_due, calendar_data, tasks_data
@@ -258,7 +257,7 @@ class Sources:
             return [self.tasks_slip(ctx.get("tasks") or await self.tasks(), sec.get("title"))]
         if t == "fortune":
             return [{"type": "slip", "template": "fortune",
-                     "data": {"text": random.choice(fortunes(self.svc)), "now": stamp}}]
+                     "data": {"text": pick_fortune(self.svc), "now": stamp}}]
         if t == "quote":
             text = (sec.get("text") or "").strip()
             return [{"type": "slip", "template": "fortune", "data": {"label": "QUOTE", "text": text, "now": stamp}}] \

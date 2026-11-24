@@ -10,7 +10,7 @@ from PIL import Image
 from walloftext.events import EventBus
 from walloftext.printer.base import WIDTH, raster_bytes
 from walloftext.printer.drivers import MockPrinter
-from walloftext.queue.worker import ROWS_PER_ROLL, PrintQueue
+from walloftext.queue.worker import PrintQueue
 from walloftext.render.document import DocumentError, Renderer, process_image
 from walloftext.render.fonts import FontRegistry
 from walloftext.store.db import Store
@@ -147,7 +147,7 @@ def test_queue_prints_in_order_and_counts_paper(q):
     assert wait_for(lambda: queue.get(b)["state"] == "done")
     assert queue.get(a)["state"] == "done" and queue.get(a)["finished_at"] <= queue.get(b)["finished_at"]
     assert len(printer.printed) == 2
-    assert queue.paper_percent() == round(100 - (80 + 160 + 2 * 72) * 100 / ROWS_PER_ROLL)
+    assert queue.paper_percent() == round(100 - (80 + 160 + 2 * 72) * 0.125 * 100 / 10_000)
 
 
 def test_crash_leaves_failed_interrupted_never_reprints(q):

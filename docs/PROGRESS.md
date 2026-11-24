@@ -1,5 +1,27 @@
 # Progress
 
+## 24 Nov 2026 (night): fortunes, previews, paper, schedules, clock
+- **Fortunes:** Settings › Fortunes uploads a CSV (or plain text, one per line), replace or add,
+  download as CSV, built-in fortunes on/off. Picks are fair: each fortune prints once per round,
+  and when a new round starts the ones from the last 7 days get 1/20 the weight.
+- **Previews:** the blur was the browser shrinking the 1-bit bitmap with nearest-neighbour
+  scaling (dropped dot columns: NOV → NCV), not the print font, so fonts are unchanged.
+  `lib/crisp.ts` uses crisp scaling only at whole-pixel ratios and smooth scaling otherwise,
+  and big previews open full size on tap (exact bitmap, 1 dot = 1 CSS px).
+- **History:** keep 1 day to 1 year or forever, and up to 2000 prints or no limit.
+- **Paper:** roll length setting (metres left shown) and a length calibration slip (two lines
+  800 dot rows apart); the measured gap sets mm per row for the estimate only. Extra feed now counts.
+- **Create:** List mode (shared shopping list) is back; quick chips stay when the printer is offline.
+- **Schedules:** Create's Schedule button opens "Schedule this message" (once on a date, or
+  repeating). New in Schedules opens the full editor, like "Start from Morning briefing", with
+  "Start from" chips and Repeat / Once / No set time. One-off schedules switch off after running
+  (DB migration 9, `once_on`). New missed-print option "Skip them and print a note": one slip
+  saying how many were missed.
+- **Date & time:** Settings › Date & time shows the Pi's clock, automatic (NTP) or set by hand
+  ("Use this device's time"), and the time zone (also sets the system zone). A time set by hand
+  counts as synced for the scheduler until the next reboot (no battery clock). polkit lets the
+  service call systemd-timedated.
+
 ## 24 Nov 2026 (later): Google Calendar and Tasks through Google's APIs
 - Google Tasks is back, and the calendar now uses the **Google Calendar API** instead of private
   iCal links. One sign-in covers both: Settings › Google (`docs/GOOGLE_SETUP.md`).

@@ -166,6 +166,7 @@ def cases() -> dict[str, dict]:
                                           "tip": "START PACKING SATURDAY", "now": "2026-11-23T08:00"})
     out["test_page"] = slip("test_page", {"paper": "About 60%", "darkness": "Normal", "speed": "Normal",
                                           "address": "walloftext.local", "now": "2026-11-23T12:04"})
+    out["calibration"] = slip("calibration", {"now": "2026-11-23T12:04"})
     out["routine"] = {"blocks": [out["weather_briefing_sample"]["blocks"][0], {"type": "cut"},
                                  out["todo_sample"]["blocks"][0], {"type": "cut"},
                                  {"type": "group", "blocks": [{"type": "text", "text": "Have a good day!"}]}]}

@@ -14,11 +14,13 @@ from .db import Store
 DEFAULTS: dict[str, Any] = {
     "printer": {"darkness": 120, "speed": "normal", "band_rows": 24, "extra_feed": 0, "paper_saver": False,
                 "rotate_180": True,
-                "default_font": "mono", "default_size": "M", "cut_lines": 3},
-    "schedules": {"timezone": "Europe/London", "missed_policy": "late_60",  # late_60 | skip | always
+                "default_font": "mono", "default_size": "M", "cut_lines": 3,
+                "roll_length_m": 10.0, "mm_per_row": 0.125},  # paper estimate: roll length, calibrated row pitch
+    "schedules": {"timezone": "Europe/London", "missed_policy": "late_60",  # late_60 | skip | always | notice
                   "quiet_hours": {"enabled": True, "start": "22:00", "end": "07:30"},
                   "holiday_mode": False, "daily_limit": 30},
-    "history": {"max_items": 200, "max_days": 30},
+    "history": {"max_items": 200, "max_days": 30},  # 0 = no limit
+    "fortunes": {"use_builtin": True},
     "weather": {"place": "", "lat": None, "lon": None, "units": "C"},
     # Google Calendar and Tasks (sources/google.py). Empty = the main calendar / the first task list.
     "google": {"calendars": [], "task_lists": []},  # calendars: [{id, name}], task_lists: [id]

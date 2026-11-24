@@ -4,7 +4,8 @@
 * Times are local wall-clock + zone; due times are computed with zoneinfo so
   DST changes keep "07:00" at 07:00.
 * Missed runs (Pi off or clock unsynced): `late_60` prints late within 60 min,
-  otherwise skips and logs "Missed"; `skip` never prints late; `always` always does.
+  otherwise skips and logs "Missed"; `skip` never prints late; `always` always does;
+  `notice` skips them all and prints one short slip saying how many were missed.
 * Quiet hours hold a scheduled print until they end ("Held"), subject to the
   same 60-minute rule.
 * Holiday mode pauses every schedule. The daily limit counts Schedule, Guest
@@ -17,7 +18,7 @@ import json
 import logging
 import time
 import uuid
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from datetime import time as dtime
 from typing import TYPE_CHECKING, Any, Callable
 from zoneinfo import ZoneInfo
@@ -65,10 +66,18 @@ class Scheduler:
                  synced: Callable[[], bool] | None = None):
         self.svc = svc
         self.clock = clock
-        self.synced = synced or svc.system.clock_synced
+        self.synced = synced or self._clock_ok
         self.waiting_for_clock = False
         self._task: asyncio.Task | None = None
         self._lock = asyncio.Lock()
+
+    def _clock_ok(self) -> bool:
+        """Set from the internet, or set by hand since this boot (Settings › Date & time). A time
+        set by hand before a power cut is stale: the Pi has no battery clock."""
+        if self.svc.system.clock_synced():
+            return True
+        boot = self.svc.system.boot_id()
+        return bool(boot) and self.svc.store.get("manual_clock_boot") == boot
 
     # ------------------------------------------------------------ store --
     def tz(self) -> ZoneInfo:
@@ -82,6 +91,7 @@ class Scheduler:
         for k in ("days", "sections", "conditions"):
             d[k] = json.loads(d[k] or "[]")
         d["enabled"] = bool(d["enabled"])
+        d["once"] = d.pop("once_on", None)
         d["next_run"] = self.next_run_ts(d)
         return d
 
@@ -108,21 +118,24 @@ class Scheduler:
         if tm:
             parse_hm(tm)  # validates
         days = sorted({int(d) for d in merged.get("days", list(range(7))) if 0 <= int(d) <= 6})
+        once = merged.get("once") or None
+        if once:
+            date.fromisoformat(once)  # validates
         vals = (
             (merged.get("name") or "Untitled")[:60], 1 if merged.get("enabled", True) else 0, tm or None,
             json.dumps(days), json.dumps(merged.get("sections") or []), json.dumps(merged.get("conditions") or []),
-            merged.get("icon") or None,
+            merged.get("icon") or None, once,
         )
         if cur:
-            c.execute("UPDATE schedules SET name=?, enabled=?, time=?, days=?, sections=?, conditions=?, icon=? "
+            c.execute("UPDATE schedules SET name=?, enabled=?, time=?, days=?, sections=?, conditions=?, icon=?, once_on=? "
                       "WHERE id=?", (*vals, sid))
-            if data.get("time") and data.get("time") != cur.get("time"):
+            if (data.get("time") and data.get("time") != cur.get("time")) or ("once" in data and data["once"] != cur.get("once")):
                 # moved: don't fire for a time that already passed today
                 c.execute("UPDATE schedules SET last_due=? WHERE id=?", (self.clock(), sid))
         else:
             sid = uuid.uuid4().hex[:10]
-            c.execute("INSERT INTO schedules(id,name,enabled,time,days,sections,conditions,icon,created_at,last_due) "
-                      "VALUES(?,?,?,?,?,?,?,?,?,?)", (sid, *vals, self.clock(), self.clock()))
+            c.execute("INSERT INTO schedules(id,name,enabled,time,days,sections,conditions,icon,once_on,created_at,last_due) "
+                      "VALUES(?,?,?,?,?,?,?,?,?,?,?)", (sid, *vals, self.clock(), self.clock()))
         return self.get(sid)
 
     def delete(self, sid: str) -> bool:
@@ -136,8 +149,9 @@ class Scheduler:
         t = parse_hm(s["time"])
         day = start.astimezone(tz).date() - timedelta(days=1)
         last = end.astimezone(tz).date()
+        once = date.fromisoformat(s["once"]) if s.get("once") else None
         while day <= last:
-            if day.weekday() in s["days"]:
+            if (day == once) if once else (day.weekday() in s["days"]):
                 dt = datetime.combine(day, t, tz)
                 # nonexistent local time (spring forward) → zoneinfo shifts it; normalise via UTC round trip
                 dt = dt.astimezone(ZoneInfo("UTC")).astimezone(tz)
@@ -150,7 +164,7 @@ class Scheduler:
         return dues[-1] if dues else None
 
     def next_run_ts(self, s: dict) -> float | None:
-        if not s.get("enabled") or not s.get("time") or not s.get("days"):
+        if not s.get("enabled") or not s.get("time") or not (s.get("days") or s.get("once")):
             return None
         now = datetime.fromtimestamp(self.clock(), self.tz())
         nxt = next(iter(self._dues(s, now, now + timedelta(days=8))), None)
@@ -205,28 +219,60 @@ class Scheduler:
             self.waiting_for_clock = False
             self.svc.events.publish("scheduler", self.status())
         handled = 0
+        missed: list[str] = []  # for the "notice" policy: one name per missed print
         async with self._lock:
             now = datetime.fromtimestamp(self.clock(), self.tz())
             sch = self.svc.app_settings.get("schedules")
+            policy = sch.get("missed_policy", "late_60")
             for s in self.list():
                 if not s["enabled"]:
                     continue
                 due = self.latest_due(s, now)
-                if due is None or due.timestamp() <= (s.get("last_due") or 0):
+                last_due = s.get("last_due") or 0
+                if due is None or due.timestamp() <= last_due:
                     continue
                 self.svc.store.conn().execute("UPDATE schedules SET last_due=? WHERE id=?", (due.timestamp(), s["id"]))
+                if s.get("once"):
+                    self.svc.store.conn().execute("UPDATE schedules SET enabled=0 WHERE id=?", (s["id"],))
                 handled += 1
                 if sch.get("holiday_mode"):
                     continue
                 lateness = now.timestamp() - due.timestamp()
-                policy = sch.get("missed_policy", "late_60")
-                if lateness > LATE_GRACE_S:
+                if policy == "notice":
+                    # every time this schedule was due while the printer was off, not just the latest
+                    since = datetime.fromtimestamp(max(last_due, (now - timedelta(days=7)).timestamp()), self.tz())
+                    earlier = [d for d in self._dues(s, since, now) if d < due]
+                    for d in earlier:
+                        self._missed(s, f"The printer was off or its clock wasn't set at {d:%a %H:%M}.")
+                        missed.append(s["name"])
+                    if lateness > LATE_GRACE_S:
+                        self._missed(s, f"The printer was off or its clock wasn't set at {due:%H:%M}.")
+                        missed.append(s["name"])
+                        continue
+                elif lateness > LATE_GRACE_S:
                     ok_late = policy == "always" or (policy == "late_60" and lateness <= LATE_WINDOW_S)
                     if not ok_late:
                         self._missed(s, f"The printer was off or its clock wasn't set at {due:%H:%M}.")
                         continue
                 await self._run(s, due, late=lateness > LATE_GRACE_S)
+            if missed:
+                self._missed_notice(missed)
         return handled
+
+    def _missed_notice(self, names: list[str]) -> None:
+        """One short slip when the printer is back: how many scheduled prints were missed."""
+        n = len(names)
+        counts: dict[str, int] = {}
+        for x in names:
+            counts[x] = counts.get(x, 0) + 1
+        what = ", ".join(f"{k} ×{v}" if v > 1 else k for k, v in list(counts.items())[:4])
+        if len(counts) > 4:
+            what += f" and {len(counts) - 4} more"
+        doc = {"blocks": [{"type": "slip", "template": "note", "data": {
+            "source": "MISSED", "text": f"{n} scheduled print{'s' if n != 1 else ''} missed\n"
+                                        f"While the printer was off: {what}."}}]}
+        self.svc.print_document(doc, "Schedule", f"Missed {n} print{'s' if n != 1 else ''}",
+                                held_until=self.hold_until())
 
     def _missed(self, s: dict, reason: str) -> None:
         self.svc.queue.log_missed("Schedule", s["name"], reason, {"schedule_id": s["id"]})

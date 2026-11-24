@@ -68,7 +68,7 @@ export function ImageMode(props: { view: View; wide: boolean }) {
         )}
         {src && (
           <>
-            {pv ? <img src={pv.url} alt="Your photo as it will print" style={{ display: "block", width: "100%", imageRendering: "pixelated", opacity: loading ? 0.6 : 1 }} />
+            {pv ? <img class="print-img" src={pv.url} alt="Your photo as it will print" style={{ display: "block", width: "100%", opacity: loading ? 0.6 : 1 }} />
               : <div class="shim" style="height:200px" />}
             <div class="r-s r-c" style="margin-top:8px;font-family:VT323,monospace">{style === "photo" ? "PHOTO DITHER" : style === "sharp" ? "SHARP" : "HALFTONE"} · 384 DOTS</div>
             <div style="display:flex;flex-direction:column;gap:2px;margin-top:10px;font-size:12px;color:#3A3C40">

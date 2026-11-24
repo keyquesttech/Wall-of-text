@@ -4,9 +4,11 @@ from __future__ import annotations
 import asyncio
 import json
 import subprocess
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
 from .. import __version__
@@ -37,6 +39,53 @@ async def device(request: Request):
         "printer": svc.queue.status(),
         "hw": svc.settings.hw,
     }
+
+
+class TimeBody(BaseModel):
+    auto: bool | None = None  # True: set the clock from the internet (NTP)
+    epoch_ms: float | None = Field(default=None, ge=1_700_000_000_000, le=4_102_444_800_000)  # set it by hand
+    timezone: str | None = Field(default=None, max_length=64)
+
+
+def _time_state(svc) -> dict:
+    st = svc.system.time_status()
+    boot = svc.system.boot_id()
+    sched = svc.extras.get("scheduler")
+    return {**st, "timezone": svc.app_settings.get("schedules").get("timezone", "Europe/London"),
+            "manual_this_boot": bool(boot) and svc.store.get("manual_clock_boot") == boot,
+            "scheduler_waiting": bool(sched and sched.waiting_for_clock)}
+
+
+@router.get("/device/time")
+async def get_time(request: Request):
+    return await asyncio.to_thread(_time_state, request.app.state.svc)
+
+
+@router.put("/device/time")
+async def set_time(body: TimeBody, request: Request):
+    """Date & time: automatic (internet) or set by hand, and the time zone. The Pi has no
+    battery clock, so a time set by hand only lasts until the next power cut."""
+    svc = request.app.state.svc
+    sysi = svc.system
+    try:
+        if body.timezone:
+            try:
+                ZoneInfo(body.timezone)
+            except Exception:
+                return JSONResponse({"error": "bad_timezone", "message": "Unknown time zone."}, status_code=422)
+            svc.app_settings.patch({"schedules": {"timezone": body.timezone}})
+            await asyncio.to_thread(sysi.set_timezone, body.timezone)
+        if body.auto is True:
+            await asyncio.to_thread(sysi.set_ntp, True)
+            svc.store.delete("manual_clock_boot")
+        elif body.epoch_ms is not None:
+            await asyncio.to_thread(sysi.set_ntp, False)
+            await asyncio.to_thread(sysi.set_time, body.epoch_ms / 1000)
+            svc.store.set("manual_clock_boot", sysi.boot_id())
+    except (RuntimeError, OSError) as exc:
+        return JSONResponse({"error": "clock", "message": f"The Pi didn't let the app change the clock ({exc}). "
+                             "Run the update again so it installs the permission."}, status_code=502)
+    return await asyncio.to_thread(_time_state, svc)
 
 
 @router.post("/print/setup-slip")

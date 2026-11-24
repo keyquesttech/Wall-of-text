@@ -239,10 +239,10 @@ def test_migration_drops_google_tasks(tmp_path):
     import sqlite3
 
     c = sqlite3.connect(tmp_path / "w.db", isolation_level=None)  # the database as it was before this change
-    for sql in MIGRATIONS[:-1]:
+    for sql in MIGRATIONS[:7]:  # the database before migration 8
         for stmt in [x for x in sql.split(";") if x.strip()]:
             c.execute(stmt)
-    c.execute(f"PRAGMA user_version={len(MIGRATIONS) - 1}")
+    c.execute("PRAGMA user_version=7")
     rows = [("mix", '[{"type":"date"},{"type":"tasks"},{"type":"fortune"}]', '[{"type":"has_tasks"},{"type":"rain_above","value":50}]', None),
             ("only", '[{"type":"tasks"}]', '[]', "tasks"),
             ("plain", '[{"type":"weather"}]', '[]', None)]
@@ -277,3 +277,43 @@ async def test_open_meteo_parsing():
     assert g["place"] == "Leeds, England, GB"
     f = await om.forecast(g["lat"], g["lon"], g["place"])
     assert f.now_text == "Light rain" and f.rain_chance == 70 and f.hourly == [("09:00", 5, 40)]
+
+
+async def test_policy_notice_prints_one_slip_with_the_count(env):
+    svc, sch, clock, *_ = env
+    svc.app_settings.patch({"schedules": {"missed_policy": "notice"}})
+    sch.save({"name": "Weather", "time": "07:00", "sections": [{"type": "fortune"}]})
+    sch.save({"name": "Fortune", "time": "06:10", "sections": [{"type": "fortune"}]})
+    clock.t = ts(2026, 11, 22, 7, 40)  # off from Fri 06:00 to Sun 07:40: 3 + 3 runs missed
+    await sch.tick()
+    q = jobs(svc)
+    assert sum(j["state"] == "missed" for j in q) == 6
+    notes = [j for j in q if j["state"] == "queued"]
+    assert len(notes) == 1 and notes[0]["title"] == "Missed 6 prints"
+    clock.t += 60  # nothing new is due: no second notice
+    await sch.tick()
+    assert len([j for j in jobs(svc) if j["state"] == "queued"]) == 1
+
+
+async def test_policy_notice_still_prints_on_time_runs(env):
+    svc, sch, clock, *_ = env
+    svc.app_settings.patch({"schedules": {"missed_policy": "notice"}})
+    sch.save({"name": "A", "time": "07:00", "sections": [{"type": "fortune"}]})
+    clock.t = ts(2026, 11, 20, 7, 0) + 10
+    await sch.tick()
+    assert [j["title"] for j in jobs(svc)] == ["A"]
+
+
+async def test_once_schedule_prints_on_its_date_then_switches_off(env):
+    svc, sch, clock, *_ = env
+    s = sch.save({"name": "Note", "time": "09:00", "once": "2026-11-21", "days": [],
+                  "sections": [{"type": "message", "document": {"blocks": [{"type": "text", "text": "Hi"}]}}]})
+    assert s["once"] == "2026-11-21" and s["next_run"] == ts(2026, 11, 21, 9, 0)
+    clock.t = ts(2026, 11, 20, 9, 0) + 10  # the day before: nothing
+    await sch.tick()
+    assert jobs(svc) == []
+    clock.t = ts(2026, 11, 21, 9, 0) + 10
+    await sch.tick()
+    assert [j["title"] for j in jobs(svc)] == ["Note"]
+    s = sch.get(s["id"])
+    assert s["enabled"] is False and s["next_run"] is None

@@ -139,6 +139,37 @@ def test_page(data: dict, now: datetime) -> list:
     ]
 
 
+CAL_ROWS = 800  # dot rows between the two calibration lines: 100 mm on a perfect 203 dpi printer
+
+
+def calibration(data: dict, now: datetime) -> list:
+    """Paper-length calibration: two full-width lines exactly CAL_ROWS dot rows apart (top edge to
+    top edge), with a ruler of nominal millimetres between them. The measured distance gives the
+    real paper advance per dot row, used only for the paper-roll estimate."""
+    def draw(c, x, y, w, h, ink):
+        c.rect(x, y, x + w, y + 3, ink)  # top line
+        c.rect(x, y + CAL_ROWS, x + w, y + CAL_ROWS + 3, ink)  # bottom line
+        c.rect(x, y, x + 2, y + CAL_ROWS + 3, ink)  # ruler spine
+        for r in range(0, CAL_ROWS + 1, 8):  # nominal 1 mm ticks
+            ln = 46 if r % 80 == 0 else 26 if r % 40 == 0 else 12
+            c.rect(x, y + r, x + ln, y + r + 2, ink)
+        for r in range(80, CAL_ROWS, 80):
+            Text(f"{r // 8}", T.PX(track=0)).draw(c, x + 54, y + r - 6, 60, T.PX.lh, ink)
+        mid = y + CAL_ROWS // 2 - 60
+        Text("MEASURE THIS GAP", T.PX_B, align="center").draw(c, x + 70, mid, w - 70, T.PX.lh, ink)
+        Text("top edge of the top line", T.T_S, align="center").draw(c, x + 70, mid + 22, w - 70, T.T_S.lh, ink)
+        Text("to the top edge of", T.T_S, align="center").draw(c, x + 70, mid + 42, w - 70, T.T_S.lh, ink)
+        Text("the bottom line, in mm", T.T_S, align="center").draw(c, x + 70, mid + 62, w - 70, T.T_S.lh, ink)
+        Text("About 100 mm", T.T_L, align="center").draw(c, x + 70, mid + 92, w - 70, T.T_L.lh, ink)
+
+    return [
+        Header("PRINTER", dt_label(now)),
+        Band(Text("CALIBRATE LENGTH", T.T_L, align="center"), (8, 8, 8, 8)),
+        Text("Enter the gap in Settings › Printer › Paper.", T.T_S, align="center"),
+        Custom(CAL_ROWS + 3, draw),
+    ]
+
+
 def date_slip(data: dict, now: datetime) -> list:
     return [Header("TODAY", dt_label(now)), Text(f"{now:%A}".upper(), T.T_XL),
             Text(f"{now.day} {now:%B %Y}", T.T_L).m(-6)]

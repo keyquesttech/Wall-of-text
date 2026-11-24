@@ -24,6 +24,7 @@ TEMPLATES = {
     "fortune": (system.fortune, 14),
     "countdown": (system.countdown, 14),
     "test_page": (system.test_page, 14),
+    "calibration": (system.calibration, 14),
     "date": (system.date_slip, 14),
     "unavailable": (system.unavailable, 14),
 }

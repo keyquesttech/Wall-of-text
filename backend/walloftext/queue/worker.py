@@ -20,7 +20,8 @@ from ..store.db import Store
 
 log = logging.getLogger(__name__)
 
-ROWS_PER_ROLL = 80_000  # 10 m roll at 8 rows/mm
+DEFAULT_ROLL_M = 10.0  # a common 58 mm roll; set the real length in Settings › Printer › Paper
+NOMINAL_MM_PER_ROW = 0.125  # 203 dpi = 8 dot rows per mm; Settings › Printer › Calibrate refines it
 FEED_ROWS = 24 * 3
 
 
@@ -170,16 +171,19 @@ class PrintQueue:
 
     def prune(self) -> int:
         h = self.settings_get().get("history", {})
-        max_items = int(h.get("max_items", 200))
-        max_days = float(h.get("max_days", 30))
+        max_items = int(h.get("max_items", 200) or 0)  # 0 = no limit
+        max_days = float(h.get("max_days", 30) or 0)  # 0 = no limit
         c = self.store.conn()
-        cutoff = self.clock() - max_days * 86400
-        n = c.execute("DELETE FROM jobs WHERE state NOT IN ('printing','queued','held') AND created_at<?",
-                      (cutoff,)).rowcount
-        n += c.execute(
-            "DELETE FROM jobs WHERE state NOT IN ('printing','queued','held') AND id NOT IN "
-            "(SELECT id FROM jobs WHERE state NOT IN ('printing','queued','held') ORDER BY id DESC LIMIT ?)",
-            (max_items,)).rowcount
+        n = 0
+        if max_days > 0:
+            cutoff = self.clock() - max_days * 86400
+            n += c.execute("DELETE FROM jobs WHERE state NOT IN ('printing','queued','held') AND created_at<?",
+                           (cutoff,)).rowcount
+        if max_items > 0:
+            n += c.execute(
+                "DELETE FROM jobs WHERE state NOT IN ('printing','queued','held') AND id NOT IN "
+                "(SELECT id FROM jobs WHERE state NOT IN ('printing','queued','held') ORDER BY id DESC LIMIT ?)",
+                (max_items,)).rowcount
         return n
 
     def count_today(self, sources: tuple[str, ...]) -> int:
@@ -190,9 +194,19 @@ class PrintQueue:
         return self.store.conn().execute(q, (midnight, *sources)).fetchone()[0]
 
     # ---------------------------------------------------------- printer --
-    def paper_percent(self) -> int:
+    def paper_used_mm(self) -> float:
         rows = int(self.store.get("rows_since_new_roll", "0") or 0)
-        return max(0, min(100, round(100 - rows * 100 / ROWS_PER_ROLL)))
+        mm_per_row = float(self.settings_get().get("printer", {}).get("mm_per_row") or NOMINAL_MM_PER_ROW)
+        return rows * mm_per_row
+
+    def roll_mm(self) -> float:
+        return float(self.settings_get().get("printer", {}).get("roll_length_m") or DEFAULT_ROLL_M) * 1000
+
+    def paper_percent(self) -> int:
+        return max(0, min(100, round(100 - self.paper_used_mm() * 100 / self.roll_mm())))
+
+    def paper_left_m(self) -> float:
+        return max(0.0, round((self.roll_mm() - self.paper_used_mm()) / 1000, 1))
 
     def new_roll(self) -> None:
         self.store.set("rows_since_new_roll", "0")
@@ -226,6 +240,7 @@ class PrintQueue:
             "state": state,
             "detail": drv.detail,
             "paper_percent": self.paper_percent(),
+            "paper_left_m": self.paper_left_m(),
             "queue_length": sum(1 for j in pend if j["state"] in ("queued", "printing")),
             "held": sum(1 for j in pend if j["state"] == "held"),
             "active": {"id": self.active_id, "progress": self.active_progress} if self.active_id else None,
@@ -299,6 +314,7 @@ class PrintQueue:
             # The printer hangs so paper reads upside down; turn the slip round. Preview and History
             # keep the upright bitmap; only what goes to the printer is rotated (exact for 1-bit).
             img = img.transpose(Image.Transpose.ROTATE_180)
+        extra = int(pset.get("extra_feed", 0)) + int((json.loads(job.get("meta") or "{}") or {}).get("extra_feed", 0))
         last_pub = [0.0]
 
         def progress(p: int) -> None:
@@ -317,7 +333,7 @@ class PrintQueue:
         if hasattr(self.printer, "set_speed"):
             self.printer.set_speed(pset.get("speed", "normal"))
         try:
-            self.printer.print_bitmap(img, copies=job["copies"] or 1, extra_feed=int(pset.get("extra_feed", 0)) + int((json.loads(job.get("meta") or "{}") or {}).get("extra_feed", 0)),
+            self.printer.print_bitmap(img, copies=job["copies"] or 1, extra_feed=extra,
                                       on_progress=progress, should_cancel=should_cancel,
                                       density=int(pset.get("darkness", 120)))
         except Cancelled:
@@ -334,7 +350,7 @@ class PrintQueue:
             time.sleep(0.3)
             if self.printer.status().state == "paper_out":
                 state, err = "failed", "paper_out"
-        rows = img.height * (job["copies"] or 1) + FEED_ROWS
+        rows = img.height * (job["copies"] or 1) + FEED_ROWS + 24 * extra
         if state in ("done", "cancelled"):
             used = int(self.store.get("rows_since_new_roll", "0") or 0) + rows
             self.store.set("rows_since_new_roll", str(used))

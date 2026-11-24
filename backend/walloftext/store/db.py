@@ -131,6 +131,10 @@ MIGRATIONS: list[str] = [
     WHERE EXISTS (SELECT 1 FROM json_each(schedules.conditions) WHERE json_extract(value, '$.type') = 'has_tasks');
     UPDATE schedules SET icon = NULL WHERE icon = 'tasks';
     """,
+    # 9: one-off schedules (a single date instead of week days)
+    """
+    ALTER TABLE schedules ADD COLUMN once_on TEXT;
+    """,
 ]
 
 

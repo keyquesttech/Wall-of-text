@@ -23,6 +23,16 @@ class ScheduleBody(BaseModel):
     sections: list[dict[str, Any]] | None = Field(default=None, max_length=20)
     conditions: list[dict[str, Any]] | None = Field(default=None, max_length=5)
     icon: str | None = Field(default=None, max_length=20)
+    once: str | None = None  # YYYY-MM-DD: print on this date only, then switch off
+
+    @field_validator("once")
+    @classmethod
+    def _once(cls, v):
+        if v in (None, ""):
+            return None
+        from datetime import date
+        date.fromisoformat(v)
+        return v
 
     @field_validator("time")
     @classmethod

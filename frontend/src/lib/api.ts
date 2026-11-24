@@ -46,6 +46,7 @@ export interface PrinterStatus {
   state: PrinterState;
   detail: string | null;
   paper_percent: number;
+  paper_left_m?: number;
   queue_length: number;
   held: number;
   active: { id: number; progress: number } | null;

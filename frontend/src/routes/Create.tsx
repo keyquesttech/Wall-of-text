@@ -13,9 +13,11 @@ import { openWizard } from "./Schedules";
 import { DrawMode } from "./create/DrawMode";
 import { ImageMode } from "./create/ImageMode";
 import { TemplatesMode } from "./create/TemplatesMode";
+import { ListMode } from "./create/ListMode";
 import { QuickActions } from "./create/QuickActions";
 
-export type Mode = "text" | "draw" | "image" | "templates";
+export type Mode = "text" | "draw" | "image" | "list" | "templates";
+const MODES: Mode[] = ["text", "draw", "image", "list", "templates"];
 export type View = "edit" | "printed";
 
 export const FONT_CSS: Record<string, string> = { mono: "'Space Mono', monospace", pixel: "VT323, monospace", silk: "Silkscreen, monospace", sans: "Inter, sans-serif" };
@@ -184,7 +186,7 @@ export function ActionRow(props: { doc: Doc; title?: string; disabled?: boolean;
 
 // ------------------------------------------------------------------------ page --
 export function Create(props: { mode?: string }) {
-  const [mode, setMode] = useState<Mode>((["text", "draw", "image", "templates"].includes(props.mode ?? "") ? props.mode : "text") as Mode);
+  const [mode, setMode] = useState<Mode>((MODES.includes(props.mode as Mode) ? props.mode : "text") as Mode);
   const [view, setView] = useState<View>("edit");
   const [wide, setWide] = useState(() => window.matchMedia("(min-width: 1024px)").matches);
   useEffect(() => {
@@ -193,24 +195,26 @@ export function Create(props: { mode?: string }) {
     mq.addEventListener("change", on);
     return () => mq.removeEventListener("change", on);
   }, []);
-  useEffect(() => { if (props.mode && ["text", "draw", "image", "templates"].includes(props.mode)) setMode(props.mode as Mode); }, [props.mode]);
+  useEffect(() => { if (props.mode && MODES.includes(props.mode as Mode)) setMode(props.mode as Mode); }, [props.mode]);
   const st = printer.value?.state;
   return (
     <>
       <h1 class="sr-only">Create</h1>
       <div class="topbar">
         <StatusPill />
-        {!wide && mode !== "templates" && (
+        {!wide && mode !== "templates" && mode !== "list" && (
           <Seg small label="Preview" width="170px" value={view} onChange={setView}
             options={[{ value: "edit", label: "Edit" }, { value: "printed", label: "As printed" }]} />
         )}
       </div>
-      {st === "offline" || st === "paper_out" ? <PrinterBanner /> : <QuickActions />}
+      {(st === "offline" || st === "paper_out") && <PrinterBanner />}
+      <QuickActions />
       <Seg tabs label="Create mode" value={mode} onChange={(m) => { setMode(m); setView("edit"); }}
-        options={[{ value: "text", label: "Text" }, { value: "draw", label: "Draw" }, { value: "image", label: "Image" }, { value: "templates", label: "Templates" }]} />
+        options={[{ value: "text", label: "Text" }, { value: "draw", label: "Draw" }, { value: "image", label: "Image" }, { value: "list", label: "List" }, { value: "templates", label: "Templates" }]} />
       {mode === "text" && <TextMode view={view} wide={wide} />}
       {mode === "draw" && <DrawMode view={view} wide={wide} />}
       {mode === "image" && <ImageMode view={view} wide={wide} />}
+      {mode === "list" && <section class="glass card" aria-label="Shopping list"><h2 class="h3" style="margin:0 0 4px">Shopping list</h2><p class="cap" style="margin:0 0 10px">Shared by everyone on the Wi-Fi. Add things now, print it on the way out.</p><ListMode /></section>}
       {mode === "templates" && <TemplatesMode onNew={() => { setMode("text"); setView("edit"); toast("Write your print, then tap the bookmark beside the paper to save it as a template."); }} />}
     </>
   );

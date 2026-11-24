@@ -169,6 +169,30 @@ async def test_page(request: Request):
     return {"job": svc.queue.get(job_id)}
 
 
+@router.post("/printer/calibration-print", status_code=201)
+async def calibration_print(request: Request):
+    """Print the length-calibration slip (two lines 800 dot rows apart)."""
+    from datetime import datetime
+    svc = request.app.state.svc
+    doc = {"blocks": [{"type": "slip", "template": "calibration", "data": {"now": datetime.now().isoformat(timespec="minutes")}}]}
+    job_id = svc.print_document(doc, "System", "Length calibration")
+    return {"job": svc.queue.get(job_id)}
+
+
+class CalibrationBody(BaseModel):
+    measured_mm: float | None = Field(default=None, ge=60, le=140)  # None = back to the nominal 203 dpi
+
+
+@router.post("/printer/calibration")
+async def set_calibration(body: CalibrationBody, request: Request):
+    from ..render.kit.system import CAL_ROWS
+    from ..queue.worker import NOMINAL_MM_PER_ROW
+    svc = request.app.state.svc
+    mm_per_row = round(body.measured_mm / CAL_ROWS, 6) if body.measured_mm else NOMINAL_MM_PER_ROW
+    svc.app_settings.patch({"printer": {"mm_per_row": mm_per_row}})
+    return {"mm_per_row": mm_per_row, **svc.queue.status()}
+
+
 @router.post("/printer/new-roll")
 async def new_roll(request: Request):
     svc = request.app.state.svc

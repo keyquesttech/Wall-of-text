@@ -5,8 +5,8 @@ import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { api, get, send, upload, type FontInfo } from "../../lib/api";
 import { inboxWaiting, printer, settings, wifi } from "../../lib/state";
-import { IconBulb, IconCalendar, IconClock, IconCloud, IconDevice, IconEye, IconFont, IconHistory, IconLock, IconMail, IconPlus, IconPrinter, IconTrash, IconWifi } from "../../components/icons";
-import { Banner, Seg, Sheet, timeAgo, toast, Toggle, ToggleRow, Topbar } from "../../components/ui";
+import { IconBulb, IconCalendar, IconClock, IconCloud, IconDevice, IconEye, IconFont, IconHistory, IconLock, IconMail, IconPlus, IconPrinter, IconStar, IconTrash, IconWifi } from "../../components/icons";
+import { Banner, Chevron, Seg, Sheet, timeAgo, toast, Toggle, ToggleRow, Topbar } from "../../components/ui";
 import { AccessPage, useBack, WifiPage } from "../Settings";
 import { RemotePage } from "./remote";
 
@@ -46,7 +46,7 @@ function PrinterPage() {
           options={[{ value: "slow", label: "Careful" }, { value: "normal", label: "Normal" }, { value: "fast", label: "Fast" }]} />
         <label class="field-label">Extra paper at the end</label>
         <Seg label="Extra feed" value={String(p.extra_feed)} onChange={(v) => patch({ printer: { extra_feed: Number(v) } })}
-          options={["0", "1", "2", "4"].map((v) => ({ value: v, label: v === "0" ? "None" : `${v} lines` }))} />
+          options={["0", "1", "2", "4"].map((v) => ({ value: v, label: v === "0" ? "None" : v === "1" ? "1 line" : `${v} lines` }))} />
       </div>
       <div class="glass grp" style="margin-top:12px">
         <ToggleRow label="Paper saver" sub="Tighter spacing and no blank space at the end." checked={p.paper_saver}
@@ -56,11 +56,60 @@ function PrinterPage() {
       </div>
       <h2 class="section">Paper</h2>
       <div class="glass grp">
-        <div class="lrow kv-row"><span class="grow">Left on the roll</span><span class="meta">About {printer.value?.paper_percent ?? 100}%</span></div>
+        <div class="lrow kv-row"><span class="grow">Left on the roll</span>
+          <span class="meta">About {printer.value?.paper_percent ?? 100}%{printer.value?.paper_left_m != null ? ` · ${printer.value.paper_left_m} m` : ""}</span></div>
+        <div class="lrow">
+          <div class="grow"><div class="title">Roll length</div><div class="sub" style="white-space:normal">Printed on the roll's box, often 10, 15 or 30 m.</div></div>
+          <input type="number" class="input" style="width:96px" min={1} max={100} step={0.5} value={p.roll_length_m ?? 10} aria-label="Roll length in metres"
+            onChange={(e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 1 && v <= 100) patch({ printer: { roll_length_m: v } }).then(() => api.queue().then((q) => (printer.value = q.printer))); }} />
+          <span class="dim">m</span>
+        </div>
         <button class="lrow" onClick={() => api.newRoll().then((x) => { printer.value = x; toast("Paper counter reset"); })}>I loaded a new roll</button>
         <button class="lrow" onClick={() => api.testPage().then(() => toast("Printing a test page"))}>Print a test page</button>
       </div>
-      <p class="dim tiny" style="margin:8px 6px">The printer can't measure the roll, so this is an estimate from how much has been printed.</p>
+      <p class="dim tiny" style="margin:8px 6px">The printer can't measure the roll, so this is an estimate from how much has been printed, the roll length and the calibration below.</p>
+      <Calibration mmPerRow={p.mm_per_row ?? 0.125} />
+    </>
+  );
+}
+
+/** Paper length calibration: print two lines 800 dot rows apart, measure them, enter the gap. */
+function Calibration(props: { mmPerRow: number }) {
+  const [, patch] = useSettings();
+  const [mm, setMm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const nominal = Math.abs(props.mmPerRow - 0.125) < 1e-6;
+  const save = async (measured: number | null) => {
+    setBusy(true);
+    try {
+      const r = await send<any>("POST", "/api/printer/calibration", { measured_mm: measured });
+      printer.value = { ...printer.value!, paper_percent: r.paper_percent, paper_left_m: r.paper_left_m };
+      await patch({});
+      setMm("");
+      toast(measured ? "Calibrated" : "Back to the standard length");
+    } catch (e) { toast((e as Error).message); } finally { setBusy(false); }
+  };
+  const v = Number(mm.replace(",", "."));
+  return (
+    <>
+      <h2 class="section">Calibrate length</h2>
+      <div class="glass card stack">
+        <p style="margin:0" class="small">Makes the paper estimate match your printer. It only changes the estimate, never what prints.</p>
+        <ol class="small steps">
+          <li>Print the calibration slip. It has two lines that should be 100 mm apart.</li>
+          <li>Measure from the top edge of the top line to the top edge of the bottom line.</li>
+          <li>Enter what you measured.</li>
+        </ol>
+        <button class="btn block" disabled={busy} onClick={() => send("POST", "/api/printer/calibration-print").then(() => toast("Printing the calibration slip"))}>Print calibration slip</button>
+        <div class="row">
+          <label class="sr-only" for="calmm">Measured gap in millimetres</label>
+          <input id="calmm" class="input grow" inputMode="decimal" placeholder="Measured gap, e.g. 101.5" value={mm} onInput={(e) => setMm((e.target as HTMLInputElement).value)} />
+          <span class="dim">mm</span>
+        </div>
+        <button class="btn-green block" disabled={busy || !(v >= 60 && v <= 140)} onClick={() => save(v)}>Save calibration</button>
+        <p class="cap" style="margin:0">{nominal ? "Using the standard 8 dot rows per mm." : `Calibrated: 100 mm on the slip measured ${(props.mmPerRow * 800).toFixed(1)} mm.`}
+          {!nominal && <> <button class="linkbtn" onClick={() => save(null)}>Reset</button></>}</p>
+      </div>
     </>
   );
 }
@@ -173,7 +222,8 @@ function SchedulePrefs() {
       <div class="glass grp">
         {[["late_60", "Print late, up to an hour", "After an hour it's skipped and shows as Missed in History."],
           ["skip", "Skip it", "Missed prints never come out late."],
-          ["always", "Always print when back", "Even if it's hours late."]].map(([v, l, sub]) => (
+          ["always", "Always print when back", "Even if it's hours late."],
+          ["notice", "Skip them and print a note", "When the printer is back, one short slip says how many prints were missed."]].map(([v, l, sub]) => (
           <button class="lrow" aria-pressed={sc.missed_policy === v} onClick={() => patch({ schedules: { missed_policy: v } })}>
             <div class="grow"><div class="title">{l}</div><div class="sub" style="white-space:normal">{sub}</div></div>
             {sc.missed_policy === v && <span aria-hidden="true">✓</span>}
@@ -202,11 +252,9 @@ function SchedulePrefs() {
         </div>
         <ToggleRow label="Holiday mode" sub="Pause every schedule." checked={sc.holiday_mode} onChange={(v) => patch({ schedules: { holiday_mode: v } })} />
       </div>
-      <h2 class="section">Time zone</h2>
-      <div class="glass card">
-        <select class="input" value={sc.timezone} aria-label="Time zone" onChange={(e) => patch({ schedules: { timezone: (e.target as HTMLSelectElement).value } })}>
-          {(((Intl as any).supportedValuesOf?.("timeZone") as string[] | undefined) ?? ["Europe/London", "Europe/Dublin", "Europe/Paris", "America/New_York", "UTC"]).map((z) => <option value={z}>{z}</option>)}
-        </select>
+      <h2 class="section">Clock</h2>
+      <div class="glass grp">
+        <a class="lrow" href="/settings/time"><span class="grow">Date, time and time zone</span><span class="v">{sc.timezone}</span><Chevron /></a>
       </div>
     </>
   );
@@ -222,16 +270,16 @@ function HistoryPrefs() {
       <div class="glass grp">
         <div class="lrow"><span class="grow">Keep up to</span>
           <select class="input" style="width:auto" value={s.history.max_items} aria-label="Items kept" onChange={(e) => patch({ history: { max_items: Number((e.target as HTMLSelectElement).value) } })}>
-            {[50, 100, 200, 500].map((n) => <option value={n}>{n} prints</option>)}
+            {[50, 100, 200, 500, 1000, 2000, 0].map((n) => <option value={n}>{n ? `${n} prints` : "No limit"}</option>)}
           </select>
         </div>
         <div class="lrow"><span class="grow">For at most</span>
           <select class="input" style="width:auto" value={s.history.max_days} aria-label="Days kept" onChange={(e) => patch({ history: { max_days: Number((e.target as HTMLSelectElement).value) } })}>
-            {[7, 14, 30, 90].map((n) => <option value={n}>{n} days</option>)}
+            {[1, 3, 7, 14, 30, 90, 180, 365, 0].map((n) => <option value={n}>{n === 0 ? "Forever" : n === 1 ? "1 day" : n === 365 ? "1 year" : `${n} days`}</option>)}
           </select>
         </div>
       </div>
-      <p class="dim tiny" style="margin:8px 6px">Whichever is fewer. Each print keeps a small picture of exactly what came out.</p>
+      <p class="dim tiny" style="margin:8px 6px">Whichever comes first. Each print keeps a small picture of exactly what came out (a few kB), so even "No limit" and "Forever" are fine on the Pi's memory card.</p>
     </>
   );
 }
@@ -516,6 +564,135 @@ function GooglePage() {
   );
 }
 
+// --------------------------------------------------------------- Fortunes --
+function FortunesPage() {
+  const back = useBack();
+  const [s, patch] = useSettings();
+  const [info, setInfo] = useState<{ builtin_count: number; custom_count: number; use_builtin: boolean; in_play: number; sample: string[] } | null>(null);
+  const [mode, setMode] = useState<"replace" | "add">("replace");
+  const [busy, setBusy] = useState(false);
+  const file = useRef<HTMLInputElement>(null);
+  const load = () => get<any>("/api/fortunes").then(setInfo);
+  useEffect(() => { load(); }, []);
+  const onFile = async () => {
+    const f = file.current?.files?.[0];
+    if (!f) return;
+    const fd = new FormData();
+    fd.append("file", f);
+    fd.append("mode", mode);
+    setBusy(true);
+    try {
+      const r = await upload<any>("/api/fortunes/csv", fd);
+      setInfo(r);
+      toast(`${r.added} fortune${r.added === 1 ? "" : "s"} added${r.skipped ? `, ${r.skipped} skipped (empty, repeated or over 300 characters)` : ""}`);
+    } catch (e) { toast((e as Error).message); } finally { setBusy(false); if (file.current) file.current.value = ""; }
+  };
+  if (!s || !info) return (<><Topbar title="Fortunes" back={back} /><div class="shim" style="height:160px" /></>);
+  return (
+    <>
+      <Topbar title="Fortunes" back={back} />
+      <div class="glass grp">
+        <div class="lrow kv-row"><span class="grow">In use</span><span class="meta">{info.in_play} fortunes</span></div>
+        <div class="lrow kv-row"><span class="grow">Yours</span><span class="meta">{info.custom_count}</span></div>
+        <ToggleRow label="Use the built-in fortunes too" sub={`${info.builtin_count} short lines that come with the printer. Always used while you have none of your own.`}
+          checked={s.fortunes?.use_builtin ?? true} onChange={(v) => patch({ fortunes: { use_builtin: v } }).then(load)} />
+      </div>
+      <h2 class="section">Upload a CSV</h2>
+      <div class="glass card stack">
+        <p class="small" style="margin:0">One fortune per row, in the first column (or a column headed <span class="mono">fortune</span>). Export it from Excel, Numbers or Google Sheets as CSV, or use a plain text file with one per line.</p>
+        <Seg label="When uploading" value={mode} onChange={setMode}
+          options={[{ value: "replace", label: "Replace mine" }, { value: "add", label: "Add to mine" }]} />
+        <input id="fcsv" ref={file} type="file" accept=".csv,.txt,text/csv,text/plain" class="sr-only" onChange={onFile} />
+        <label for="fcsv" class={`btn-green block ${busy ? "disabled" : ""}`}>{busy ? "Uploading…" : "Choose a CSV file"}</label>
+        <div class="row">
+          <a class="btn grow" href="/api/fortunes/csv" download="walloftext-fortunes.csv">Download as CSV</a>
+          {info.custom_count > 0 && <button class="btn btn-danger grow" onClick={() => send<any>("DELETE", "/api/fortunes/custom").then((r) => { setInfo(r); toast("Your fortunes were removed"); })}>Remove mine</button>}
+        </div>
+      </div>
+      {info.sample.length > 0 && (
+        <>
+          <h2 class="section">First of yours</h2>
+          <div class="glass grp">{info.sample.map((x) => <div class="lrow"><span class="grow" style="white-space:normal">{x}</span></div>)}</div>
+        </>
+      )}
+      <p class="dim tiny" style="margin:8px 6px">Fortunes are picked at random, but each one prints once before any comes back, and the ones from the last week are held back when a new round starts.</p>
+    </>
+  );
+}
+
+// ------------------------------------------------------------ Date & time --
+interface TimeState { epoch: number; timezone: string; system_timezone: string; ntp: boolean; synced: boolean; manual_this_boot: boolean; scheduler_waiting: boolean }
+const fmtTime = (epoch: number, tz: string) => {
+  try { return new Date(epoch * 1000).toLocaleString("en-GB", { timeZone: tz, weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }); }
+  catch { return new Date(epoch * 1000).toLocaleString(); }
+};
+const pad = (n: number) => String(n).padStart(2, "0");
+
+function TimePage() {
+  const back = useBack();
+  const [t, setT] = useState<TimeState | null>(null);
+  const [skew, setSkew] = useState(0); // Pi clock minus this device's clock, in seconds
+  const [tick, setTick] = useState(0);
+  const [busy, setBusy] = useState(false);
+  const [manual, setManual] = useState({ date: "", time: "" });
+  const apply = (x: TimeState) => { setT(x); setSkew(x.epoch - Date.now() / 1000); };
+  useEffect(() => { get<TimeState>("/api/device/time").then(apply).catch(() => {}); const i = setInterval(() => setTick((k) => k + 1), 1000); return () => clearInterval(i); }, []);
+  useEffect(() => {
+    if (!t) return;
+    const d = new Date(Date.now() + skew * 1000);
+    setManual({ date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, time: `${pad(d.getHours())}:${pad(d.getMinutes())}` });
+  }, [t?.ntp]);
+  const put = async (body: any, msg: string) => {
+    setBusy(true);
+    try { apply(await send<TimeState>("PUT", "/api/device/time", body)); settings.value = await api.settings(); toast(msg); }
+    catch (e) { toast((e as Error).message); } finally { setBusy(false); }
+  };
+  if (!t) return (<><Topbar title="Date & time" back={back} /><div class="shim" style="height:160px" /></>);
+  const piNow = Date.now() / 1000 + skew;
+  void tick;
+  const off = Math.round(skew);
+  const zones = ((Intl as any).supportedValuesOf?.("timeZone") as string[] | undefined) ?? ["Europe/London", "Europe/Dublin", "Europe/Madrid", "Europe/Paris", "America/New_York", "UTC"];
+  return (
+    <>
+      <Topbar title="Date & time" back={back} />
+      <div class={`glass card ${t.synced || t.manual_this_boot ? "tg" : ""}`}>
+        <div class="lbl">The printer's clock</div>
+        <div class="h2 num" style="margin:4px 0">{fmtTime(piNow, t.timezone)}</div>
+        <div class="cap">{t.ntp ? (t.synced ? "Set automatically from the internet." : "Waiting for the internet to set it…") : t.manual_this_boot ? "Set by hand." : "Not set since the last power cut."}
+          {Math.abs(off) >= 60 && ` ${Math.abs(off) >= 3600 ? `${Math.round(Math.abs(off) / 3600)} h` : `${Math.round(Math.abs(off) / 60)} min`} ${off > 0 ? "ahead of" : "behind"} this device.`}</div>
+      </div>
+      {t.scheduler_waiting && <Banner>Schedules are waiting for the clock. Set it by hand below, or connect the printer to the internet.</Banner>}
+      <div class="glass grp">
+        <ToggleRow label="Set automatically" sub="From internet time servers. Best when the printer is online." checked={t.ntp}
+          onChange={(v) => (v ? put({ auto: true }, "Clock set automatically") : put({ epoch_ms: Date.now() }, "Clock set from this device"))} />
+      </div>
+      {!t.ntp && (
+        <>
+          <h2 class="section">Set by hand</h2>
+          <div class="glass card stack">
+            <button class="btn-green block" disabled={busy} onClick={() => put({ epoch_ms: Date.now() }, "Clock set from this device")}>Use this device's time</button>
+            <div class="row">
+              <label class="sr-only" for="tdate">Date</label>
+              <input id="tdate" type="date" class="input grow" value={manual.date} onInput={(e) => setManual({ ...manual, date: (e.target as HTMLInputElement).value })} />
+              <label class="sr-only" for="ttime">Time</label>
+              <input id="ttime" type="time" class="input" style="width:130px" value={manual.time} onInput={(e) => setManual({ ...manual, time: (e.target as HTMLInputElement).value })} />
+            </div>
+            <button class="btn block" disabled={busy || !manual.date || !manual.time} onClick={() => put({ epoch_ms: new Date(`${manual.date}T${manual.time}:00`).getTime() }, "Clock set")}>Set this date and time</button>
+            <p class="cap" style="margin:0">The date and time are read in this device's time zone. The printer has no battery clock, so after a power cut it needs setting again (or the internet).</p>
+          </div>
+        </>
+      )}
+      <h2 class="section">Time zone</h2>
+      <div class="glass card">
+        <select class="input" value={t.timezone} aria-label="Time zone" disabled={busy} onChange={(e) => put({ timezone: (e.target as HTMLSelectElement).value }, "Time zone saved")}>
+          {(zones.includes(t.timezone) ? zones : [t.timezone, ...zones]).map((z) => <option value={z}>{z.replace(/_/g, " ")}</option>)}
+        </select>
+        <p class="cap" style="margin:8px 4px 0">Schedules, quiet hours and the time on prints use this zone.</p>
+      </div>
+    </>
+  );
+}
+
 // ----------------------------------------------------------- Guest & inbox --
 export function GuestAndInbox() {
   const [s, patch] = useSettings();
@@ -700,12 +877,14 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   { id: "fonts", Icon: IconFont, title: "Fonts", group: "Printing", Component: FontsPage },
   { id: "button", Icon: IconBulb, title: "Button & light", group: "Printing", Component: ButtonPage },
   { id: "schedules", Icon: IconClock, title: "Schedules", group: "Printing", Component: SchedulePrefs, meta: () => (settings.value?.schedules?.holiday_mode ? "Holiday mode" : settings.value?.schedules?.quiet_hours?.enabled ? `Quiet ${settings.value.schedules.quiet_hours.start}–${settings.value.schedules.quiet_hours.end}` : "") },
-  { id: "history", Icon: IconHistory, title: "History", group: "Printing", Component: HistoryPrefs },
+  { id: "history", Icon: IconHistory, title: "History", group: "Printing", Component: HistoryPrefs, meta: () => { const h = settings.value?.history; return h ? (h.max_days ? `${h.max_days} days` : "Forever") : ""; } },
+  { id: "fortunes", Icon: IconStar, title: "Fortunes", group: "Printing", Component: FortunesPage },
   { id: "weather", Icon: IconCloud, title: "Weather", group: "Connections", Component: WeatherPage, meta: () => settings.value?.weather?.place || "Not set" },
   { id: "google", Icon: IconCalendar, title: "Google", group: "Connections", Component: GooglePage, meta: googleMeta },
   { id: "remote", Icon: IconMail, title: "Remote messages", group: "Connections", Component: RemotePage },
   { id: "access", Icon: IconLock, title: "Access", group: "Access", Component: AccessPage, meta: () => (inboxWaiting.value ? `${inboxWaiting.value} waiting` : "") },
   { id: "wifi", Icon: IconWifi, title: "Wi-Fi", group: "Device", Component: WifiPage, meta: () => wifi.value?.ssid ?? "" },
   { id: "device", Icon: IconDevice, title: "Device", group: "Device", Component: DevicePage },
+  { id: "time", Icon: IconClock, title: "Date & time", group: "Device", Component: TimePage, meta: () => settings.value?.schedules?.timezone?.replace(/_/g, " ") ?? "" },
   { id: "display", Icon: IconEye, title: "Display", group: "Device", Component: DisplayPage },
 ];

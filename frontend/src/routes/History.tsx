@@ -149,7 +149,7 @@ function Detail(props: { id: number; onClose: () => void; onChanged: () => void 
           <p class="cap" style="margin-top:-6px">{j.source} · {timeAgo(j.created_at)}</p>
           {err && <Banner>{err}</Banner>}
           {j.has_image && (
-            <div style="display:flex;justify-content:center"><div class="rwrap" style="max-width:300px"><div class="receipt bits img"><img src={`/api/history/${j.id}/image`} alt={`What was printed: ${j.title}`} /></div></div></div>
+            <div style="display:flex;justify-content:center"><div class="rwrap" style="width:100%;max-width:384px"><div class="receipt bits img"><img src={`/api/history/${j.id}/image`} alt={`What was printed: ${j.title}`} /></div></div></div>
           )}
           {j.has_image && j.state === "failed" && <button class="btn-green" onClick={() => again(() => api.retry(j.id))}><IconRefresh class="i" />Try again</button>}
           {j.has_image && j.state !== "failed" && <button class="btn-print block" onClick={() => again(() => api.reprint(j.id))}><IconPrint2 class="i" />Print again</button>}

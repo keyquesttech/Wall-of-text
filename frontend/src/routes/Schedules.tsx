@@ -1,13 +1,13 @@
 // Schedules (HANDOFF 7.2–7.4; Schedules, Wizard, Routine mockups). Pink = "later".
 import { signal } from "@preact/signals";
 import type { ComponentChildren } from "preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { useLocation, useRoute } from "preact-iso";
 import { get, send, type Doc } from "../lib/api";
 import { settings } from "../lib/state";
 import {
-  IconAlarm, IconCalendar, IconCart, IconCloud, IconDown, IconHourglass, IconPin, IconPlus, IconQuote, IconRoutine,
-  IconSun, IconTasks, IconTrash, IconUp, IconX, IconCreate,
+  IconAlarm, IconCalendar, IconCart, IconCloud, IconDown, IconHourglass, IconPlus, IconQuote, IconRoutine,
+  IconSun, IconTasks, IconTrash, IconUp, IconCreate,
 } from "../components/icons";
 import { StatusPill } from "../components/printer";
 import { Banner, Seg, Sheet, timeAgo, toast, Toggle, Topbar } from "../components/ui";
@@ -16,7 +16,7 @@ import { googleState, loadGoogle } from "./settings/pages";
 export interface Section { type: string; [k: string]: any }
 export interface Condition { type: string; value?: number }
 export interface Schedule {
-  id: string; name: string; enabled: boolean; time: string | null; days: number[];
+  id: string; name: string; enabled: boolean; time: string | null; days: number[]; once?: string | null;
   sections: Section[]; conditions: Condition[]; next_run: number | null; last_run_at: number | null; last_result: string | null;
 }
 interface ListResp { items: Schedule[]; status: { clock_synced: boolean; holiday_mode: boolean; quiet_now: boolean; timezone: string }; sections: Record<string, string>; conditions: Record<string, string> }
@@ -30,8 +30,9 @@ const SECTION_ICON: Record<string, (p: any) => any> = {
   shopping: IconCart, message: IconCreate, date: IconSun, divider: IconRoutine,
 };
 
-export function whenText(s: { time: string | null; days: number[] }) {
+export function whenText(s: { time: string | null; days: number[]; once?: string | null }) {
   if (!s.time) return "From the button or a quick chip";
+  if (s.once) { const t = onceText(s.once, s.time); return `Once, ${t}`; }
   const d = [...s.days].sort().join();
   const on = d === "0,1,2,3,4,5,6" ? "Every day" : d === "0,1,2,3,4" ? "Every weekday" : d === "5,6" ? "Every weekend day"
     : s.days.length === 1 ? `Every ${DAYN[s.days[0]]}` : s.days.length === 0 ? "Never (no days picked)" : s.days.map((x) => DAYS[x]).join(", ");
@@ -55,8 +56,10 @@ function nextLabel(ts: number | null) {
 interface WizardState { doc?: Doc; title?: string }
 const wizard = signal<WizardState | null>(null);
 const schedulesChanged = signal(0);
+/** Create's Schedule button: schedule this message (a small sheet, not the full editor). */
 export function openWizard(doc?: Doc, title?: string) {
-  wizard.value = { doc: doc && doc.blocks.length ? doc : undefined, title };
+  if (!doc || !doc.blocks.length) { toast("Make something first, then schedule it."); return; }
+  wizard.value = { doc, title };
 }
 
 // ---------------------------------------------------------------------- list --
@@ -75,7 +78,7 @@ export function Schedules() {
   const names = data?.sections ?? {};
   return (
     <>
-      <Topbar title="Schedules" right={<button class="btn-pink" style="min-height:44px;padding:0 16px;font-size:15px" onClick={() => openWizard()}><IconPlus class="i" style="stroke-width:2.4" />New</button>}>
+      <Topbar title="Schedules" right={<button class="btn-pink" style="min-height:44px;padding:0 16px;font-size:15px" onClick={() => route("/schedules/new")}><IconPlus class="i" style="stroke-width:2.4" />New</button>}>
         <StatusPill />
       </Topbar>
       {st && !st.clock_synced && <Banner>Waiting for the clock. After a power cut the printer sets its clock from the internet; schedules start once it has.</Banner>}
@@ -85,7 +88,7 @@ export function Schedules() {
         <div class="grow" style="display:flex;flex-direction:column"><span class="h3" style="font-size:16px">Holiday mode</span><span class="cap">Pause every schedule until you're back</span></div>
         <Toggle pink label="Holiday mode" checked={holiday} onChange={(v) => send("PATCH", "/api/settings", { schedules: { holiday_mode: v } }).then((s) => (settings.value = s))} />
       </div>
-      {data && data.items.length === 0 && <Empty onStarter={async () => {
+      {data && data.items.length === 0 && <Empty onNew={() => route("/schedules/new")} onStarter={async () => {
         const s = await send<Schedule>("POST", "/api/schedules", { name: "Morning briefing", time: "07:30", days: [0, 1, 2, 3, 4], sections: [{ type: "date" }, { type: "weather" }, { type: "agenda" }, { type: "tasks" }, { type: "fortune" }], conditions: [] });
         route(`/schedules/${s.id}`);
       }} />}
@@ -101,7 +104,7 @@ export function Schedules() {
   );
 }
 
-function Empty(props: { onStarter: () => void }) {
+function Empty(props: { onStarter: () => void; onNew: () => void }) {
   return (
     <div class="empty">
       <svg class="illo" viewBox="0 0 160 140" aria-hidden="true">
@@ -115,7 +118,7 @@ function Empty(props: { onStarter: () => void }) {
       </svg>
       <h2 class="h2">Nothing scheduled yet</h2>
       <p style="font-size:16px;line-height:22px">Set a print to happen on its own, like an alarm. A morning briefing is a nice first one.</p>
-      <button class="btn-pink" onClick={() => openWizard()}><IconPlus class="i" style="stroke-width:2.4" />New schedule</button>
+      <button class="btn-pink" onClick={props.onNew}><IconPlus class="i" style="stroke-width:2.4" />New schedule</button>
       <button class="glass btn" style="color:var(--hi)" onClick={props.onStarter}>Start from “Morning briefing”</button>
     </div>
   );
@@ -126,7 +129,8 @@ function Timeline({ items }: { items: Schedule[] }) {
   const now = new Date();
   const dow = (now.getDay() + 6) % 7;
   const minsNow = now.getHours() * 60 + now.getMinutes();
-  const pts = items.filter((s) => s.days.includes(dow)).map((s) => {
+  const todayIso = iso(now);
+  const pts = items.filter((s) => (s.once ? s.once === todayIso : s.days.includes(dow))).map((s) => {
     const [h, m] = s.time!.split(":").map(Number);
     return { s, mins: h * 60 + m };
   }).filter((p) => p.mins >= 360).sort((a, b) => a.mins - b.mins);
@@ -236,164 +240,116 @@ function firstRunText(time: string, days: number[]) {
 }
 
 // -------------------------------------------------------------------- wizard --
-const SOURCES: { id: string; name: string; sub: string; Icon: (p: any) => any; sections: Section[]; defName: string }[] = [
-  { id: "weather", name: "Weather", sub: "Today's forecast", Icon: IconCloud, sections: [{ type: "weather" }], defName: "Weather" },
-  { id: "agenda", name: "Calendar agenda", sub: "What's on today", Icon: IconCalendar, sections: [{ type: "agenda" }], defName: "Today's agenda" },
-  { id: "tasks", name: "Tasks", sub: "Google Tasks to do", Icon: IconTasks, sections: [{ type: "tasks" }], defName: "To do" },
-  { id: "countdown", name: "Countdown", sub: "Days until something", Icon: IconHourglass, sections: [{ type: "countdown", date: "", label: "" }], defName: "Countdown" },
-  { id: "fortune", name: "Quote or fortune", sub: "A little line", Icon: IconQuote, sections: [{ type: "fortune" }], defName: "Daily fortune" },
-  { id: "shopping", name: "Shopping list", sub: "If it has items", Icon: IconCart, sections: [{ type: "shopping", skip_empty: true }], defName: "Shopping list" },
-  { id: "routine", name: "Routine", sub: "Date, weather, agenda, tasks, quote", Icon: IconRoutine, sections: [{ type: "date" }, { type: "weather" }, { type: "agenda" }, { type: "tasks" }, { type: "fortune" }], defName: "Morning briefing" },
+/** Ready-made block sets for a new schedule (the editor's "Start from" chips). */
+const STARTERS: { id: string; name: string; Icon: (p: any) => any; sections: Section[]; defName: string }[] = [
+  { id: "briefing", name: "Morning briefing", Icon: IconRoutine, sections: [{ type: "date" }, { type: "weather" }, { type: "agenda" }, { type: "tasks" }, { type: "fortune" }], defName: "Morning briefing" },
+  { id: "weather", name: "Weather", Icon: IconCloud, sections: [{ type: "weather" }], defName: "Weather" },
+  { id: "agenda", name: "Calendar", Icon: IconCalendar, sections: [{ type: "agenda" }], defName: "Today's agenda" },
+  { id: "tasks", name: "Tasks", Icon: IconTasks, sections: [{ type: "tasks" }], defName: "To do" },
+  { id: "fortune", name: "Fortune", Icon: IconQuote, sections: [{ type: "fortune" }], defName: "Daily fortune" },
+  { id: "shopping", name: "Shopping list", Icon: IconCart, sections: [{ type: "shopping", skip_empty: true }], defName: "Shopping list" },
+  { id: "countdown", name: "Countdown", Icon: IconHourglass, sections: [{ type: "countdown", date: "", label: "" }], defName: "Countdown" },
 ];
-const STEP_NAMES = ["What", "When", "Options", "Preview"];
-const STEP_TITLES = ["What should it print?", "When should it print?", "Any options?", "Check and save"];
 type Freq = "daily" | "weekdays" | "weekends" | "weekly" | "custom";
+const FREQS: [Freq, string][] = [["daily", "Daily"], ["weekdays", "Weekdays"], ["weekends", "Weekends"], ["weekly", "Weekly"], ["custom", "Pick days"]];
+const daysFor = (f: Freq, cur: number[]) => (f === "daily" ? [0, 1, 2, 3, 4, 5, 6] : f === "weekdays" ? [0, 1, 2, 3, 4] : f === "weekends" ? [5, 6] : f === "weekly" ? [(new Date().getDay() + 6) % 7] : cur);
+const freqOf = (days: number[]): Freq => { const d = [...days].sort().join(); return d === "0,1,2,3,4,5,6" ? "daily" : d === "0,1,2,3,4" ? "weekdays" : d === "5,6" ? "weekends" : "custom"; };
+const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const atTime = (date: string, time: string) => new Date(`${date}T${time}:00`);
+function onceText(date: string, time: string) {
+  const d = atTime(date, time), now = new Date();
+  const day = iso(d) === iso(now) ? "today" : iso(d) === iso(new Date(now.getTime() + 86400000)) ? "tomorrow"
+    : d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  return `${day} at ${time}`;
+}
+/** A sensible first time for a one-off: 30 minutes from now, on a 5-minute step. */
+function soon() {
+  const d = new Date(Date.now() + 30 * 60000);
+  d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
+  return { date: iso(d), time: `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}` };
+}
+
+/** When: once on a date, or repeating on week days (shared by the message sheet and the editor). */
+function WhenPicker(props: { kind: "once" | "repeat"; date: string; time: string; days: number[]; onChange: (p: { date?: string; time?: string; days?: number[] }) => void }) {
+  const [freq, setFreq] = useState<Freq>(freqOf(props.days));
+  const today = iso(new Date()), tomorrow = iso(new Date(Date.now() + 86400000));
+  return (
+    <div class="stack">
+      {props.kind === "once" ? (
+        <div class="chips wrapc" role="group" aria-label="Day">
+          <button type="button" class="glass chip pk" aria-pressed={props.date === today} onClick={() => props.onChange({ date: today })}>Today</button>
+          <button type="button" class="glass chip pk" aria-pressed={props.date === tomorrow} onClick={() => props.onChange({ date: tomorrow })}>Tomorrow</button>
+          <label class="sr-only" for="oncedate">Date</label>
+          <input id="oncedate" type="date" class="input" style="width:auto;flex:1;min-width:150px" min={today} value={props.date} onInput={(e) => props.onChange({ date: (e.target as HTMLInputElement).value })} />
+        </div>
+      ) : (
+        <div class="chips wrapc" role="group" aria-label="How often">
+          {FREQS.map(([f, label]) => (
+            <button type="button" class="glass chip pk" aria-pressed={freq === f} onClick={() => { setFreq(f); props.onChange({ days: daysFor(f, props.days) }); }}>{label}</button>
+          ))}
+        </div>
+      )}
+      <TimeWheel value={props.time} onChange={(time) => props.onChange({ time })} />
+      {props.kind === "repeat" && (freq === "custom" || freq === "weekly") && <DayChips days={props.days} onChange={(days) => props.onChange({ days })} />}
+    </div>
+  );
+}
 
 export function WizardHost() {
   const w = wizard.value;
-  if (!w) return null;
-  return <Wizard key={JSON.stringify(w).length} init={w} onClose={() => (wizard.value = null)} />;
+  if (!w?.doc) return null;
+  return <ScheduleMessage key={JSON.stringify(w).length} doc={w.doc} title={w.title} onClose={() => (wizard.value = null)} />;
 }
 
-function Wizard({ init, onClose }: { init: WizardState; onClose: () => void }) {
-  const { route } = useLocation();
-  const [step, setStep] = useState(1);
-  const [src, setSrc] = useState(init.doc ? "message" : "weather");
-  const [freq, setFreq] = useState<Freq>("daily");
-  const [time, setTime] = useState("07:45");
+/** The Schedule button on Create: schedule just this message. Everything else lives in Schedules. */
+function ScheduleMessage(props: { doc: Doc; title?: string; onClose: () => void }) {
+  const first = soon();
+  const [kind, setKind] = useState<"once" | "repeat">("once");
+  const [date, setDate] = useState(first.date);
+  const [time, setTime] = useState(first.time);
   const [days, setDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
-  const [conds, setConds] = useState<Condition[]>([]);
-  const [cd, setCd] = useState({ label: "", date: "" });
-  const [name, setName] = useState("");
-  const [pv, setPv] = useState<string | null>(null);
+  const [name, setName] = useState(props.title || firstWords(props.doc) || "My message");
   const [busy, setBusy] = useState(false);
-  const source = SOURCES.find((s) => s.id === src);
-  const sections: Section[] = useMemo(() => {
-    if (src === "message") return [{ type: "message", document: init.doc }];
-    const secs = source?.sections.map((x) => ({ ...x })) ?? [];
-    return secs.map((x) => (x.type === "countdown" ? { ...x, ...cd } : x));
-  }, [src, cd]);
-  const setF = (f: Freq) => {
-    setFreq(f);
-    if (f === "daily") setDays([0, 1, 2, 3, 4, 5, 6]);
-    if (f === "weekdays") setDays([0, 1, 2, 3, 4]);
-    if (f === "weekends") setDays([5, 6]);
-    if (f === "weekly") setDays([(new Date().getDay() + 6) % 7]);
-  };
-  useEffect(() => { if (step === 4 && !name) setName(src === "message" ? init.title || "My message" : source?.defName ?? "Schedule"); }, [step]);
-  useEffect(() => {
-    if (step !== 4) return;
-    setPv(null);
-    fetch("/api/schedules/preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sections }) })
-      .then((r) => (r.ok ? r.blob() : null)).then((b) => b && setPv(URL.createObjectURL(b))).catch(() => {});
-  }, [step]);
-  const canNext = step === 1 ? !!src : step === 2 ? days.length > 0 : step === 3 ? (src !== "countdown" || !!cd.date) : !!name.trim();
+  const past = kind === "once" && atTime(date, time).getTime() <= Date.now();
+  const summary = kind === "once" ? (past ? "That time has already passed." : `Prints once, ${onceText(date, time)}.`)
+    : days.length ? `Prints ${whenText({ time, days }).replace(/^Every/, "every")}. ${firstRunText(time, days)}` : "Pick at least one day.";
   const save = async () => {
     setBusy(true);
     try {
-      await send<Schedule>("POST", "/api/schedules", { name: name.trim(), time, days, sections, conditions: conds, enabled: true });
-      toast(`Scheduled for ${time}`);
+      await send<Schedule>("POST", "/api/schedules", {
+        name: name.trim() || "My message", time, enabled: true, conditions: [],
+        days: kind === "once" ? [] : days, once: kind === "once" ? date : null,
+        sections: [{ type: "message", document: props.doc }],
+      });
+      toast(kind === "once" ? `Scheduled for ${onceText(date, time)}` : `Scheduled ${whenText({ time, days }).toLowerCase()}`);
       schedulesChanged.value++;
-      onClose();
-      route("/schedules");
+      props.onClose();
     } catch (e) { toast((e as Error).message); } finally { setBusy(false); }
   };
-  const condRow = (type: string, title: string, sub: string, value?: number) => {
-    const on = conds.some((c) => c.type === type);
-    return (
-      <div class="lrow">
-        <div class="grow" style="display:flex;flex-direction:column"><span>{title}</span><span class="cap">{sub}</span></div>
-        <Toggle pink label={title} checked={on} onChange={(v) => setConds(v ? [...conds, { type, ...(value !== undefined ? { value } : {}) }] : conds.filter((c) => c.type !== type))} />
-      </div>
-    );
-  };
-  const quiet = settings.value?.schedules?.quiet_hours;
   return (
-    <div class="scrimf" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <section class="glass sheetf tp" role="dialog" aria-modal="true" aria-label="New schedule" style="display:flex;flex-direction:column;gap:14px;max-height:94vh">
-        <div class="grab" />
-        <div class="row" style="justify-content:space-between;align-items:flex-start">
-          <div style="display:flex;flex-direction:column;gap:2px">
-            <span class="lbl" style="color:var(--pink-text)">Step {step} of 4 · {STEP_NAMES[step - 1]}</span>
-            <h2 class="h2">{STEP_TITLES[step - 1]}</h2>
-          </div>
-          <button class="ib" aria-label="Close" style="background:rgba(201,205,212,.12)" onClick={onClose}><IconX class="i" /></button>
+    <Sheet open onClose={props.onClose} title="Schedule this message" tint="tp">
+      <div class="stack">
+        <div class="glass" style="border-radius:16px;padding:4px 4px 4px 14px;display:flex;align-items:center;gap:10px">
+          <label for="smname" class="cap" style="color:var(--silver)">Name</label>
+          <input id="smname" value={name} maxLength={60} onInput={(e) => setName((e.target as HTMLInputElement).value)} style="flex:1;min-width:0;height:44px;border:0;background:transparent;outline:none;font-size:16px;font-weight:600;color:var(--hi)" />
         </div>
-        <div class="wizbar">{[1, 2, 3, 4].map((k) => <div class="bar pk"><i style={{ width: k <= step ? "100%" : "0%" }} /></div>)}</div>
-
-        {step === 1 && (
-          <div class="wtiles">
-            {init.doc && (
-              <Tile on={src === "message"} onClick={() => setSrc("message")} Icon={IconCreate} name="My message" sub={`${init.title ? `“${init.title}” ` : ""}attached from Create`} />
-            )}
-            {SOURCES.map((s) => <Tile on={src === s.id} onClick={() => setSrc(s.id)} Icon={s.Icon} name={s.name} sub={s.sub} />)}
-          </div>
-        )}
-        {step === 2 && (
-          <>
-            <div class="chips wrapc">
-              {([["daily", "Daily"], ["weekdays", "Weekdays"], ["weekends", "Weekends"], ["weekly", "Weekly"], ["custom", "Pick days"]] as const).map(([f, l]) => (
-                <button class={`glass chip pk`} aria-pressed={freq === f} onClick={() => setF(f)}>{l}</button>
-              ))}
-            </div>
-            <TimeWheel value={time} onChange={setTime} />
-            <DayChips days={days} onChange={(d) => { setDays(d); setFreq("custom"); }} />
-            <div class="glass summary"><IconAlarm class="i" /><span>Prints <b>{whenText({ time, days }).replace(/^Every/, "every")}</b>. {firstRunText(time, days)}</span></div>
-          </>
-        )}
-        {step === 3 && (
-          <>
-            {(src === "weather" || src === "routine") && (
-              <>
-                <div class="glass grp">
-                  <a class="lrow" href="/settings/weather" onClick={onClose}><span class="ico p"><IconPin class="i" /></span>Location<span class="v">{settings.value?.weather?.place || "Not set"}</span><span class="chevr">›</span></a>
-                  <div class="lrow">Units
-                    <div style="margin-left:auto"><Seg small width="120px" label="Units" value={settings.value?.weather?.units ?? "C"}
-                      onChange={(v) => send("PATCH", "/api/settings", { weather: { units: v } }).then((s) => (settings.value = s))}
-                      options={[{ value: "C", label: "°C" }, { value: "F", label: "°F" }]} /></div>
-                  </div>
-                </div>
-                <span class="sect">Only print if</span>
-                <div class="glass grp">
-                  {condRow("rain_above", "Rain is likely", "Chance of rain 50% or more", 50)}
-                  {condRow("temp_below", "It drops below", "3 °C when it's time to print", 3)}
-                </div>
-              </>
-            )}
-            {(src === "agenda" || src === "tasks") && <GoogleHint />}
-            {src === "agenda" && <div class="glass grp">{condRow("has_events", "Only if there's something on", "Skip days with an empty calendar")}</div>}
-            {src === "tasks" && <div class="glass grp">{condRow("has_tasks", "Only if any are due", "Skip when there's nothing to do")}</div>}
-            {src === "countdown" && (
-              <div class="glass card stack">
-                <label class="field-label" for="cdl" style="margin-top:0">What are you counting down to?</label>
-                <input id="cdl" class="input" placeholder="Holiday" value={cd.label} maxLength={40} onInput={(e) => setCd({ ...cd, label: (e.target as HTMLInputElement).value })} />
-                <label class="field-label" for="cdd">Date</label>
-                <input id="cdd" class="input" type="date" value={cd.date} onInput={(e) => setCd({ ...cd, date: (e.target as HTMLInputElement).value })} />
-              </div>
-            )}
-            {["message", "fortune", "shopping"].includes(src) && <p class="cap">Nothing else to set for this one.</p>}
-            <div class="glass grp"><div class="lrow"><div class="grow" style="display:flex;flex-direction:column"><span>Quiet hours</span><span class="cap">{quiet?.enabled ? `${quiet.start} to ${quiet.end}: prints wait until they end. Change in Settings.` : "Off. Turn on in Settings › Schedules."}</span></div></div></div>
-          </>
-        )}
-        {step === 4 && (
-          <>
-            <div class="glass" style="border-radius:16px;padding:4px 4px 4px 14px;display:flex;align-items:center;gap:10px">
-              <label for="wname" class="cap" style="color:var(--silver)">Name</label>
-              <input id="wname" value={name} maxLength={60} onInput={(e) => setName((e.target as HTMLInputElement).value)} style="flex:1;height:44px;border:0;background:transparent;outline:none;font-size:16px;font-weight:600;color:var(--hi)" />
-            </div>
-            <div style="display:flex;justify-content:center">
-              <div class="rwrap" style="width:250px"><div class="receipt bits img">{pv ? <img src={pv} alt="What it will print" /> : <div class="shim" style="height:180px;margin:0 10px" />}</div></div>
-            </div>
-            <p class="cap center">{src === "message" ? "It prints exactly this each time." : "Preview uses today's data. Each print uses the data of its day."}</p>
-          </>
-        )}
-        <div class="actrow">
-          <button class="btn" style="width:110px;min-height:56px" onClick={() => (step === 1 ? onClose() : setStep(step - 1))}>{step === 1 ? "Cancel" : "Back"}</button>
-          <button class="btn-pink" style="flex:1;min-height:56px" disabled={!canNext || busy} onClick={() => (step < 4 ? setStep(step + 1) : save())}>{step < 4 ? "Next" : "Save schedule"}</button>
-        </div>
-      </section>
-    </div>
+        <Seg label="How often" value={kind} onChange={setKind} options={[{ value: "once", label: "Once" }, { value: "repeat", label: "Repeat" }]} />
+        <WhenPicker kind={kind} date={date} time={time} days={days}
+          onChange={(p) => { if (p.date !== undefined) setDate(p.date); if (p.time !== undefined) setTime(p.time); if (p.days !== undefined) setDays(p.days); }} />
+        <div class="glass summary"><IconAlarm class="i" /><span>{summary}</span></div>
+        <button class="btn-pink block" disabled={busy || past || (kind === "repeat" && !days.length)} onClick={save}>Save schedule</button>
+        <p class="cap" style="margin:0 4px">Weather, calendar, routines and more: <a href="/schedules" onClick={props.onClose} style="color:var(--pink-text)">Schedules</a>.</p>
+      </div>
+    </Sheet>
   );
+}
+
+function firstWords(doc: Doc): string {
+  for (const b of doc.blocks as any[]) {
+    const t = (b.text ?? b.items?.[0]?.text ?? "").trim();
+    if (t) return t.split("\n")[0].slice(0, 30);
+  }
+  return "";
 }
 
 function Tile(props: { on: boolean; onClick: () => void; Icon: (p: any) => any; name: string; sub: string }) {
@@ -406,12 +362,21 @@ function Tile(props: { on: boolean; onClick: () => void; Icon: (p: any) => any; 
 }
 
 // ------------------------------------------------------- routine builder / edit --
+const NEW_DRAFT = (): Schedule => ({ id: "", name: "New schedule", enabled: true, time: "07:30", days: [0, 1, 2, 3, 4, 5, 6], once: null,
+  sections: [], conditions: [], next_run: null, last_run_at: null, last_result: null });
+
 function Routine(props: { id: string; meta: ListResp | null; onDone: () => void }) {
+  const { route } = useLocation();
+  const draft = props.id === "new";
   const [s, setS] = useState<Schedule | null>(null);
   const [adding, setAdding] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [pv, setPv] = useState<string | null>(null);
-  useEffect(() => { get<Schedule>(`/api/schedules/${props.id}`).then(setS).catch(props.onDone); }, [props.id]);
+  const [named, setNamed] = useState(!draft);
+  useEffect(() => {
+    if (draft) { setS(NEW_DRAFT()); setNamed(false); return; }
+    get<Schedule>(`/api/schedules/${props.id}`).then(setS).catch(props.onDone);
+  }, [props.id]);
   const set = (p: Partial<Schedule>) => setS((x) => (x ? { ...x, ...p } : x));
   const key = JSON.stringify(s?.sections ?? []);
   useEffect(() => {
@@ -425,11 +390,48 @@ function Routine(props: { id: string; meta: ListResp | null; onDone: () => void 
   if (!s) return <div class="stack"><div class="shim" style="height:60px" /><div class="shim" style="height:220px" /></div>;
   const secNames = props.meta?.sections ?? {};
   const condNames = props.meta?.conditions ?? {};
+  const body = () => ({ name: s.name, time: s.time, days: s.once ? [] : s.days, once: s.time ? s.once ?? null : null,
+    sections: s.sections, conditions: s.conditions, enabled: s.once ? true : s.enabled });
+  const check = () => {
+    if (!s.sections.length) return "Add a block first.";
+    if (s.sections.some((x) => x.type === "countdown" && !x.date)) return "Pick a date for the countdown.";
+    if (s.time && s.once && atTime(s.once, s.time).getTime() <= Date.now()) return "That date and time has already passed.";
+    if (s.time && !s.once && !s.days.length) return "Pick at least one day.";
+    return null;
+  };
   const save = async () => {
-    if (s.sections.some((x) => x.type === "countdown" && !x.date)) return toast("Pick a date for the countdown.");
-    await send("PATCH", `/api/schedules/${s.id}`, { name: s.name, time: s.time, days: s.days, sections: s.sections, conditions: s.conditions, enabled: s.enabled });
-    toast(s.time ? `Scheduled for ${s.time}` : "Saved");
-    props.onDone();
+    const why = check();
+    if (why) return toast(why);
+    try {
+      if (draft) await send<Schedule>("POST", "/api/schedules", body());
+      else await send("PATCH", `/api/schedules/${s.id}`, body());
+      schedulesChanged.value++;
+      toast(s.time ? (s.once ? `Scheduled for ${onceText(s.once, s.time)}` : `Scheduled for ${s.time}`) : "Saved");
+      props.onDone();
+    } catch (e) { toast((e as Error).message); }
+  };
+  const printNow = async () => {
+    try {
+      let id = s.id;
+      if (draft) { // save it first so it can run, then keep editing the saved one
+        const why = check();
+        if (why) return toast(why);
+        id = (await send<Schedule>("POST", "/api/schedules", body())).id;
+        schedulesChanged.value++;
+        route(`/schedules/${id}`, true);
+      }
+      toast((await send<{ message: string }>("POST", `/api/schedules/${id}/run`)).message);
+    } catch (e) { toast((e as Error).message); }
+  };
+  const kind: "repeat" | "once" | "none" = !s.time ? "none" : s.once ? "once" : "repeat";
+  const setKind = (k: "repeat" | "once" | "none") => {
+    if (k === "none") set({ time: null, once: null });
+    else if (k === "once") {
+      const f = soon();
+      const keep = s.time && s.once && atTime(s.once, s.time).getTime() > Date.now();
+      set(keep ? {} : { time: f.time, once: f.date });
+    }
+    else set({ time: s.time ?? "07:30", once: null, days: s.days.length ? s.days : [0, 1, 2, 3, 4, 5, 6] });
   };
   const move = (i: number, d: number) => {
     const xs = s.sections.slice();
@@ -446,11 +448,23 @@ function Routine(props: { id: string; meta: ListResp | null; onDone: () => void 
   };
   return (
     <>
-      <Topbar title={s.name || "Routine"} back={props.onDone} backLabel="Schedules"><StatusPill /></Topbar>
+      <Topbar title={draft ? "New schedule" : s.name || "Routine"} back={props.onDone} backLabel="Schedules"><StatusPill /></Topbar>
       <div class="glass" style="border-radius:16px;padding:4px 4px 4px 14px;display:flex;align-items:center;gap:10px">
         <label for="sname" class="cap" style="color:var(--silver)">Name</label>
-        <input id="sname" value={s.name} maxLength={60} onInput={(e) => set({ name: (e.target as HTMLInputElement).value })} style="flex:1;height:44px;border:0;background:transparent;outline:none;font-size:16px;font-weight:600;color:var(--hi)" />
+        <input id="sname" value={s.name} maxLength={60} onInput={(e) => { setNamed(true); set({ name: (e.target as HTMLInputElement).value }); }} style="flex:1;min-width:0;height:44px;border:0;background:transparent;outline:none;font-size:16px;font-weight:600;color:var(--hi)" />
       </div>
+      {draft && s.sections.length === 0 && (
+        <>
+          <span class="sect">Start from</span>
+          <div class="chips wrapc" role="group" aria-label="Start from">
+            {STARTERS.map((st) => (
+              <button class="glass chip pk" onClick={() => set({ sections: st.sections.map((x) => ({ ...x })), ...(named ? {} : { name: st.defName }) })}>
+                <st.Icon class="i" />{st.name}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       <span class="sect">Blocks</span>
       {s.sections.map((sec, i) => {
@@ -478,13 +492,18 @@ function Routine(props: { id: string; meta: ListResp | null; onDone: () => void 
         );
       })}
       <button class="add-row" onClick={() => setAdding(true)}><IconPlus class="i" width={18} />Add a block</button>
+      {s.sections.some((x) => x.type === "agenda" || x.type === "tasks") && <GoogleHint />}
 
       <span class="sect">When</span>
       <div class="glass card stack">
-        <div class="row" style="justify-content:space-between"><span>Print at a set time</span>
-          <Toggle pink label="Print at a set time" checked={!!s.time} onChange={(v) => set({ time: v ? "07:30" : null })} /></div>
-        {s.time && (<><TimeWheel value={s.time} onChange={(time) => set({ time })} /><DayChips days={s.days} onChange={(days) => set({ days })} /></>)}
-        <p class="cap">{s.time ? `${whenText(s)}. ${firstRunText(s.time, s.days)}` : "Without a time, run it from the arcade button or a quick chip on Create."}</p>
+        <Seg label="When" value={kind} onChange={setKind}
+          options={[{ value: "repeat", label: "Repeat" }, { value: "once", label: "Once" }, { value: "none", label: "No set time" }]} />
+        {s.time && (
+          <WhenPicker kind={kind === "once" ? "once" : "repeat"} date={s.once ?? soon().date} time={s.time} days={s.days}
+            onChange={(p) => set({ ...(p.time !== undefined ? { time: p.time } : {}), ...(p.days !== undefined ? { days: p.days } : {}), ...(p.date !== undefined ? { once: p.date } : {}) })} />
+        )}
+        <p class="cap">{!s.time ? "Without a time, run it from the arcade button or a quick chip on Create."
+          : s.once ? `Prints once, ${onceText(s.once, s.time)}, then switches off.` : `${whenText(s)}. ${firstRunText(s.time, s.days)}`}</p>
       </div>
 
       {s.time && (
@@ -513,13 +532,13 @@ function Routine(props: { id: string; meta: ListResp | null; onDone: () => void 
 
       <span class="sect">Preview</span>
       <div style="display:flex;justify-content:center">
-        <div class="rwrap" style="max-width:300px">{s.sections.length ? <div class="receipt bits img">{pv ? <img src={pv} alt="What it will print today" /> : <div class="shim" style="height:180px;margin:0 10px" />}</div> : <p class="cap">Add a block to see it.</p>}</div>
+        <div class="rwrap" style="width:100%;max-width:384px">{s.sections.length ? <div class="receipt bits img">{pv ? <img src={pv} alt="What it will print today" /> : <div class="shim" style="height:180px;margin:0 10px" />}</div> : <p class="cap">Add a block to see it.</p>}</div>
       </div>
       <div class="actrow">
-        <button class="btn-green" style="flex:1" disabled={!s.sections.length} onClick={() => send<{ message: string }>("POST", `/api/schedules/${s.id}/run`).then((r) => toast(r.message))}>Print now</button>
-        <button class="btn-pink" style="flex:1" onClick={save}>{s.time ? "Save schedule" : "Save routine"}</button>
+        <button class="btn-green" style="flex:1" disabled={!s.sections.length} onClick={printNow}>Print now</button>
+        <button class="btn-pink" style="flex:1" disabled={!s.sections.length} onClick={save}>{s.time ? "Save schedule" : "Save routine"}</button>
       </div>
-      <button class="btn btn-danger" onClick={() => setConfirmDel(true)}><IconTrash class="i" />Delete</button>
+      {!draft && <button class="btn btn-danger" onClick={() => setConfirmDel(true)}><IconTrash class="i" />Delete</button>}
 
       <Sheet open={adding} onClose={() => setAdding(false)} title="Add a block" tint="tp">
         <div class="wtiles">

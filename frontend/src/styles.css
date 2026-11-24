@@ -138,6 +138,9 @@ label.btn, label.btn-green { cursor: pointer; }
 .seg { width: 100%; }
 .seg button[aria-pressed="true"], .seg button[aria-selected="true"] { color: var(--hi); }
 .seg.fit { width: auto; display: inline-grid; }
+/* five tabs (Create modes) on a 360-390 px phone: shrink the label a little rather than clip it */
+.seg button { font-size: clamp(12.5px, 3.5vw, 14px); padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.linkbtn { color: var(--green); text-decoration: underline; font-weight: 600; padding: 4px 0; }
 
 /* --------------------------------------------------------------- inputs */
 label.field-label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin: 12px 4px 6px; }
@@ -181,14 +184,24 @@ input[type="range"] { width: 100%; accent-color: var(--green); height: 28px; }
 /* --------------------------------------------------------------- receipt */
 .rwrap { width: 100%; }
 .receipt.img { padding: 10px 0 22px; }
-.receipt.img img { display: block; width: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+.receipt.img img { display: block; width: 100%; }
 .receipt.loading img { opacity: .55; transition: opacity .2s; }
 .dotscap { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 8px; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .06em; }
 .dotscap::before, .dotscap::after { content: ""; width: 24px; height: 1px; background: var(--muted); }
 .paper-wrap { display: flex; justify-content: center; padding: 8px 0; }
 .paper { width: 100%; max-width: 384px; }
-.paper img { display: block; width: 100%; image-rendering: pixelated; }
+.paper img { display: block; width: 100%; }
 .paper-meta { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin: 10px 4px 0; }
+
+/* Print previews (lib/crisp.ts): crisp when each dot is a whole number of screen pixels,
+   smooth when shrunk (nearest-neighbour shrinking drops dots and garbles small text). */
+img.px { image-rendering: pixelated; image-rendering: crisp-edges; }
+img.smooth { image-rendering: auto; }
+img.zoomable { cursor: zoom-in; }
+.zoomview { position: fixed; inset: 0; z-index: 90; background: rgba(8, 8, 10, .88); overflow: auto; display: flex; flex-direction: column; align-items: center; padding: calc(16px + env(safe-area-inset-top)) 0 32px; animation: fadein .2s both; }
+.zoomclose { position: sticky; top: 0; align-self: flex-end; margin: 0 16px 12px; z-index: 1; }
+.zoompaper { background: var(--paper); padding: 12px 0 24px; box-shadow: 0 16px 40px rgba(0, 0, 0, .6); }
+.zoompaper img { display: block; width: 384px; max-width: none; }
 
 /* ------------------------------------------------------------- Create */
 .canvas { position: relative; display: flex; gap: 10px; padding: 14px; min-height: 360px; overflow: hidden; }
@@ -207,7 +220,7 @@ input[type="range"] { width: 100%; accent-color: var(--green); height: 28px; }
 .btn-sched { width: 128px; flex: none; }
 .slot { top: 14px; }
 .feedpaper { top: 22px; width: 224px !important; }
-.feedpaper img { display: block; width: 100%; image-rendering: pixelated; }
+.feedpaper img { display: block; width: 100%; }
 .feedlayer { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
 .canvas.feedingnow .strip { visibility: hidden; }
 draw-surface, canvas.draw { touch-action: none; display: block; width: 100%; background: var(--paper); cursor: crosshair; image-rendering: pixelated; }
@@ -220,7 +233,7 @@ draw-surface, canvas.draw { touch-action: none; display: block; width: 100%; bac
 .tgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 12px; align-content: start; width: 100%; }
 .tcard { display: flex; flex-direction: column; gap: 6px; text-align: left; }
 .tcard .receipt { height: 96px; padding: 8px 8px 16px; overflow: hidden; }
-.tcard .receipt img { width: 100%; display: block; image-rendering: pixelated; }
+.tcard .receipt img { width: 100%; display: block; }
 .tcard .tname { font-size: 13px; font-weight: 600; color: var(--hi); }
 
 /* -------------------------------------------------------------- History */
@@ -228,7 +241,7 @@ draw-surface, canvas.draw { touch-action: none; display: block; width: 100%; bac
 @media (min-width: 768px) { .hgrid { gap: 12px; } }
 .hcard { display: flex; flex-direction: column; padding: 10px; gap: 8px; border-radius: 18px !important; text-align: left; }
 .hcard .receipt { height: 96px; padding: 6px 6px 16px; overflow: hidden; }
-.hcard .receipt img { width: 100%; display: block; image-rendering: pixelated; }
+.hcard .receipt img { width: 100%; display: block; }
 .hcard .t { font-size: 13px; font-weight: 600; color: var(--hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hcard.bad { border-color: rgba(255, 46, 154, .6) !important; }
 .hcard.bad .rwrap { opacity: .55; }
@@ -289,7 +302,7 @@ a.btn-green, a.btn { text-decoration: none; }
 .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 32px 16px; color: var(--silver); }
 .empty > svg { width: 44px; height: 44px; color: var(--muted); }
 .empty svg.illo { width: 170px; height: auto; }
-.thumb { width: 52px; height: 52px; border-radius: 10px; background: var(--paper); object-fit: cover; object-position: left top; image-rendering: pixelated; flex-shrink: 0; }
+.thumb { width: 52px; height: 52px; border-radius: 10px; background: var(--paper); object-fit: cover; object-position: left top; flex-shrink: 0; }
 .state-tag { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(201, 205, 212, .12); color: var(--muted); }
 .state-tag.failed, .state-tag.missed { background: rgba(255, 46, 154, .16); color: var(--pink-text); }
 .state-tag.printing, .state-tag.queued, .state-tag.held { background: rgba(57, 255, 136, .14); color: var(--green); }
