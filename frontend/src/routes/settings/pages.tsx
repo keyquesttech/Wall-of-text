@@ -4,8 +4,8 @@ import type { FunctionComponent } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { api, get, send, upload, type FontInfo } from "../../lib/api";
 import { inboxWaiting, printer, settings, wifi } from "../../lib/state";
-import { IconBulb, IconCalendar, IconClock, IconCloud, IconDevice, IconEye, IconFont, IconHistory, IconLock, IconMail, IconPlus, IconPrinter, IconTasks, IconTrash, IconWifi } from "../../components/icons";
-import { Banner, Seg, Sheet, timeAgo, toast, Toggle, ToggleRow, Topbar } from "../../components/ui";
+import { IconBulb, IconCalendar, IconClock, IconCloud, IconDevice, IconEye, IconFont, IconHistory, IconLock, IconMail, IconPlus, IconPrinter, IconTrash, IconWifi } from "../../components/icons";
+import { Banner, Seg, Sheet, timeAgo, toast, ToggleRow, Topbar } from "../../components/ui";
 import { AccessPage, useBack, WifiPage } from "../Settings";
 import { RemotePage } from "./remote";
 
@@ -341,59 +341,6 @@ function CalendarsPage() {
   );
 }
 
-function TasksPage() {
-  const back = useBack();
-  const [s, patch] = useSettings();
-  const [lists, setLists] = useState<{ id: string; title: string }[]>([]);
-  const [connected, setConnected] = useState<boolean | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const file = useRef<HTMLInputElement>(null);
-  const load = () => get<{ lists: any[]; connected: boolean }>("/api/sources/tasks/lists").then((r) => { setLists(r.lists); setConnected(r.connected); }).catch((e) => { setErr(e.message); setConnected(true); });
-  useEffect(() => { load(); }, []);
-  const onFile = async () => {
-    const f = file.current?.files?.[0];
-    if (!f) return;
-    const fd = new FormData();
-    fd.append("file", f);
-    try { await upload("/api/sources/tasks/token", fd); toast("Google Tasks connected"); setErr(null); load(); settings.value = await api.settings(); }
-    catch (e) { setErr((e as Error).message); }
-  };
-  if (!s) return null;
-  const chosen: string[] = s.tasks.lists ?? [];
-  return (
-    <>
-      <Topbar title="Google Tasks" back={back} />
-      {err && <Banner action={<label for="tokfile" class="btn small">Sign in again</label>}>{err}</Banner>}
-      {connected === false && (
-        <div class="glass card">
-          <p style="margin-top:0">Google doesn't let small devices sign in to Tasks directly, so you make a sign-in file once on your computer:</p>
-          <ol class="small" style="padding-left:20px">
-            <li>On the PC, run <span class="mono">python tools/google_auth.py client_secret.json</span> (the file explains the one-time Google setup).</li>
-            <li>Sign in to Google in the browser that opens.</li>
-            <li>Upload the <span class="mono">walloftext-google-token.json</span> it makes.</li>
-          </ol>
-        </div>
-      )}
-      {connected && (
-        <>
-          <h2 class="section">Lists to print</h2>
-          <div class="glass grp">
-            {lists.map((l) => (
-              <div class="lrow"><span class="grow">{l.title}</span>
-                <Toggle label={l.title} checked={chosen.length === 0 ? l === lists[0] : chosen.includes(l.id)}
-                  onChange={(v) => patch({ tasks: { lists: v ? [...chosen.filter((x) => x !== l.id), l.id] : chosen.filter((x) => x !== l.id) } })} />
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-      <input ref={file} id="tokfile" type="file" accept=".json,application/json" class="sr-only" onChange={onFile} />
-      <label for="tokfile" class="btn block" style="margin-top:14px">{connected ? "Upload a new sign-in file" : "Upload sign-in file"}</label>
-      {connected && <button class="btn btn-ghost btn-danger block" style="margin-top:8px" onClick={() => send("DELETE", "/api/sources/tasks/token").then(load)}>Disconnect</button>}
-    </>
-  );
-}
-
 // ----------------------------------------------------------- Guest & inbox --
 export function GuestAndInbox() {
   const [s, patch] = useSettings();
@@ -581,7 +528,6 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   { id: "history", Icon: IconHistory, title: "History", group: "Printing", Component: HistoryPrefs },
   { id: "weather", Icon: IconCloud, title: "Weather", group: "Connections", Component: WeatherPage, meta: () => settings.value?.weather?.place || "Not set" },
   { id: "calendars", Icon: IconCalendar, title: "Calendars", group: "Connections", Component: CalendarsPage, meta: () => `${settings.value?.calendars?.length ?? 0}` },
-  { id: "tasks", Icon: IconTasks, title: "Google Tasks", group: "Connections", Component: TasksPage, meta: () => (settings.value?.tasks?.enabled ? "Connected" : "Not connected") },
   { id: "remote", Icon: IconMail, title: "Remote messages", group: "Connections", Component: RemotePage },
   { id: "access", Icon: IconLock, title: "Access", group: "Access", Component: AccessPage, meta: () => (inboxWaiting.value ? `${inboxWaiting.value} waiting` : "") },
   { id: "wifi", Icon: IconWifi, title: "Wi-Fi", group: "Device", Component: WifiPage, meta: () => wifi.value?.ssid ?? "" },

@@ -89,7 +89,7 @@ def test_backup_roundtrip_excludes_secrets(c, settings):
     c.post("/api/schedules", json={"name": "Morning", "time": "07:00", "sections": [{"type": "fortune"}]})
     data = (settings.fonts_dir / "VT323-Regular.ttf").read_bytes()
     c.post("/api/fonts", files={"file": ("Mine.ttf", data, "font/ttf")}, data={"name": "Mine"})
-    (settings.data_dir / "google-token.json").write_text('{"refresh_token": "SECRET"}')
+    (settings.data_dir / "stray-token.json").write_text('{"refresh_token": "SECRET"}')
     r = c.get("/api/backup")
     assert r.status_code == 200 and r.headers["content-type"] == "application/zip"
     z = zipfile.ZipFile(io.BytesIO(r.content))

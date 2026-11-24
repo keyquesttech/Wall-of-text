@@ -1,5 +1,13 @@
 # Progress
 
+## 24 Nov 2026: Google Tasks removed
+- Google Tasks is gone: the Tasks source, its token upload API and Settings page, the wizard's
+  "Tasks" tile, the routine block, the "Only if any are due" condition, the To-do print template
+  and `tools/google_auth.py`. The OAuth setup on the PC was too much hassle for what it gave.
+- DB migration 8 strips Tasks blocks and conditions from saved schedules and switches off any
+  schedule that printed only Tasks. Any old `google-token.json` in the data dir is deleted at start.
+- The in-app shopping and to-do lists stay. Google Calendar (private iCal link) is unchanged.
+
 ## 21 Nov 2026 (later): fixes from use
 - **Every print is rotated 180°** before it goes to the printer (Settings › Printer › "Rotate prints
   180°", on by default). Preview and History stay upright; only the paper is turned.

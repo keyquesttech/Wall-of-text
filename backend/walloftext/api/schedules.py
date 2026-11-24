@@ -5,7 +5,7 @@ import asyncio
 import json
 from typing import Any
 
-from fastapi import APIRouter, File, Request, UploadFile
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, field_validator
 
@@ -146,39 +146,4 @@ async def test_calendar(body: CalendarBody, request: Request):
 @router.get("/sources/status")
 async def sources_status(request: Request):
     src = request.app.state.svc.extras["sources"]
-    return {"sources": src.status(), "tasks_connected": src.tasks_api.configured()}
-
-
-@router.post("/sources/tasks/token")
-async def upload_tasks_token(request: Request, file: UploadFile = File(...)):
-    from ..sources.google_tasks import TasksError
-
-    src = request.app.state.svc.extras["sources"]
-    try:
-        src.tasks_api.save_token(await file.read(64 * 1024))
-        lists = await src.tasks_api.lists()
-    except TasksError as exc:
-        return JSONResponse({"error": "bad_token", "message": str(exc)}, status_code=422)
-    except Exception:
-        return JSONResponse({"error": "unreachable", "message": "Saved, but Google couldn't be reached to check it."},
-                            status_code=502)
-    request.app.state.svc.app_settings.patch({"tasks": {"enabled": True}})
-    return {"ok": True, "lists": lists}
-
-
-@router.get("/sources/tasks/lists")
-async def tasks_lists(request: Request):
-    src = request.app.state.svc.extras["sources"]
-    if not src.tasks_api.configured():
-        return {"lists": [], "connected": False}
-    try:
-        return {"lists": await src.tasks_api.lists(), "connected": True}
-    except Exception as exc:
-        return JSONResponse({"error": "tasks", "message": str(exc)}, status_code=502)
-
-
-@router.delete("/sources/tasks/token")
-async def forget_tasks(request: Request):
-    request.app.state.svc.extras["sources"].tasks_api.forget()
-    request.app.state.svc.app_settings.patch({"tasks": {"enabled": False}})
-    return {"ok": True}
+    return {"sources": src.status()}

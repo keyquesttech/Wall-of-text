@@ -14,7 +14,7 @@ B = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8099"
 AXE = (Path(__file__).resolve().parents[2] / "frontend/node_modules/axe-core/axe.min.js").read_text()
 PAGES = ["/signin", "/setup", "/note", "/", "/create/draw", "/create/image", "/create/templates", "/create/list",
          "/schedules", "/history", "/settings", "/settings/printer", "/settings/fonts", "/settings/button",
-         "/settings/schedules", "/settings/history", "/settings/weather", "/settings/calendars", "/settings/tasks",
+         "/settings/schedules", "/settings/history", "/settings/weather", "/settings/calendars",
          "/settings/remote", "/settings/access", "/settings/wifi", "/settings/device", "/settings/display"]
 bad = 0
 with sync_playwright() as p:

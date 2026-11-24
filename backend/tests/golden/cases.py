@@ -108,24 +108,6 @@ def cases() -> dict[str, dict]:
                                                       "text": "Can't reach the weather service.",
                                                       "last": "Mon 06:58", "now": "2026-11-23T07:30"})
 
-    t = sample("tasks")
-    out["todo_sample"] = slip("todo", dict(t, now="2026-11-23T07:30"))
-    clear = copy.deepcopy(t)
-    clear["today"] = "2026-11-28"
-    clear["tasks"] = [x for x in clear["tasks"] if not x["due"] or x["due"] > "2026-11-28"] + [
-        {"id": "x1", "list": "Home", "order": 20, "title": "Defrost the freezer", "notes": "", "due": "2026-12-02",
-         "parent": None},
-        {"id": "x2", "list": "Home", "order": 21, "title": "Send rent", "notes": "", "due": "2026-12-08",
-         "parent": None}]
-    out["todo_all_clear"] = slip("todo", dict(clear, now="2026-11-28T07:30"))
-    many = copy.deepcopy(t)
-    many["tasks"] += [{"id": f"m{i}", "list": "Errands", "order": 30 + i,
-                       "title": ("A forty character task title, quite long" if i == 0 else f"Extra task {i}"),
-                       "notes": "", "due": "2026-11-23" if i < 4 else None, "parent": None} for i in range(10)]
-    many["tasks"][0]["title"] = "Call landlord about the boiler and the window @10:00"
-    many["tasks"][0]["notes"] = "Ask for Thursday. Also mention the damp patch in the hall and the extractor fan."
-    out["todo_many"] = slip("todo", dict(many, now="2026-11-23T07:30"))
-
     cal = sample("calendar")
     out["itinerary_sample"] = slip("itinerary", dict(cal, now="2026-11-23T07:30"))
     out["itinerary_free"] = slip("itinerary", {"date": "2026-11-28", "events": [], "allDay": [],
@@ -167,7 +149,7 @@ def cases() -> dict[str, dict]:
     out["test_page"] = slip("test_page", {"paper": "About 60%", "darkness": "Normal", "speed": "Normal",
                                           "address": "walloftext.local", "now": "2026-11-23T12:04"})
     out["routine"] = {"blocks": [out["weather_briefing_sample"]["blocks"][0], {"type": "cut"},
-                                 out["todo_sample"]["blocks"][0], {"type": "cut"},
+                                 out["itinerary_sample"]["blocks"][0], {"type": "cut"},
                                  {"type": "group", "blocks": [{"type": "text", "text": "Have a good day!"}]}]}
     out["create_text"] = {"blocks": [{"type": "heading", "text": "Hello"}, {"type": "text", "text": "A Create print"}]}
     return out

@@ -9,7 +9,6 @@ import pytest
 from walloftext.scheduler.engine import Scheduler, in_quiet
 from walloftext.services import build
 from walloftext.sources.calendar import parse_events
-from walloftext.sources.google_tasks import GoogleTasks, TasksError
 from walloftext.sources.hub import Sources
 from walloftext.sources.weather import Forecast, OpenMeteo
 
@@ -226,10 +225,11 @@ async def test_routine_doc_sections(env):
         {"type": "quote", "text": "Be kind"}, {"type": "agenda"}, {"type": "tasks"}, {"type": "divider"}])
     texts = json.dumps(doc, ensure_ascii=False)
     kinds = [b.get("template") for b in doc["blocks"] if b["type"] == "slip"]
-    assert kinds == ["date", "unavailable", "countdown", "fortune", "unavailable", "unavailable"]
-    assert sum(b["type"] == "cut" for b in doc["blocks"]) == 5
+    # a "tasks" block left over from before Google Tasks was removed prints nothing
+    assert kinds == ["date", "unavailable", "countdown", "fortune", "unavailable"]
+    assert sum(b["type"] == "cut" for b in doc["blocks"]) == 4
     assert "Christmas" in texts and "Be kind" in texts
-    assert "Google Tasks isn't connected." in texts
+    assert "Tasks" not in texts
     img = svc.renderer.render(doc).image
     assert img.width == 384
 
@@ -288,30 +288,32 @@ async def test_calendar_via_http_and_failure_line(env):
     assert len(evs) == 3 and errs == ["Calendar “Work” unavailable"]
 
 
-async def test_google_tasks_refresh_and_list(tmp_path):
-    calls = []
+def test_migration_drops_google_tasks(tmp_path):
+    """Saved schedules lose their Google Tasks blocks and condition; a Tasks-only one is switched off."""
+    from walloftext.store.db import MIGRATIONS, Store
 
-    def handler(req):
-        calls.append(str(req.url))
-        if req.url.path == "/token":
-            body = req.content.decode()
-            if "refresh_token=bad" in body:
-                return httpx.Response(400, json={"error": "invalid_grant"})
-            return httpx.Response(200, json={"access_token": "AT", "expires_in": 3600})
-        assert req.headers["authorization"] == "Bearer AT"
-        if req.url.path.endswith("/users/@me/lists"):
-            return httpx.Response(200, json={"items": [{"id": "L1", "title": "My Tasks"}]})
-        return httpx.Response(200, json={"items": [{"title": "Later"}, {"title": "Soon", "due": "2026-11-21T00:00:00Z"}]})
+    import sqlite3
 
-    gt = GoogleTasks(tmp_path / "tok.json", httpx.AsyncClient(transport=httpx.MockTransport(handler)))
-    with pytest.raises(TasksError):
-        gt.save_token(b'{"client_id": "x"}')
-    gt.save_token(json.dumps({"client_id": "c", "client_secret": "s", "refresh_token": "r"}).encode())
-    assert [t["title"] for t in await gt.tasks()] == ["Soon", "Later"]
-    gt.save_token(json.dumps({"client_id": "c", "client_secret": "s", "refresh_token": "bad"}).encode())
-    with pytest.raises(TasksError) as e:
-        await gt.lists()
-    assert e.value.reauth
+    c = sqlite3.connect(tmp_path / "w.db", isolation_level=None)  # the database as it was before this change
+    for sql in MIGRATIONS[:-1]:
+        for stmt in [x for x in sql.split(";") if x.strip()]:
+            c.execute(stmt)
+    c.execute(f"PRAGMA user_version={len(MIGRATIONS) - 1}")
+    rows = [("mix", '[{"type":"date"},{"type":"tasks"},{"type":"fortune"}]', '[{"type":"has_tasks"},{"type":"rain_above","value":50}]', None),
+            ("only", '[{"type":"tasks"}]', '[]', "tasks"),
+            ("plain", '[{"type":"weather"}]', '[]', None)]
+    for name, sec, cond, icon in rows:
+        c.execute("INSERT INTO schedules(id,name,sections,conditions,icon,created_at) VALUES(?,?,?,?,?,0)",
+                  (name, name, sec, cond, icon))
+    c.close()
+    st = Store(tmp_path / "w.db")
+    st.migrate()
+    got = {r["id"]: r for r in st.conn().execute("SELECT * FROM schedules")}
+    assert [x["type"] for x in json.loads(got["mix"]["sections"])] == ["date", "fortune"]
+    assert json.loads(got["mix"]["conditions"]) == [{"type": "rain_above", "value": 50}]
+    assert got["mix"]["enabled"] == 1 and got["plain"]["enabled"] == 1
+    assert got["only"]["enabled"] == 0 and got["only"]["sections"] == "[]" and got["only"]["icon"] is None
+    assert json.loads(got["plain"]["sections"]) == [{"type": "weather"}]
 
 
 async def test_open_meteo_parsing():

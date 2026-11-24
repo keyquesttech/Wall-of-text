@@ -117,6 +117,20 @@ MIGRATIONS: list[str] = [
     );
     CREATE INDEX list_items_list ON list_items(list);
     """,
+    # Google Tasks was removed: drop its blocks and its "Only if any are due" condition from saved
+    # schedules, and switch off any schedule that printed nothing else.
+    """
+    UPDATE schedules SET enabled = 0
+    WHERE EXISTS (SELECT 1 FROM json_each(schedules.sections) WHERE json_extract(value, '$.type') = 'tasks')
+      AND NOT EXISTS (SELECT 1 FROM json_each(schedules.sections) WHERE json_extract(value, '$.type') IS NOT 'tasks');
+    UPDATE schedules SET sections = (SELECT json_group_array(json(value)) FROM json_each(schedules.sections)
+                                     WHERE json_extract(value, '$.type') IS NOT 'tasks')
+    WHERE EXISTS (SELECT 1 FROM json_each(schedules.sections) WHERE json_extract(value, '$.type') = 'tasks');
+    UPDATE schedules SET conditions = (SELECT json_group_array(json(value)) FROM json_each(schedules.conditions)
+                                       WHERE json_extract(value, '$.type') IS NOT 'has_tasks')
+    WHERE EXISTS (SELECT 1 FROM json_each(schedules.conditions) WHERE json_extract(value, '$.type') = 'has_tasks');
+    UPDATE schedules SET icon = NULL WHERE icon = 'tasks';
+    """,
 ]
 
 

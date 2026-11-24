@@ -16,8 +16,7 @@ import httpx
 
 from ..actions import fortunes
 from .calendar import Event, fetch_ics, owner_from_url, parse_events
-from .normalise import any_due, calendar_data, tasks_data
-from .google_tasks import GoogleTasks, TasksError
+from .normalise import calendar_data
 from .weather import CACHE_S, Forecast, OpenMeteo, WeatherProvider
 
 if TYPE_CHECKING:
@@ -29,7 +28,6 @@ SECTION_TYPES = {
     "date": "Date header",
     "weather": "Weather",
     "agenda": "Today's calendar",
-    "tasks": "Google Tasks",
     "fortune": "Fortune",
     "quote": "Your own line",
     "countdown": "Countdown",
@@ -45,7 +43,8 @@ class Sources:
         self.svc = svc
         self.weather_provider = weather or OpenMeteo(http)
         self.http = http
-        self.tasks_api = GoogleTasks(svc.settings.data_dir / "google-token.json", http)
+        # Google Tasks was removed; don't leave its sign-in token lying around on the Pi.
+        (svc.settings.data_dir / "google-token.json").unlink(missing_ok=True)
         self._weather_cache: Forecast | None = None
         self._status: dict[str, dict] = {}
         self._ics: dict[str, tuple[float, bytes]] = {}
@@ -181,35 +180,7 @@ class Sources:
     async def agenda_doc(self) -> dict:
         return {"blocks": [await self.agenda_slip()]}
 
-    # ------------------------------------------------------------- tasks --
-    async def tasks(self) -> tuple[list[dict], str | None]:
-        if not self.tasks_api.configured():
-            return [], "Google Tasks isn't connected."
-        try:
-            lists = self.svc.app_settings.get("tasks").get("lists") or None
-            items = await self.tasks_api.tasks(lists)
-            self._ok("tasks")
-            return items, None
-        except TasksError as exc:
-            self._fail("tasks", str(exc), reauth=exc.reauth)
-            return [], "Tasks unavailable"
-        except Exception as exc:
-            log.warning("tasks failed: %s", exc)
-            self._fail("tasks", "Can't reach Google Tasks.")
-            return [], "Tasks unavailable"
-
     # ---------------------------------------------------------- sections --
-    def tasks_slip(self, res: tuple[list[dict], str | None], title: str | None = None) -> dict:
-        items, err = res
-        now = self._now()
-        if err:
-            return {"type": "slip", "template": "unavailable",
-                    "data": {"source": "GOOGLE TASKS", "title": err, "now": now.replace(tzinfo=None).isoformat()}}
-        return {"type": "slip", "template": "todo", "data": tasks_data(items, now)}
-
-    def has_due_tasks(self, res: tuple[list[dict], str | None]) -> bool:
-        return any_due(res[0], self._now().date())
-
     async def section_blocks(self, sec: dict[str, Any], ctx: dict) -> list[dict]:
         """One routine section → kit slip blocks (PRINT_TEMPLATES 1, 8b)."""
         t = sec.get("type")
@@ -221,8 +192,6 @@ class Sources:
             return [self.weather_slip(ctx.get("weather") or await self.weather(), "weather_briefing")]
         if t == "agenda":
             return [await self.agenda_slip(ctx.get("events"))]
-        if t == "tasks":
-            return [self.tasks_slip(ctx.get("tasks") or await self.tasks(), sec.get("title"))]
         if t == "fortune":
             return [{"type": "slip", "template": "fortune",
                      "data": {"text": random.choice(fortunes(self.svc)), "now": stamp}}]

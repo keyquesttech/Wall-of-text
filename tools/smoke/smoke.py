@@ -116,7 +116,7 @@ def run(viewport, tag):
         page.wait_for_timeout(400)
         shot(page, f"{tag}-21-schedules")
         # every settings page renders without errors
-        for sp in ["printer", "fonts", "button", "schedules", "history", "weather", "calendars", "tasks",
+        for sp in ["printer", "fonts", "button", "schedules", "history", "weather", "calendars",
                    "remote", "access", "wifi", "device", "display"]:
             page.goto(args.base + "/settings/" + sp)
             expect(page.locator("h1")).not_to_have_text("Not found")

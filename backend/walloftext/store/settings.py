@@ -21,7 +21,6 @@ DEFAULTS: dict[str, Any] = {
     "history": {"max_items": 200, "max_days": 30},
     "weather": {"place": "", "lat": None, "lon": None, "units": "C"},
     "calendars": [],  # [{id, name, url}]
-    "tasks": {"enabled": False, "lists": []},
     "button": {"single": "reprint_last", "double": "weather_now", "long": "agenda_today"},
     "led": {"brightness": 60,
             "patterns": {"idle": "off", "printing": "blink", "message_waiting": "slow_pulse",

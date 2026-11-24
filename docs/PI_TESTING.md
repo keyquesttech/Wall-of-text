@@ -55,7 +55,6 @@ density command the probe found (`printer/drivers.py`).
 
 - Weather: Settings › Connections › Weather, type your town.
 - Calendar: paste the Google Calendar "Secret address in iCal format".
-- Google Tasks: run `tools/google_auth.py` on the PC and upload the token.
 - Remote messages: follow [REMOTE_SETUP.md](REMOTE_SETUP.md) (Gmail app password, Telegram bot).
   Done when an allowed email and an allowed Telegram message print within ~90 s, a stranger's
   doesn't, the bot replies "Printed", and quiet hours hold messages.

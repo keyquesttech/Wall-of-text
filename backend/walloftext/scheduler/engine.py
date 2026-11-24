@@ -36,7 +36,6 @@ CONDITIONS = {
     "temp_below": "Temperature is below",
     "temp_above": "Temperature is above",
     "has_events": "There's something in the calendar",
-    "has_tasks": "There are tasks to do",
 }
 
 
@@ -257,8 +256,6 @@ class Scheduler:
             ctx["weather"] = await src.weather()
         if types & {"agenda", "has_events"}:
             ctx["events"] = await src.events()
-        if types & {"tasks", "has_tasks"}:
-            ctx["tasks"] = await src.tasks()
         return ctx
 
     def check_conditions(self, s: dict, ctx: dict) -> str | None:
@@ -278,10 +275,6 @@ class Scheduler:
                 ev, errs = ctx.get("events") or ([], [])
                 if not ev and not errs:
                     return "Nothing in the calendar."
-            if t == "has_tasks":
-                res = ctx.get("tasks") or ([], None)
-                if not res[1] and not self.svc.extras["sources"].has_due_tasks(res):
-                    return "No tasks due today or late."
         return None
 
     async def _run(self, s: dict, due: datetime, late: bool) -> int | None:

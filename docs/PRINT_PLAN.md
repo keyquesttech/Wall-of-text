@@ -1,5 +1,7 @@
 # Print plan (Step 0 survey, 23 Nov 2026)
 
+> **24 Nov 2026:** Google Tasks and the To-do print were removed later. Rows below that mention tasks are history.
+
 Maps `print-templates/IMPLEMENTATION_BRIEF.md` onto the real code. `print-templates/PRINT_TEMPLATES.md`
 is the source of truth for anything printed.
 

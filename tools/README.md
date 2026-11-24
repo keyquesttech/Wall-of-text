@@ -1,4 +1,6 @@
 # Tools
 
-- `google_auth.py` (Phase 5): runs Google's installed-app OAuth flow on the PC
-  and saves a Tasks token to upload to the Pi (BUILD_PLAN 9.1). Not written yet.
+- `update_goldens.py`: regenerate the golden print images in `backend/tests/golden/`.
+- `build_icons.py`: build the app icons.
+- `soak.py`: long-running print soak test.
+- `smoke/`: Playwright smoke and accessibility checks against a mock backend (`run_server.sh`, `smoke.py`, `a11y.py`).

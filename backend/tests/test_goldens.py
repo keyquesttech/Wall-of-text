@@ -142,7 +142,7 @@ def client(settings, fake_nm):
 
 
 def test_preview_equals_printer_bitmap_for_every_golden(client):
-    for name in ("weather_briefing_sample", "weather_now_sample", "todo_sample", "itinerary_sample", "routine",
+    for name in ("weather_briefing_sample", "weather_now_sample", "itinerary_sample", "routine",
                  "message", "shopping", "test_page"):
         doc = CASES[name]
         r = client.post("/api/preview", json={"document": doc})

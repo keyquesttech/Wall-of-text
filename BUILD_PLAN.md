@@ -25,7 +25,7 @@ Version 1.1 · 19 Nov 2026 · Companion to `design-handoff/HANDOFF.md` (UI spec)
 | Dev loop | Develop on Windows against a mock printer, mock GPIO and mock network manager; deploy to the Pi over SSH |
 | Weather | Open-Meteo (free, no key), behind a provider interface |
 | Calendar | Private iCal URL (no OAuth) |
-| Google Tasks | OAuth token created once on the PC and uploaded to the Pi (section 9) |
+| Google Tasks | **Removed** (24 Nov 2026): the OAuth setup was too much hassle. Use the in-app shopping and to-do lists |
 | Site password | One plain-text file on the Pi, default `root`, changeable in the GUI or by editing the file (section 10) |
 | Remote messages | Email (IMAP) and Telegram bot in v1, both free; real SMS optional and paid (section 9.2) |
 
@@ -62,7 +62,7 @@ Raspberry Pi OS Lite is the base because it has no desktop, runs 64-bit on the P
 | 8 | Button: single, double, long press are all user-mappable | Reserve **hold 10 s = Wi-Fi reset** (not mappable). Keep the three mappable gestures as designed |
 | 9 | Nothing on missed schedules, clock, outages | Section 7 defines the policy |
 | 10 | Settings › Device "software updates" | v1 shows the version only. Updates ship through `deploy/deploy.ps1` from the PC. No in-app updater in v1 |
-| 11 | Connections: Google Calendar and Google Tasks with "Sign in again" | Calendar uses a private iCal URL (no sign-in). Only Tasks uses Google OAuth. See section 9 |
+| 11 | Connections: Google Calendar and Google Tasks with "Sign in again"; Schedules wizard "Tasks" tile; routines with "today's tasks" | Calendar uses a private iCal URL (no sign-in). **Google Tasks is not built** (removed 24 Nov 2026): no Tasks connection, wizard tile, routine block or "Only if any are due" condition. See section 9 |
 | 12 | "No sign-up, no login; at most an optional 4-digit PIN" (section 1) and Settings › Access "Require a PIN" | Password-protected by default. One site password (default `root`) lives in a text file on the Pi and can be changed in Settings › Access or by editing the file. Needs a new **Sign in** screen. The 4-digit PIN is dropped (section 10) |
 | 13 | History filters: All, Manual, Schedules, Button, Guest. Connections lists only Google and Weather | Add a **Remote** filter. Add Settings › Connections › **Remote messages** (Email, Telegram, optional SMS) with allowed senders. Guest notes and remote messages share the "Waiting for your OK" list (section 9.2) |
 
@@ -74,7 +74,7 @@ Phone / laptop browser ──HTTP :80──►  walloftext.service  (FastAPI, us
                                        ├─ render/     blocks → 1-bit 384-px bitmap (+ preview PNG)
                                        ├─ queue/      single worker, SQLite-backed jobs
                                        ├─ scheduler/  schedules, routines, conditions
-                                       ├─ sources/    weather, iCal, Google Tasks, quotes
+                                       ├─ sources/    weather, iCal, quotes
                                        ├─ remote/     inbound adapters (email, Telegram, SMS) + approval pipeline
                                        ├─ auth/       password file, sessions, login rate limit
                                        ├─ printer/    driver interface: escpos_usb | mock
@@ -262,13 +262,13 @@ The Pi 4 has **no real-time clock** and the Power + Fan HAT does not add one. Af
 |---|---|
 | Weather | Open-Meteo. Settings stores a place name; geocode once, store lat/lon. Behind a `WeatherProvider` interface |
 | Calendar | Google Calendar "Secret address in iCal format" (read-only link) per calendar, parsed with `icalendar` + `recurring-ical-events`. Any other `.ics` URL works too. No OAuth |
-| Google Tasks | Needs OAuth. **Google's limited-input device flow cannot be used**: it only supports the `email/openid/profile`, Drive `appdata/file` and YouTube scopes, not Calendar or Tasks. Default: `tools/google_auth.py` runs the normal installed-app flow on your Windows PC (loopback redirect works there), saves a token file, and Settings › Connections › Tasks accepts the upload (or `scp`). Set the Google Cloud consent screen to **In production**: in Testing status Google expires refresh tokens after 7 days. It stays unverified, which is fine for personal use |
+| Google Tasks | **Removed 24 Nov 2026.** It needed OAuth, and **Google's limited-input device flow cannot be used**: it only supports the `email/openid/profile`, Drive `appdata/file` and YouTube scopes, not Calendar or Tasks. Default: `tools/google_auth.py` runs the normal installed-app flow on your Windows PC (loopback redirect works there), saves a token file, and Settings › Connections › Tasks accepts the upload (or `scp`). Set the Google Cloud consent screen to **In production**: in Testing status Google expires refresh tokens after 7 days. It stays unverified, which is fine for personal use. That one-time setup proved too awkward, so Tasks was dropped |
 | Quotes and fortunes | Bundled local JSON (offline). Users can add their own |
 | Countdown | Computed locally |
 | Remote messages | Email, Telegram, optional SMS: see 9.2 |
 | Home Assistant, Webhook | "Coming later" in the design; not in v1 |
 
-If Tasks OAuth turns out to be more hassle than it is worth, the fallback is a local to-do and shopping list inside the app (the design already has a shared shopping list).
+Tasks OAuth turned out to be more hassle than it was worth, so the fallback applies: the local to-do and shopping lists inside the app.
 
 ### 9.2 Remote messages: text or email something and it prints
 
@@ -394,7 +394,7 @@ Each phase ends with something runnable and a short note in `docs/PROGRESS.md`.
 - Scheduler, missed-run and quiet-hours policy, sources, conditions, routines, list, wizard, routine builder, holiday mode.
 
 **Phase 5: Settings and connections.**
-- All settings groups, font manager and upload, weather and iCal connections, Tasks OAuth path, Access (change password, change setup Wi-Fi password, "Ask for password", default-password banners, guest page and the shared approval list), Device (stats, backup and restore, restart, shut down).
+- All settings groups, font manager and upload, weather and iCal connections, Access (change password, change setup Wi-Fi password, "Ask for password", default-password banners, guest page and the shared approval list), Device (stats, backup and restore, restart, shut down).
 
 **Phase 6: Remote messages.**
 - Adapter interface, pipeline, allowed senders, approval, dedupe, secrets file, Settings › Connections › Remote messages, History "Remote" filter. Email (IMAP) first, then Telegram, then the optional image support, then optional SMS (Twilio polling) if you decide to pay for a number.
@@ -419,7 +419,7 @@ Change any of these before or during the phase that needs them.
 | 3 | Site password | `root`, protection on by default, plain-text file, device remembered for 30 days |
 | 4 | Scope of "the password" | Protects the website and the setup network only. The Linux and SSH password is the one set in Imager |
 | 5 | Fan | No software fan state; temperature and throttle only |
-| 6 | Google Tasks | OAuth token made on the PC (section 9); drop Tasks if it proves awkward |
+| 6 | Google Tasks | Dropped (24 Nov 2026): the OAuth setup was too awkward |
 | 7 | Missed schedules | Print late within 60 minutes, else skip and log |
 | 8 | Quiet hours | Hold scheduled, guest and remote prints and release them when quiet hours end |
 | 9 | PWA | Plain HTTP, no service worker (override 3) |
