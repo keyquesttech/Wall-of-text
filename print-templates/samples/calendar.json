@@ -1,0 +1,17 @@
+{
+  "_comment": "Normalised calendar data for the Itinerary print. Built from the private iCal URLs (icalendar + recurring-ical-events), today only, local time. Matches Final-Calendar.dc.html. An empty 'events' and 'allDay' list prints Cal-Free.dc.html instead, using 'nextEvent'.",
+  "date": "2026-11-23",
+  "printedAt": "07:30",
+  "calendars": ["Personal", "Work"],
+  "allDay": [
+    {"title": "Recycling collection", "calendar": "Personal"}
+  ],
+  "events": [
+    {"uid": "e1", "title": "Team stand-up", "start": "09:30", "end": "10:00", "location": "", "conferenceUrl": "https://meet.google.com/abc-defg-hij", "attendees": ["Studio team (6)"], "description": "", "calendar": "Work"},
+    {"uid": "e2", "title": "Client review", "start": "11:00", "end": "12:30", "location": "Studio, 2nd floor, 14 Mill Lane", "conferenceUrl": null, "attendees": ["Priya", "Tom", "Ravi", "Jo"], "description": "Bring the prototype and the v2 sketches.", "calendar": "Work"},
+    {"uid": "e3", "title": "Lunch with Sam", "start": "13:00", "end": "14:00", "location": "Canteen, 3 Elm Street", "conferenceUrl": null, "attendees": ["Sam"], "description": "", "calendar": "Personal"},
+    {"uid": "e4", "title": "Haircut", "start": "15:30", "end": "16:15", "location": "Barber, 22 High Street", "conferenceUrl": null, "attendees": [], "description": "", "calendar": "Personal"},
+    {"uid": "e5", "title": "Dinner at Ana's", "start": "19:00", "end": "21:00", "location": "Ana's flat, 12 Elm Street, flat 3", "conferenceUrl": null, "attendees": [], "description": "Bring dessert.", "calendar": "Personal"}
+  ],
+  "nextEvent": null
+}

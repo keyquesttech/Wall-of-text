@@ -78,23 +78,34 @@ class GoogleTasks:
             if c is not self.client:
                 await c.aclose()
 
-    async def tasks(self, list_ids: list[str] | None = None, limit: int = 15) -> list[dict]:
+    async def tasks(self, list_ids: list[str] | None = None, limit: int = 100) -> list[dict]:
+        """Open tasks of the chosen lists: id, title, notes, due (date only), parent, position, list name
+        and `order` (list order, then position). Sorted by due date for simple callers."""
         c = self._c()
         try:
             tok = await self._token(c)
             hdr = {"Authorization": f"Bearer {tok}"}
+            r = await c.get(f"{API}/users/@me/lists", headers=hdr)
+            r.raise_for_status()
+            names = {x["id"]: x.get("title", "") for x in r.json().get("items", [])}
             if not list_ids:
-                r = await c.get(f"{API}/users/@me/lists", headers=hdr)
-                r.raise_for_status()
-                list_ids = [x["id"] for x in r.json().get("items", [])][:1]
+                list_ids = list(names)[:1]
             out: list[dict] = []
-            for lid in list_ids:
+            for li, lid in enumerate(list_ids):
                 r = await c.get(f"{API}/lists/{lid}/tasks", headers=hdr,
-                                params={"showCompleted": "false", "maxResults": 50})
+                                params={"showCompleted": "false", "showHidden": "false", "maxResults": 100})
                 r.raise_for_status()
-                for t in r.json().get("items", []):
-                    if t.get("title", "").strip():
-                        out.append({"title": t["title"].strip(), "due": (t.get("due") or "")[:10] or None})
+                items = [t for t in r.json().get("items", []) if t.get("title", "").strip()]
+                items.sort(key=lambda t: (t.get("parent") is not None, t.get("position", "")))
+                for t in items:
+                    out.append({"id": t.get("id") or f"{lid}:{len(out)}", "title": t["title"].strip(),
+                                "notes": (t.get("notes") or "").strip(), "due": (t.get("due") or "")[:10] or None,
+                                "parent": t.get("parent"), "position": t.get("position", ""),
+                                "list": names.get(lid, ""), "_li": li})
+            out.sort(key=lambda t: (t["_li"], t["position"]))
+            for i, t in enumerate(out):
+                t["order"] = i + 1
+                t.pop("_li")
             out.sort(key=lambda t: (t["due"] is None, t["due"] or ""))
             return out[:limit]
         finally:

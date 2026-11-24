@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Print design system</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./rc.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&amp;family=JetBrains+Mono:wght@400;700;800&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 2720px; height: 2440px; box-sizing: border-box; background: #121315; color: #C9CDD4; font-family: Inter, sans-serif; padding: 64px; display: flex; flex-direction: column; gap: 56px">
+
+<header style="display: flex; justify-content: space-between; align-items: flex-end; gap: 48px">
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <span style="font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #8A8F98">Wall Printer · print design system v1</span>
+    <h1 style="margin: 0; font-size: 56px; line-height: 60px; font-weight: 800; letter-spacing: -.025em; color: #ECEEF2">One system for every slip</h1>
+  </div>
+  <p style="margin: 0; max-width: 900px; font-size: 18px; line-height: 28px; color: #C9CDD4">Every print uses the same skeleton, two fonts, four tones and one set of parts. Weather, to-dos and the itinerary already follow it. Notes, guest notes, remote messages, lists, fortunes, countdowns and system slips use it too. Everything here is at true size: 1 px = 1 printer dot.</p>
+</header>
+
+<div style="display: grid; grid-template-columns: 384px 320px minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: start">
+
+  <!-- Anatomy -->
+  <div class="rc" style="gap: 14px">
+    <div class="row sp" style="position: relative"><span class="px b">Source name</span><span class="px">Mon 23 Nov · 07:30</span><span style="position: absolute; right: -19px; top: -4px; width: 18px; height: 18px; border-radius: 9px; background: #39FF88; color: #06210F; font: 800 11px/18px Inter, sans-serif; text-align: center">1</span></div>
+    <div class="inv t-xl c" style="padding: 10px 8px 8px; position: relative">TITLE<span style="position: absolute; right: -19px; top: 12px; width: 18px; height: 18px; border-radius: 9px; background: #39FF88; color: #06210F; font: 800 11px/18px Inter, sans-serif; text-align: center">2</span></div>
+    <div class="row sp"><span class="t-l">Subtitle or scope</span><span class="t-m">3 items</span></div>
+    <div class="hr2" style="position: relative"><span style="position: absolute; right: -19px; top: -10px; width: 18px; height: 18px; border-radius: 9px; background: #39FF88; color: #06210F; font: 800 11px/18px Inter, sans-serif; text-align: center">3</span></div>
+    <div class="row" style="gap: 8px; position: relative"><span class="px b">Section</span><div style="flex: 1; border-top: 2px dashed #000"></div><span style="position: absolute; right: -19px; top: -4px; width: 18px; height: 18px; border-radius: 9px; background: #39FF88; color: #06210F; font: 800 11px/18px Inter, sans-serif; text-align: center">4</span></div>
+    <div class="row"><span class="cb"></span><span class="t-m">A body line people read</span></div>
+    <div class="row"><span class="cb"></span><span class="t-m">Another body line</span></div>
+    <div class="box col" style="gap: 4px"><span class="px">Label</span><span class="t-l">Grouped detail</span></div>
+    <div class="inv t-l c" style="padding: 8px; position: relative">ONE CLEAR ACTION<span style="position: absolute; right: -19px; top: 8px; width: 18px; height: 18px; border-radius: 9px; background: #39FF88; color: #06210F; font: 800 11px/18px Inter, sans-serif; text-align: center">5</span></div>
+    
+    <span style="position: absolute; right: 1px; bottom: 20px; width: 18px; height: 18px; border-radius: 9px; background: #39FF88; color: #06210F; font: 800 11px/18px Inter, sans-serif; text-align: center">6</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 22px; padding-top: 8px">
+    <h2 style="margin: 0; font-size: 24px; font-weight: 800; color: #ECEEF2">Anatomy of a slip</h2>
+    <sc-for list="{{anatomy}}" as="a" hint-placeholder-count="6">
+      <div style="display: flex; gap: 12px">
+        <span style="flex: none; width: 24px; height: 24px; border-radius: 12px; background: #39FF88; color: #06210F; font: 800 13px/24px Inter, sans-serif; text-align: center">{{a.n}}</span>
+        <div style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 600; color: #ECEEF2">{{a.t}}</span><span style="font-size: 14px; line-height: 20px; color: #A9AEB6">{{a.d}}</span></div>
+      </div>
+    </sc-for>
+    <div style="border-top: 1px solid #2A2C31; padding-top: 18px; display: flex; flex-direction: column; gap: 6px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 20px; color: #A9AEB6">
+      <span>Width 384 · content 344</span><span>Side margins 20</span><span>Top 30 · bottom 36</span><span>Gap between blocks 14</span><span>Height grows with content</span>
+    </div>
+  </div>
+
+  <!-- Tokens -->
+  <div style="background: #F7F5F0; color: #000; border-radius: 16px; padding: 32px; display: flex; flex-direction: column; gap: 22px; font-family: 'Space Grotesk', sans-serif">
+    <span style="font: 700 13px Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #5A5E66">Tokens</span>
+    <div class="col" style="gap: 12px">
+      <sc-for list="{{type}}" as="t" hint-placeholder-count="8">
+        <div style="display: grid; grid-template-columns: 96px minmax(0, 1fr) 210px; gap: 16px; align-items: baseline; border-bottom: 1px solid #E2DFD8; padding-bottom: 10px">
+          <span style="font: 600 13px 'JetBrains Mono', monospace; color: #5A5E66">{{t.k}}</span>
+          <span class="{{t.cls}}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{t.sample}}</span>
+          <span style="font: 500 12px/16px 'JetBrains Mono', monospace; color: #5A5E66">{{t.spec}}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px">
+      <div class="col" style="gap: 6px"><div style="height: 56px; border: 2px solid #000"></div><span class="px">0 · paper</span></div>
+      <div class="col" style="gap: 6px"><div class="d25" style="height: 56px; border: 2px solid #000"></div><span class="px">d25</span></div>
+      <div class="col" style="gap: 6px"><div class="d50" style="height: 56px; border: 2px solid #000"></div><span class="px">d50 · bars</span></div>
+      <div class="col" style="gap: 6px"><div class="d75" style="height: 56px; border: 2px solid #000"></div><span class="px">d75</span></div>
+      <div class="col" style="gap: 6px"><div style="height: 56px; background: #000"></div><span class="px">solid · bands</span></div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 32px">
+      <div class="col" style="gap: 10px">
+        <span style="font: 600 13px 'JetBrains Mono', monospace; color: #5A5E66">Rules</span>
+        <div class="row" style="gap: 12px"><div class="hr" style="flex: 1"></div><span class="px" style="width: 90px">hr</span></div>
+        <div class="row" style="gap: 12px"><div class="hrd" style="flex: 1"></div><span class="px" style="width: 90px">hrd</span></div>
+        <div class="row" style="gap: 12px"><div class="hr2" style="flex: 1"></div><span class="px" style="width: 90px">hr2</span></div>
+        <div class="row" style="gap: 12px"><div class="cut" style="flex: 1">CUT</div><span class="px" style="width: 90px">cut</span></div>
+      </div>
+      <div class="col" style="gap: 10px">
+        <span style="font: 600 13px 'JetBrains Mono', monospace; color: #5A5E66">Borders and spacing (dots)</span>
+        <div class="row" style="gap: 12px"><div style="width: 56px; height: 36px; border: 2px solid #000"></div><div style="width: 56px; height: 36px; border: 3px solid #000"></div><div style="width: 56px; height: 36px; border: 4px solid #000"></div><span class="px">2 · 3 · 4</span></div>
+        <div class="row" style="gap: 6px; align-items: flex-end">
+          <sc-for list="{{space}}" as="s" hint-placeholder-count="8"><div class="col" style="align-items: center; gap: 4px"><div style="width: {{s.w}}; height: {{s.w}}; background: #000"></div><span class="px" style="letter-spacing: 0">{{s.v}}</span></div></sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Components -->
+  <div style="background: #F7F5F0; color: #000; border-radius: 16px; padding: 32px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 32px; font-family: 'Space Grotesk', sans-serif; align-content: start">
+    <span style="grid-column: 1 / -1; font: 700 13px Inter, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #5A5E66">Components</span>
+
+    <div class="col" style="gap: 8px"><span style="font: 600 12px 'JetBrains Mono', monospace; color: #5A5E66">Header row</span><div class="row sp"><span class="px b">Google Tasks</span><span class="px">Mon 23 Nov · 07:30</span></div></div>
+    <div class="col" style="gap: 8px"><span style="font: 600 12px 'JetBrains Mono', monospace; color: #5A5E66">Title band</span><div class="inv t-xl c" style="padding: 8px">TO DO</div></div>
+
+    <div class="col" style="gap: 8px"><span style="font: 600 12px 'JetBrains Mono', monospace; color: #5A5E66">Section rules</span>
+      <div class="row" style="gap: 8px"><span class="px b">Due today</span><div style="flex: 1; border-top: 2px dashed #000"></div></div>
+      <div class="row" style="gap: 8px"><span class="inv px b" style="padding: 3px 6px">! Overdue</span><div style="flex: 1; border-top: 3px solid #000"></div></div></div>
+    <div class="col" style="gap: 8px"><span style="font: 600 12px 'JetBrains Mono', monospace; color: #5A5E66">Tags</span>
+      <div class="row" style="gap: 8px; flex-wrap: wrap"><span class="inv px b" style="padding: 3px 6px">3 days late</span><span class="px b" style="border: 2px solid #000; padding: 2px 6px">Today</span><span class="px">Any time</span><span class="inv px b" style="padding: 3px 6px">Next up</span></div></div>
+
+    <div class="col" style="gap: 8px"><span style="font: 600 12px 'JetBrains Mono', monospace; color: #5A5E66">Checkbox rows</span>
+      <div class="row" style="align-items: flex-start"><span class="cb lg"></span><div class="col"><span class="t-l">Large · Big 3</span><span class="t-s">With a note line</span></div></div>
+      <div class="row"><span class="cb"></span><span class="t-m">Small · lists and sub-steps</span></div></div>
+    <div class="col" style="gap: 8px"><span style="font: 600 12px 'JetBrains Mono', monospace; color: #5A5E66">Ticket box</span>
+      <div style="display: grid; grid-template-columns: 48px minmax(0, 1fr); border: 3px solid #000">
+        <div class="col" style="border-right: 2px dashed #000; align-items: center; justify-content: center"><span style="font-size: 24px; font-weight: 700">04</span></div>
+        <div class="col" style="padding: 8px 10px; gap: 4px"><div class="row"><span class="t-m" style="flex: 1; font-weight: 700">Return library books</span><span class="cb"></span></div><div class="row sp"><span class="px">Errands</span><span class="inv px b">2 days late</span></div></div>
+      </div></div>
+
+    <div class="col" style="gap: 8px"><span style="font: 600 12px 'JetBrains Mono', monospace; color: #5A5E66">Key–value grid</span>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 2px solid #000">
+        <div class="col" style="padding: 4px 6px; border-right: 2px solid #000"><span class="px">Starts</span><span class="t-m" style="font-weight: 700">11:00</span></div>
+        <div class="col" style="padding: 4px 6px; border-right: 2px solid #000"><span class="px">Ends</span><span class="t-m" style="font-weight: 700">12:30</span></div>
+        <div class="col" style="padding: 4px 6px"><span class="px">Length</span><span class="t-m" style="font-weight: 700">1 h 30</span></div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px"><div class="col"><span class="px">Wind</span><span class="t-l">20 km/h</span></div><div class="col"><span class="px">Sunset</span><span class="t-l">16:05</span></div></div></div>
+    <div class="col" style="gap: 8px"><span style="font: 600 12px 'JetBrains Mono', monospace; color: #5A5E66">Meter and bars</span>
+      <div class="row"><div class="meter" style="flex: 1"><i class="d50" style="width: 70%"></i></div><span class="t-s">70%</span></div>
+      <div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; align-items: end; height: 70px; border-bottom: 3px solid #000">
+        <sc-for list="{{bars}}" as="b" hint-placeholder-count="8"><div style="height: {{b}}; background: #000"></div></sc-for>
+      </div></div>
+
+    <div class="col" style="gap: 8px"><span style="font: 600 12px 'JetBrains Mono', monospace; color: #5A5E66">Callout box and tip band</span>
+      <div class="box col" style="gap: 2px"><span class="px">Next event</span><span class="t-l">Team stand-up · Mon 09:30</span></div>
+      <div class="inv t-l c" style="padding: 8px">TAKE AN UMBRELLA</div></div>
+    <div class="col" style="gap: 8px"><span style="font: 600 12px 'JetBrains Mono', monospace; color: #5A5E66">Signature, source line and cut</span>
+      <div class="row" style="justify-content: flex-end"><span class="inv t-m" style="font-weight: 700">— from Matias</span></div>
+      <div class="inv px b" style="padding: 5px 8px">From Ana · via email · 18:42</div>
+      <div class="cut">CUT</div></div>
+
+    <div class="col" style="gap: 8px"><span style="font: 600 12px 'JetBrains Mono', monospace; color: #5A5E66">QR block (real code at print time)</span>
+      <div class="row" style="gap: 12px">
+        <div role="img" aria-label="QR code placeholder" style="display: grid; grid-template-columns: repeat(21, 3px); grid-auto-rows: 3px; padding: 4px; border: 2px solid #000; flex: none">
+          <sc-for list="{{qr}}" as="q" hint-placeholder-count="441"><i class="{{q}}" style="display: block"></i></sc-for>
+        </div>
+        <span class="mono" style="font-size: 13px; line-height: 17px">3 dots per module, 4-module quiet zone, caption to the right.</span>
+      </div></div>
+    <div class="col" style="gap: 8px"><span style="font: 600 12px 'JetBrains Mono', monospace; color: #5A5E66">Icons · 104 · 52 · 40</span>
+      <div class="row" style="gap: 18px; align-items: flex-end">
+        <dc-import name="WxIcon" icon="partly" size="104" hint-size="104px,104px"></dc-import>
+        <dc-import name="WxIcon" icon="rain" size="52" hint-size="52px,52px"></dc-import>
+        <dc-import name="WxIcon" icon="sunny" size="40" hint-size="40px,40px"></dc-import>
+      </div></div>
+    <div class="col" style="grid-column: 1 / -1; gap: 8px"><span style="font: 600 12px 'JetBrains Mono', monospace; color: #5A5E66">End mark · after the last block, full paper width, on every slip</span>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 24px; align-items: center"><div class="endmark">END · TEAR HERE</div><span class="mono" style="font-size: 13px; line-height: 18px">A 3-dot rule and a fine 12-dot hatch above and below; between them the label in a black tag on a dashed tear line. Light enough not to streak, and nothing else uses diagonal lines.</span></div></div>
+  </div>
+</div>
+
+<!-- Message patterns -->
+<section style="display: flex; flex-direction: column; gap: 22px">
+  <div style="display: flex; align-items: baseline; gap: 20px"><h2 style="margin: 0; font-size: 32px; font-weight: 800; color: #ECEEF2; letter-spacing: -.015em">Applied to every other slip</h2><span style="font-size: 16px; color: #A9AEB6">Same skeleton, same parts. Only the body changes.</span></div>
+  <div style="display: grid; grid-template-columns: repeat(6, 384px); gap: 48px; align-items: start">
+
+    <div class="col" style="gap: 10px"><span style="font: 700 13px Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #8A8F98">Note · also guest notes</span>
+    <div class="rc">
+      <div class="row sp"><span class="px b">Note</span><span class="px">Mon 23 Nov · 18:42</span></div>
+      <div class="hr2"></div>
+      <p class="t-l" style="font-size: 28px; line-height: 32px">Back at 7. Pasta's in the fridge, help yourself.</p>
+      <p class="t-m">Bins go out tonight.</p>
+      
+    </div></div>
+
+    <div class="col" style="gap: 10px"><span style="font: 700 13px Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #8A8F98">Remote message · email or Telegram</span>
+    <div class="rc">
+      <div class="row sp"><span class="px b">Message</span><span class="px">Mon 23 Nov</span></div>
+      <span class="t-l">Spare keys</span>
+      <p class="t-m">I left the spare keys with the neighbour at no. 14. Back on Sunday, water the basil please!</p>
+      
+    </div></div>
+
+    <div class="col" style="gap: 10px"><span style="font: 700 13px Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #8A8F98">Shared shopping list</span>
+    <div class="rc" style="gap: 12px">
+      <div class="row sp"><span class="px b">Shopping list</span><span class="px">Thu 26 Nov · 18:00</span></div>
+      <div class="inv t-xl c" style="padding: 10px 8px 8px">SHOPPING</div>
+      <div class="row sp"><span class="t-l">This week</span><span class="t-m">7 items</span></div>
+      <div class="hr2"></div>
+      <sc-for list="{{shop}}" as="g" hint-placeholder-count="3">
+        <div class="col" style="gap: 8px">
+          <div class="row" style="gap: 8px"><span class="px b">{{g.name}}</span><div style="flex: 1; border-top: 2px dashed #000"></div></div>
+          <sc-for list="{{g.items}}" as="i" hint-placeholder-count="3"><div class="row"><span class="cb"></span><span class="t-m" style="flex: 1">{{i.t}}</span></div></sc-for>
+        </div>
+      </sc-for>
+      
+    </div></div>
+
+    <div class="col" style="gap: 10px"><span style="font: 700 13px Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #8A8F98">Fortune or quote</span>
+    <div class="rc">
+      <div class="row sp"><span class="px b">Fortune</span><span class="px">Tue 24 Nov · 22:10</span></div>
+      <div class="hr2"></div>
+      <span style="font-size: 92px; line-height: 60px; font-weight: 700; height: 52px">“</span>
+      <p class="t-l" style="font-size: 30px; line-height: 34px">A small kindness comes back to you today.</p>
+      <div class="hr"></div>
+      <div class="row sp"><span class="px">Lucky number</span><span class="box t-l" style="padding: 2px 12px">17</span></div>
+      
+    </div></div>
+
+    <div class="col" style="gap: 10px"><span style="font: 700 13px Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #8A8F98">Countdown</span>
+    <div class="rc">
+      <div class="row sp"><span class="px b">Countdown</span><span class="px">Mon 23 Nov · 08:00</span></div>
+      <div class="hr2"></div>
+      <div class="row" style="align-items: flex-end; gap: 12px"><span class="t-xxl">11</span><span class="t-xl" style="padding-bottom: 6px">DAYS</span></div>
+      <p class="t-m" style="margin-top: -4px">until the holiday</p>
+      <div class="col" style="gap: 4px"><div class="meter"><i class="d50" style="width: 63%"></i></div><div class="row sp"><span class="px">Set 19 Oct</span><span class="px">Fri 4 Dec</span></div></div>
+      <div class="inv t-l c" style="padding: 8px">START PACKING SATURDAY</div>
+      
+    </div></div>
+
+    <div class="col" style="gap: 10px"><span style="font: 700 13px Inter, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #8A8F98">System slip · test page</span>
+    <div class="rc">
+      <div class="row sp"><span class="px b">Printer</span><span class="px">Mon 23 Nov · 12:04</span></div>
+      <div class="inv t-xl c" style="padding: 10px 8px 8px">TEST PAGE</div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+        <div class="d25" style="height: 40px; border: 2px solid #000"></div><div class="d50" style="height: 40px; border: 2px solid #000"></div><div class="d75" style="height: 40px; border: 2px solid #000"></div><div style="height: 40px; background: #000"></div>
+      </div>
+      <div class="col" style="gap: 0"><div style="height: 14px; background-image: repeating-linear-gradient(90deg, #000 0 2px, transparent 2px 8px); border-bottom: 2px solid #000"></div><div class="row sp"><span class="px">0</span><span class="px">10</span><span class="px">20</span><span class="px">30</span><span class="px">40 mm</span></div></div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px">
+        <div class="col"><span class="px">Paper</span><span class="t-l">About 60%</span></div><div class="col"><span class="px">Darkness</span><span class="t-l">Dark</span></div>
+        <div class="col"><span class="px">Speed</span><span class="t-l">Normal</span></div><div class="col"><span class="px">Address</span><span class="mono b" style="font-size: 14px">walloftext.local</span></div>
+      </div>
+      
+    </div></div>
+  </div>
+</section>
+
+<!-- Rules -->
+<section style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 48px; border-top: 1px solid #2A2C31; padding-top: 36px">
+  <sc-for list="{{rules}}" as="r" hint-placeholder-count="3">
+    <div style="display: flex; flex-direction: column; gap: 14px">
+      <h3 style="margin: 0; font-size: 20px; font-weight: 800; color: #ECEEF2">{{r.title}}</h3>
+      <sc-for list="{{r.items}}" as="i" hint-placeholder-count="5">
+        <div style="display: flex; gap: 10px; font-size: 15px; line-height: 22px; color: #C9CDD4"><span style="flex: none; width: 8px; height: 8px; margin-top: 7px; background: #39FF88"></span><span>{{i}}</span></div>
+      </sc-for>
+    </div>
+  </sc-for>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2720,"height":2440}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const N = 21;
+    const finder = (x, y) => {
+      const f = (ox, oy) => { const dx = x - ox, dy = y - oy; if (dx < 0 || dy < 0 || dx > 6 || dy > 6) return null; return dx === 0 || dy === 0 || dx === 6 || dy === 6 || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4); };
+      const a = f(0, 0); if (a !== null) return a; const b = f(14, 0); if (b !== null) return b; const c = f(0, 14); if (c !== null) return c;
+      if ((x === 7 && y < 8) || (y === 7 && x < 8) || (x === 13 && y < 8) || (y === 7 && x > 12) || (x === 7 && y > 12) || (y === 13 && x < 8)) return false;
+      return null;
+    };
+    let s = 11; const qr = [];
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { const f = finder(x, y); s = (s * 1103515245 + 12345) % 2147483648; qr.push((f !== null ? f : ((s >> 8) % 2 === 0)) ? 'qon' : ''); }
+    const it = (t, by) => ({ t, by });
+    return {
+      qr,
+      anatomy: [
+        { n: 1, t: 'Header row', d: 'Source on the left in JetBrains Mono caps, date and time on the right. Always the first line.' },
+        { n: 2, t: 'Title', d: 'One per slip, in caps. An inverted band for list slips, plain t-xl or a big number otherwise.' },
+        { n: 3, t: 'Double rule', d: 'hr2 closes the title block. Also used above totals.' },
+        { n: 4, t: 'Body sections', d: 'Each section opens with a label and a dashed rule. Items sit in rows, boxes or grids.' },
+        { n: 5, t: 'One clear action', d: 'At most one tip band per slip, near the end. Say what to do.' },
+        { n: 6, t: 'End mark', d: 'END · TEAR HERE in a black tag on a dashed tear line, framed by a rule and a fine hatch above and below, across the full paper width after the last block of every slip. If a slip is left hanging, the next print can never blend into it.' }
+      ],
+      type: [
+        { k: 't-xxl', cls: 't-xxl', sample: '18°', spec: 'Space Grotesk 92 bold' },
+        { k: 't-xl', cls: 't-xl', sample: 'THE BIG 3', spec: 'Space Grotesk 36 bold' },
+        { k: 't-l', cls: 't-l', sample: 'Call landlord', spec: 'Space Grotesk 23 bold' },
+        { k: 't-m', cls: 't-m', sample: 'Body line people read', spec: 'Space Grotesk 17 medium' },
+        { k: 't-s', cls: 't-s', sample: 'Notes and secondary lines', spec: 'Space Grotesk 15 medium' },
+        { k: 'mono', cls: 'mono', sample: '14 Mill Lane · walloftext.local', spec: 'JetBrains Mono 15' },
+        { k: 'px', cls: 'px b', sample: 'Labels and tags', spec: 'JetBrains Mono 12 caps' },
+        { k: 'foot', cls: 'px', sample: 'Wall Printer · updated 07:58', spec: 'JetBrains Mono 12 bold caps' }
+      ],
+      space: [4, 6, 8, 10, 12, 14, 20, 30].map((v) => ({ v, w: v + 'px' })),
+      bars: ['20px', '28px', '36px', '50px', '62px', '56px', '40px', '30px'],
+      shop: [
+        { name: 'Fridge', items: [it('Oat milk', 'M'), it('Eggs ×6', 'F'), it('Halloumi', 'F')] },
+        { name: 'Cupboard', items: [it('Coffee beans', 'M'), it('Rice', 'M')] },
+        { name: 'Other', items: [it('Bin bags', 'F'), it('Washing-up liquid', 'M')] }
+      ],
+      rules: [
+        { title: 'Composition', items: [
+          'Every slip runs: header row → title → double rule → body sections → end mark. Nothing goes above the header or below the end mark.',
+          'Big numbers people scan (temperatures, times, counts) are Space Grotesk bold. Data people read (places, names, links) is JetBrains Mono.',
+          'Group related lines in a box or a ticket box. Boxes never sit inside other boxes more than one level deep.',
+          'Use an inverted band at most once per section: the title, a "Next up" header, a tag or the tip.',
+          'Leave 14 dots between blocks, 30 at the top and 36 at the bottom, and nothing within 20 dots of the edge.'
+        ] },
+        { title: 'Print safety', items: [
+          'Pure black on white. Grey is never printed: use the d25, d50 and d75 patterns.',
+          'Text at least 12 dots high, strokes at least 2 dots, icons drawn with 4-dot strokes.',
+          'Keep large fills light: use d50 for bars and big areas, and keep solid black for bands, small tags and digits.',
+          'Checkboxes are always empty. People tick them with a pen.',
+          'QR codes are real at print time: 3 dots per module with a 4-module quiet zone.'
+        ] },
+        { title: 'Voice', items: [
+          'Say what to do: "TAKE AN UMBRELLA", not "precipitation likely".',
+          'Times are 24-hour (18:42). Dates read MON 23 NOV. Lengths read 1 h 30.',
+          'Titles and labels in caps; body lines in sentence case.',
+          'No emoji: the printer fonts don\'t have them. Use an icon or a sticker.',
+          'Every slip says where it came from and when, in the header row.'
+        ] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

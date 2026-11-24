@@ -1,5 +1,6 @@
 // Lets the walloftext service user drive NetworkManager (setup AP, home Wi-Fi)
-// and reboot / power off, without sudo. Installed by deploy/install.sh.
+// and reboot / power off, and mount USB drives for backups (udisks2), without sudo.
+// Installed by deploy/install.sh.
 polkit.addRule(function(action, subject) {
     if (subject.user !== "walloftext") return polkit.Result.NOT_HANDLED;
     if (action.id.indexOf("org.freedesktop.NetworkManager.") === 0)
@@ -8,6 +9,10 @@ polkit.addRule(function(action, subject) {
         action.id === "org.freedesktop.login1.reboot-multiple-sessions" ||
         action.id === "org.freedesktop.login1.power-off" ||
         action.id === "org.freedesktop.login1.power-off-multiple-sessions")
+        return polkit.Result.YES;
+    if (action.id === "org.freedesktop.udisks2.filesystem-mount" ||
+        action.id === "org.freedesktop.udisks2.filesystem-mount-other-seat" ||
+        action.id === "org.freedesktop.udisks2.filesystem-unmount-others")
         return polkit.Result.YES;
     return polkit.Result.NOT_HANDLED;
 });

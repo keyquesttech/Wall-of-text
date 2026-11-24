@@ -2,7 +2,10 @@
 No OAuth (BUILD_PLAN override 11)."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+import html
+import re
+from dataclasses import dataclass, field
+from urllib.parse import unquote
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
@@ -19,6 +22,10 @@ class Event:
     all_day: bool
     calendar: str
     location: str | None = None
+    uid: str = ""
+    attendees: list[str] = field(default_factory=list)
+    description: str = ""
+    conference: str | None = None
 
     def label(self) -> str:
         if self.all_day:
@@ -26,14 +33,62 @@ class Event:
         return self.start.strftime("%H:%M")
 
 
-def parse_events(ics: bytes | str, day: date, tz: ZoneInfo, calendar: str = "") -> list[Event]:
+_CONF = re.compile(r"https?://(?:[\w-]+\.)?(?:meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com)/[^\s<>\"')]+",
+                   re.I)
+_BOILER = re.compile(r"(join with google meet|join by phone|more phone numbers|learn more about meet|"
+                     r"meet\.google\.com|^pin:|join zoom meeting|zoom\.us/|meeting id:|passcode:|"
+                     r"microsoft teams meeting|teams\.microsoft|join on your computer|click here to join|"
+                     r"please do not edit this section|^-::~)", re.I)
+
+
+def owner_from_url(url: str) -> str | None:
+    """Google's secret iCal address carries the calendar owner's address: /calendar/ical/<email>/private-…"""
+    m = re.search(r"/ical/([^/]+)/", url or "")
+    owner = unquote(m.group(1)) if m else ""
+    return owner.lower() if "@" in owner else None
+
+
+def clean_description(text: str) -> str:
+    """HTML and conference boilerplate out; plain lines kept."""
+    t = re.sub(r"<br\s*/?>|</p>|</div>|</li>", "\n", text or "", flags=re.I)
+    t = html.unescape(re.sub(r"<[^>]+>", "", t))
+    lines = []
+    for line in t.replace("\r", "").split("\n"):
+        if line.strip().startswith("-::~") or "~:~:~" in line:
+            break  # Google's conference section marker: everything after is boilerplate
+        if _BOILER.search(line.strip()):
+            continue
+        lines.append(line.strip())
+    return re.sub(r"\n{2,}", "\n", "\n".join(lines)).strip()
+
+
+def _people(ev, owner: str | None) -> list[str]:
+    att = ev.get("ATTENDEE")
+    if att is None:
+        return []
+    out = []
+    for a in att if isinstance(att, list) else [att]:
+        email = str(a).lower().removeprefix("mailto:")
+        if owner and email == owner:
+            continue
+        cn = a.params.get("CN") if hasattr(a, "params") else None
+        name = str(cn) if cn and "@" not in str(cn) else email.split("@")[0]
+        if name:
+            out.append(name)
+    return out
+
+
+def parse_events(ics: bytes | str, day: date, tz: ZoneInfo, calendar: str = "", days: int = 1,
+                 owner: str | None = None) -> list[Event]:
     cal = icalendar.Calendar.from_ical(ics)
     start = datetime.combine(day, time.min, tz)
-    end = start + timedelta(days=1)
+    end = start + timedelta(days=days)
     out: list[Event] = []
     for ev in recurring_ical_events.of(cal).between(start, end):
         s = ev.get("DTSTART").dt
         e = ev.get("DTEND").dt if ev.get("DTEND") else None
+        if e is None and ev.get("DURATION"):
+            e = s + ev.get("DURATION").dt
         all_day = not isinstance(s, datetime)
         if not all_day:
             s = s.astimezone(tz) if s.tzinfo else s.replace(tzinfo=tz)
@@ -42,8 +97,16 @@ def parse_events(ics: bytes | str, day: date, tz: ZoneInfo, calendar: str = "") 
         status = str(ev.get("STATUS", "")).upper()
         if status == "CANCELLED":
             continue
-        out.append(Event(str(ev.get("SUMMARY", "(no title)")), s, e, all_day, calendar,
-                         str(ev.get("LOCATION")) if ev.get("LOCATION") else None))
+        desc = str(ev.get("DESCRIPTION") or "")
+        loc = str(ev.get("LOCATION")) if ev.get("LOCATION") else None
+        conf = str(ev.get("X-GOOGLE-CONFERENCE") or "") or None
+        if not conf:
+            m = _CONF.search(desc) or _CONF.search(loc or "")
+            conf = m.group(0) if m else None
+        if loc and _CONF.fullmatch(loc.strip()):
+            loc = None  # a bare meeting link is not a place
+        out.append(Event(str(ev.get("SUMMARY", "(no title)")), s, e, all_day, calendar, loc,
+                         str(ev.get("UID", "")), _people(ev, owner), clean_description(desc), conf))
     out.sort(key=lambda x: (not x.all_day, x.start if isinstance(x.start, datetime) else start))
     return out
 
@@ -61,17 +124,3 @@ async def fetch_ics(url: str, client: httpx.AsyncClient | None = None) -> bytes:
     finally:
         if c is not client:
             await c.aclose()
-
-
-def agenda_blocks(events: list[Event], day: date, errors: list[str], title: str | None = None) -> list[dict]:
-    blocks: list[dict] = [{"type": "banner", "text": title or day.strftime("Agenda · %A %-d %B")}]
-    if not events:
-        blocks.append({"type": "text", "text": "Nothing in the calendar today.", "size": "M"})
-    for e in events[:30]:
-        line = f"{e.label():>7}  {e.title}"
-        if e.location:
-            line += f" ({e.location})"
-        blocks.append({"type": "text", "text": line, "size": "M", "font": "mono"})
-    for err in errors:
-        blocks.append({"type": "text", "text": err, "size": "S"})
-    return blocks

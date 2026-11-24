@@ -28,12 +28,14 @@ def test_every_builtin_template_renders(c):
 
 
 def test_fill_lists_and_drops_empty_blocks():
-    t = next(x for x in BUILTIN_TEMPLATES if x["id"] == "b-todo")
+    t = {"fields": [{"key": "title"}, {"key": "items", "list": True}], "defaults": {"title": "To do"},
+         "document": {"blocks": [{"type": "heading", "text": "{{title}}"}, {"type": "checklist", "items": "{{items}}"},
+                                 {"type": "text", "text": "{{caption}}"}]}}
     doc = fill(t, {"items": "a\n\n b \n"})
     assert doc["blocks"][0]["text"] == "To do"
     assert doc["blocks"][1]["items"] == [{"text": "a"}, {"text": "b"}]
-    sticker = next(x for x in BUILTIN_TEMPLATES if x["id"] == "b-sticker")
-    assert [b["type"] for b in fill(sticker, {})["blocks"]] == ["sticker"]
+    assert len(doc["blocks"]) == 2
+    assert [t["id"] for t in BUILTIN_TEMPLATES] == ["b-wifi"]
 
 
 def test_template_api(c):
@@ -41,8 +43,11 @@ def test_template_api(c):
     assert any(t["id"] == "b-wifi" for t in items)
     r = c.post("/api/templates/b-wifi/fill", json={"values": {"ssid": "Home", "password": "pw"}}).json()
     assert "WIFI:T:WPA;S:Home;P:pw;;" == r["document"]["blocks"][1]["data"]
-    r = c.post("/api/templates/b-note/fill", json={"values": {"text": "hi"}, "print": True}).json()
-    assert r["job"]["title"] == "Note to self"
+    r = c.post("/api/templates/b-wifi/fill", json={"values": {"ssid": "Home"}, "print": True}).json()
+    assert r["job"]["title"] == "Wi-Fi for guests"
+    own = c.post("/api/templates", json={"name": "Hi", "document": {"blocks": [{"type": "text", "text": "Hi {{name}}"}]}}).json()
+    assert own["fields"] == [{"key": "name", "label": "Name", "multiline": False}]
+    assert c.post(f"/api/templates/{own['id']}/fill", json={"values": {"name": "Sam"}}).json()["document"]["blocks"][0]["text"] == "Hi Sam"
     mine = c.post("/api/templates", json={"name": "Mine", "document": {"blocks": [{"type": "text", "text": "x"}]}}).json()
     assert mine["id"].startswith("u-") and not mine["builtin"]
     assert c.post(f"/api/templates/{mine['id']}/fill", json={}).json()["document"]["blocks"][0]["text"] == "x"
@@ -60,7 +65,7 @@ def test_shopping_list_and_section(c):
     assert c.post("/api/lists/nope", json={"text": "x"}).status_code == 404
     j = c.post("/api/lists/shopping/print").json()["job"]
     full = c.get(f"/api/history/{j['id']}").json()
-    assert full["document"]["blocks"][2]["items"] == [{"text": "Bread"}]
+    assert full["document"]["blocks"][0]["data"]["items"] == ["Bread"]
     r = c.post("/api/actions/shopping_list").json()
     assert "shopping" in r["message"]
 
@@ -70,11 +75,11 @@ async def test_shopping_section_skips_when_empty(c):
     assert await src.section_blocks({"type": "shopping"}, {}) == []
     c.svc.extras["lists"].add("shopping", "Tea")
     blocks = await src.section_blocks({"type": "shopping"}, {})
-    assert blocks[1]["items"] == [{"text": "Tea"}]
+    assert blocks[0]["template"] == "shopping" and blocks[0]["data"]["items"] == ["Tea"]
 
 
 def test_thumb_search_extra_feed_and_message_section(c):
-    r = c.get("/api/templates/b-card/thumb")
+    r = c.get("/api/templates/b-wifi/thumb")
     assert r.status_code == 200 and r.headers["content-type"] == "image/png"
     j = c.post("/api/print", json={"document": {"blocks": [{"type": "text", "text": "Find me 50%"}]}, "extra_feed": 3}).json()["job"]
     assert j["meta"]["extra_feed"] == 3

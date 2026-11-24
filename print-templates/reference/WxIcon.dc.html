@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Weather icon</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./rc.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>body{margin:0}</style>
+</helmet>
+<svg viewBox="0 0 64 64" width="{{size}}" height="{{size}}" role="img" aria-label="{{label}}" style="display: block; color: #000">
+<defs>
+  <pattern id="wx50" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="2" height="2" fill="#000"></rect><rect x="2" y="2" width="2" height="2" fill="#000"></rect></pattern>
+</defs>
+<g fill="none" stroke="#000" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter">
+<sc-if value="{{is.sunny}}" hint-placeholder-val="{{ true }}">
+  <circle cx="32" cy="32" r="11" fill="#000"></circle>
+  <path d="M32 4v9M32 51v9M4 32h9M51 32h9M12.2 12.2l6.4 6.4M45.4 45.4l6.4 6.4M12.2 51.8l6.4-6.4M45.4 18.6l6.4-6.4"></path>
+</sc-if>
+<sc-if value="{{is.night}}" hint-placeholder-val="{{ false }}">
+  <path d="M40 9a23 23 0 1 0 15 35A19 19 0 0 1 40 9z" fill="#000" stroke="none"></path>
+  <path d="M12 6v10M7 11h10M53 8v6M50 11h6" stroke-width="3"></path>
+</sc-if>
+<sc-if value="{{is.partly}}" hint-placeholder-val="{{ false }}">
+  <circle cx="22" cy="22" r="8" fill="#000"></circle>
+  <path d="M22 4v6M4 22h6M9.3 9.3l4.2 4.2M34.7 9.3l-4.2 4.2M9.3 34.7l4.2-4.2"></path>
+  <path transform="translate(8 12) scale(.85)" d="M16 46H48A10 10 0 0 0 48 26A14 14 0 0 0 21 24A11 11 0 0 0 16 46Z" fill="#F7F5F0" stroke-width="4.6"></path>
+</sc-if>
+<sc-if value="{{is.cloudy}}" hint-placeholder-val="{{ false }}">
+  <path transform="translate(-4 -8) scale(.8)" d="M16 46H48A10 10 0 0 0 48 26A14 14 0 0 0 21 24A11 11 0 0 0 16 46Z" fill="url(#wx50)" stroke-width="5"></path>
+  <path transform="translate(6 8) scale(.9)" d="M16 46H48A10 10 0 0 0 48 26A14 14 0 0 0 21 24A11 11 0 0 0 16 46Z" fill="#F7F5F0" stroke-width="4.4"></path>
+</sc-if>
+<sc-if value="{{is.fog}}" hint-placeholder-val="{{ false }}">
+  <path d="M8 18h48M4 28h34M46 28h14M10 38h46M6 48h26M40 48h16M16 58h30"></path>
+</sc-if>
+<sc-if value="{{is.drizzle}}" hint-placeholder-val="{{ false }}">
+  <path transform="translate(0 -8)" d="M16 46H48A10 10 0 0 0 48 26A14 14 0 0 0 21 24A11 11 0 0 0 16 46Z" fill="#F7F5F0"></path>
+  <path d="M22 46v3M34 48v3M46 46v3M28 56v3M40 56v3"></path>
+</sc-if>
+<sc-if value="{{is.rain}}" hint-placeholder-val="{{ false }}">
+  <path transform="translate(0 -8)" d="M16 46H48A10 10 0 0 0 48 26A14 14 0 0 0 21 24A11 11 0 0 0 16 46Z" fill="#F7F5F0"></path>
+  <path d="M23 44l-4 10M35 44l-4 10M47 44l-4 10"></path>
+</sc-if>
+<sc-if value="{{is.heavy}}" hint-placeholder-val="{{ false }}">
+  <path transform="translate(0 -10)" d="M16 46H48A10 10 0 0 0 48 26A14 14 0 0 0 21 24A11 11 0 0 0 16 46Z" fill="url(#wx50)"></path>
+  <path d="M18 40l-7 20M28 40l-7 20M38 40l-7 20M48 40l-7 20"></path>
+</sc-if>
+<sc-if value="{{is.thunder}}" hint-placeholder-val="{{ false }}">
+  <path transform="translate(0 -10)" d="M16 46H48A10 10 0 0 0 48 26A14 14 0 0 0 21 24A11 11 0 0 0 16 46Z" fill="url(#wx50)"></path>
+  <path d="M35 32L23 48h9l-5 14 16-19h-9l5-11z" fill="#000" stroke="#F7F5F0" stroke-width="2.5"></path>
+</sc-if>
+<sc-if value="{{is.snow}}" hint-placeholder-val="{{ false }}">
+  <path transform="translate(0 -9)" d="M16 46H48A10 10 0 0 0 48 26A14 14 0 0 0 21 24A11 11 0 0 0 16 46Z" fill="#F7F5F0"></path>
+  <path d="M22 44v9M18 46l8 5M18 51l8-5M42 44v9M38 46l8 5M38 51l8-5M32 53v9M28 55l8 5M28 60l8-5" stroke-width="2.6"></path>
+</sc-if>
+<sc-if value="{{is.sleet}}" hint-placeholder-val="{{ false }}">
+  <path transform="translate(0 -9)" d="M16 46H48A10 10 0 0 0 48 26A14 14 0 0 0 21 24A11 11 0 0 0 16 46Z" fill="#F7F5F0"></path>
+  <path d="M22 43l-4 9M42 43l-4 9"></path>
+  <circle cx="32" cy="48" r="3" fill="#000" stroke="none"></circle><circle cx="25" cy="59" r="3" fill="#000" stroke="none"></circle><circle cx="45" cy="57" r="3" fill="#000" stroke="none"></circle>
+</sc-if>
+<sc-if value="{{is.frost}}" hint-placeholder-val="{{ false }}">
+  <path d="M32 5v54M8.6 18.5l46.8 27M8.6 45.5l46.8-27"></path>
+  <path d="M25 9l7 7 7-7M25 55l7-7 7 7M9 27l9-2-3-9M55 37l-9 2 3 9M9 37l9 2-3 9M55 27l-9-2 3-9" stroke-width="3"></path>
+</sc-if>
+<sc-if value="{{is.wind}}" hint-placeholder-val="{{ false }}">
+  <path d="M4 24h34a7 7 0 1 0-7-7M4 36h44a8 8 0 1 1-8 8M4 48h22"></path>
+</sc-if>
+<sc-if value="{{is.heat}}" hint-placeholder-val="{{ false }}">
+  <circle cx="32" cy="24" r="10" fill="#000"></circle>
+  <path d="M32 3v6M32 39v6M11 24h6M47 24h6M17 9l4 4M43 35l4 4M17 39l4-4M43 13l4-4"></path>
+  <path d="M6 54q5-6 10 0t10 0 10 0 10 0 10 0"></path>
+</sc-if>
+</g>
+</svg>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"icon":{"editor":"enum","options":["sunny","night","partly","cloudy","fog","drizzle","rain","heavy","thunder","snow","sleet","frost","wind","heat"],"default":"sunny"},"size":{"editor":"int","default":96},"$preview":{"width":96,"height":96}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const k = this.props.icon || 'sunny';
+    const keys = ['sunny', 'night', 'partly', 'cloudy', 'fog', 'drizzle', 'rain', 'heavy', 'thunder', 'snow', 'sleet', 'frost', 'wind', 'heat'];
+    const is = {};
+    keys.forEach((x) => { is[x] = x === k; });
+    const labels = { sunny: 'Sunny', night: 'Clear night', partly: 'Sunny spells', cloudy: 'Overcast', fog: 'Fog', drizzle: 'Drizzle', rain: 'Rain', heavy: 'Heavy rain', thunder: 'Thunderstorm', snow: 'Snow', sleet: 'Sleet and hail', frost: 'Frost', wind: 'Windy', heat: 'Heatwave' };
+    return { is, size: String(this.props.size || 96), label: labels[k] || 'Weather' };
+  }
+}
+</script>
+</body>
+</html>

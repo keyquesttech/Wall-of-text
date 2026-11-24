@@ -1,7 +1,7 @@
 // Templates (HANDOFF 7.1): 2-column gallery of mini receipts; filter chips in the toolbar.
 import { useEffect, useState } from "preact/hooks";
 import { get, send, type Doc, type Job } from "../../lib/api";
-import { IconTrash } from "../../components/icons";
+import { IconBookmark, IconTrash } from "../../components/icons";
 import { AsPrinted, startMoment } from "../../components/printer";
 import { Sheet, toast } from "../../components/ui";
 import { Toolbar } from "../Create";
@@ -10,29 +10,30 @@ import { openWizard } from "../Schedules";
 interface Field { key: string; label: string; multiline?: boolean; list?: boolean }
 interface Template { id: string; name: string; builtin: boolean; fields: Field[]; document: Doc; defaults?: Record<string, string> }
 
-const KIND: Record<string, "Lists" | "Notes" | "Cards"> = {
-  "b-todo": "Lists", "b-recipe": "Lists", "b-chore": "Lists", "b-note": "Notes", "b-big": "Notes", "b-wifi": "Notes", "b-card": "Cards", "b-sticker": "Cards",
-};
-const FILTERS = ["All", "Lists", "Notes", "Cards", "Mine"] as const;
+const FILTERS = ["All", "Mine"] as const;
 
-export function TemplatesMode() {
+export function TemplatesMode(props: { onNew: () => void }) {
   const [items, setItems] = useState<Template[]>([]);
   const [open, setOpen] = useState<Template | null>(null);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("All");
   const load = () => get<{ items: Template[] }>("/api/templates").then((r) => setItems(r.items));
   useEffect(() => { load(); }, []);
-  const shown = items.filter((t) => filter === "All" || (filter === "Mine" ? !t.builtin : KIND[t.id] === filter));
+  const shown = items.filter((t) => filter === "All" || !t.builtin);
   return (
     <>
       <section class="glass canvas" aria-label="Templates">
         <div class="tgrid">
+          <button class="tcard tnew" onClick={props.onNew} aria-label="New template">
+            <div class="rwrap"><div class="receipt tnew-paper"><IconBookmark class="i" /><span>New template</span></div></div>
+            <span class="tname">Make your own</span>
+          </button>
           {shown.map((t) => (
             <button class="tcard" onClick={() => setOpen(t)}>
               <div class="rwrap"><div class="receipt bits"><img src={`/api/templates/${t.id}/thumb`} alt="" loading="lazy" /></div></div>
               <span class="tname">{t.name}</span>
             </button>
           ))}
-          {filter === "Mine" && shown.length === 0 && <p class="cap" style="grid-column:1/-1">Save any print as a template with the bookmark button next to the paper.</p>}
+          {shown.length === 0 && <p class="cap" style="grid-column:1/-1">Save any print as a template with the bookmark button next to the paper.</p>}
         </div>
       </section>
       <Toolbar label="Template filters">
@@ -62,6 +63,7 @@ function Filler({ t, onClose, onDeleted }: { t: Template; onClose: () => void; o
   return (
     <Sheet open onClose={onClose} title={t.name}>
       <div class="stack">
+        {t.fields.length > 0 && !t.builtin && <p class="cap" style="margin:0 4px">Fill in the boxes; they replace the {"{{…}}"} words in your template.</p>}
         {t.fields.map((f) => (
           <div>
             <label class="field-label" for={`f-${f.key}`}>{f.label}</label>

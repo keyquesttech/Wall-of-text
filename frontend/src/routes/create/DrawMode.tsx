@@ -108,7 +108,7 @@ export function DrawMode(props: { view: View; wide: boolean }) {
   return (
     <>
       <Split view={props.view} wide={props.wide} doc={doc} edit={edit}
-        side={<SideButtons onClear={clear} />} />
+        side={<SideButtons doc={doc} name="Drawing" onClear={clear} />} />
       <Toolbar label="Drawing tools">
         <div class="row" style="gap:2px;flex:1;justify-content:space-between">
           {([3, 6, 14] as const).map((w, i) => (

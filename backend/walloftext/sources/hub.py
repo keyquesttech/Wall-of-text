@@ -8,16 +8,17 @@ import json
 import logging
 import random
 import time
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
 
 import httpx
 
 from ..actions import fortunes
-from .calendar import Event, agenda_blocks, fetch_ics, parse_events
+from .calendar import Event, fetch_ics, owner_from_url, parse_events
+from .normalise import any_due, calendar_data, tasks_data
 from .google_tasks import GoogleTasks, TasksError
-from .weather import CACHE_S, Forecast, OpenMeteo, WeatherProvider, weather_blocks
+from .weather import CACHE_S, Forecast, OpenMeteo, WeatherProvider
 
 if TYPE_CHECKING:
     from ..services import Services
@@ -47,6 +48,7 @@ class Sources:
         self.tasks_api = GoogleTasks(svc.settings.data_dir / "google-token.json", http)
         self._weather_cache: Forecast | None = None
         self._status: dict[str, dict] = {}
+        self._ics: dict[str, tuple[float, bytes]] = {}
 
     def tz(self) -> ZoneInfo:
         try:
@@ -96,12 +98,47 @@ class Sources:
                 return cached, int((time.time() - cached.fetched_at) / 60)
             return None, None
 
-    async def weather_doc(self) -> dict:
-        f, stale = await self.weather()
-        return {"blocks": weather_blocks(f, stale)}
+    def _now(self) -> datetime:
+        return datetime.now(self.tz())
+
+    def weather_slip(self, fs: tuple[Forecast | None, int | None], template: str = "weather_briefing") -> dict:
+        """The weather briefing (schedules, routines) or Weather now (button, chip) as a kit slip.
+        No usable forecast → "Weather unavailable" with the last forecast time."""
+        f, stale = fs
+        now = self._now()
+        if f is None or not f.data:
+            last = self._weather_cache or self._stored_forecast()
+            when = datetime.fromtimestamp(last.fetched_at, self.tz()).strftime("%a %H:%M") if last and last.fetched_at else None
+            return {"type": "slip", "template": "unavailable",
+                    "data": {"source": "WEATHER", "title": "Weather unavailable", "now": now.replace(tzinfo=None).isoformat(),
+                             "text": "Can't reach the weather service.", "last": when}}
+        data = dict(f.data, now=now.replace(tzinfo=None).isoformat())
+        th = self.svc.app_settings.get("weather").get("thresholds")
+        if isinstance(th, dict):
+            data["thresholds"] = th
+        if stale:
+            data["staleFrom"] = datetime.fromtimestamp(f.fetched_at, self.tz()).strftime("%H:%M")
+        return {"type": "slip", "template": template, "data": data}
+
+    def _stored_forecast(self) -> Forecast | None:
+        try:
+            return Forecast(**json.loads(self.svc.store.get("weather_cache", "") or "{}"))
+        except (TypeError, ValueError):
+            return None
+
+    async def weather_doc(self, template: str = "weather_now") -> dict:
+        return {"blocks": [self.weather_slip(await self.weather(), template)]}
 
     # ---------------------------------------------------------- calendar --
-    async def events(self, day: date | None = None) -> tuple[list[Event], list[str]]:
+    async def _fetch_ics(self, url: str) -> bytes:
+        hit = self._ics.get(url)
+        if hit and time.time() - hit[0] < 600:
+            return hit[1]
+        ics = await fetch_ics(url, self.http)
+        self._ics[url] = (time.time(), ics)
+        return ics
+
+    async def events(self, day: date | None = None, days: int = 1) -> tuple[list[Event], list[str]]:
         tz = self.tz()
         day = day or datetime.now(tz).date()
         cals = self.svc.app_settings.get("calendars") or []
@@ -111,8 +148,9 @@ class Sources:
             if not cal.get("url"):
                 continue
             try:
-                ics = await fetch_ics(cal["url"], self.http)
-                events += await asyncio.to_thread(parse_events, ics, day, tz, cal.get("name", ""))
+                ics = await self._fetch_ics(cal["url"])
+                events += await asyncio.to_thread(parse_events, ics, day, tz, cal.get("name", ""), days,
+                                                  owner_from_url(cal["url"]))
                 self._ok(f"calendar:{cal.get('id')}")
             except Exception as exc:
                 log.warning("calendar %s failed: %s", cal.get("name"), exc)
@@ -121,12 +159,27 @@ class Sources:
         events.sort(key=lambda e: (not e.all_day, e.start if isinstance(e.start, datetime) else datetime.min.replace(tzinfo=tz)))
         return events, errors
 
-    async def agenda_doc(self) -> dict:
+    async def agenda_slip(self, evs: tuple[list[Event], list[str]] | None = None) -> dict:
+        """The itinerary (or the free-day slip, with the next event in 14 days)."""
         tz = self.tz()
-        if not self.svc.app_settings.get("calendars"):
-            return {"blocks": [{"type": "text", "text": "No calendars yet. Add one in Settings › Connections.", "size": "S"}]}
-        ev, errs = await self.events()
-        return {"blocks": agenda_blocks(ev, datetime.now(tz).date(), errs)}
+        now = self._now()
+        cals = self.svc.app_settings.get("calendars") or []
+        if not cals:
+            return {"type": "slip", "template": "unavailable",
+                    "data": {"source": "GOOGLE CALENDAR", "title": "No calendars yet", "now": now.replace(tzinfo=None).isoformat(),
+                             "text": "Add one in Settings › Connections."}}
+        ev, errs = evs or await self.events()
+        upcoming: list[Event] = []
+        if not ev:
+            later, _ = await self.events(now.date() + timedelta(days=1), 14)
+            upcoming = sorted(later, key=lambda e: (e.start.date() if isinstance(e.start, datetime) else e.start,
+                                                    not e.all_day,
+                                                    e.start if isinstance(e.start, datetime) else datetime.min.replace(tzinfo=tz)))
+        data = calendar_data(ev, errs, now.date(), now, [c.get("name", "") for c in cals], upcoming)
+        return {"type": "slip", "template": "itinerary", "data": data}
+
+    async def agenda_doc(self) -> dict:
+        return {"blocks": [await self.agenda_slip()]}
 
     # ------------------------------------------------------------- tasks --
     async def tasks(self) -> tuple[list[dict], str | None]:
@@ -146,76 +199,83 @@ class Sources:
             return [], "Tasks unavailable"
 
     # ---------------------------------------------------------- sections --
+    def tasks_slip(self, res: tuple[list[dict], str | None], title: str | None = None) -> dict:
+        items, err = res
+        now = self._now()
+        if err:
+            return {"type": "slip", "template": "unavailable",
+                    "data": {"source": "GOOGLE TASKS", "title": err, "now": now.replace(tzinfo=None).isoformat()}}
+        return {"type": "slip", "template": "todo", "data": tasks_data(items, now)}
+
+    def has_due_tasks(self, res: tuple[list[dict], str | None]) -> bool:
+        return any_due(res[0], self._now().date())
+
     async def section_blocks(self, sec: dict[str, Any], ctx: dict) -> list[dict]:
+        """One routine section → kit slip blocks (PRINT_TEMPLATES 1, 8b)."""
         t = sec.get("type")
-        tz = self.tz()
-        now = datetime.now(tz)
+        now = self._now()
+        stamp = now.replace(tzinfo=None).isoformat()
         if t == "date":
-            return [{"type": "heading", "text": now.strftime("%A"), "size": "XL"},
-                    {"type": "text", "text": now.strftime("%-d %B %Y"), "align": "center", "size": "M"}]
+            return [{"type": "slip", "template": "date", "data": {"now": stamp}}]
         if t == "weather":
-            f, stale = ctx.get("weather") or await self.weather()
-            return weather_blocks(f, stale)
+            return [self.weather_slip(ctx.get("weather") or await self.weather(), "weather_briefing")]
         if t == "agenda":
-            ev, errs = ctx.get("events") or await self.events()
-            return agenda_blocks(ev, now.date(), errs, sec.get("title"))
+            return [await self.agenda_slip(ctx.get("events"))]
         if t == "tasks":
-            items, err = ctx.get("tasks") or await self.tasks()
-            blocks: list[dict] = [{"type": "banner", "text": sec.get("title") or "To do"}]
-            if err:
-                blocks.append({"type": "text", "text": err, "size": "S"})
-            elif not items:
-                blocks.append({"type": "text", "text": "Nothing to do. Nice.", "size": "M"})
-            else:
-                blocks.append({"type": "checklist", "items": [{"text": i["title"]} for i in items], "size": "M"})
-            return blocks
+            return [self.tasks_slip(ctx.get("tasks") or await self.tasks(), sec.get("title"))]
         if t == "fortune":
-            return [{"type": "divider", "style": "stars"},
-                    {"type": "text", "text": random.choice(fortunes(self.svc)), "align": "center", "size": "M"}]
+            return [{"type": "slip", "template": "fortune",
+                     "data": {"text": random.choice(fortunes(self.svc)), "now": stamp}}]
         if t == "quote":
             text = (sec.get("text") or "").strip()
-            return [{"type": "text", "text": text, "align": sec.get("align", "center"), "size": sec.get("size", "M"),
-                     "font": sec.get("font")}] if text else []
+            return [{"type": "slip", "template": "fortune", "data": {"label": "QUOTE", "text": text, "now": stamp}}] \
+                if text else []
         if t == "countdown":
             try:
-                target = date.fromisoformat(sec.get("date", ""))
+                date.fromisoformat(sec.get("date", ""))
             except ValueError:
-                return [{"type": "text", "text": "Countdown date missing", "size": "S"}]
-            days = (target - now.date()).days
-            label = sec.get("label") or target.strftime("%-d %B")
-            if days > 1:
-                text = f"{days} days until {label}"
-            elif days == 1:
-                text = f"Tomorrow: {label}"
-            elif days == 0:
-                text = f"Today: {label}!"
-            else:
-                text = f"{label} was {-days} days ago"
-            return [{"type": "text", "text": text, "size": "L", "align": "center", "bold": True}]
+                return [{"type": "slip", "template": "unavailable",
+                         "data": {"source": "COUNTDOWN", "title": "Countdown date missing", "now": stamp}}]
+            return [{"type": "slip", "template": "countdown",
+                     "data": {"date": sec["date"], "label": sec.get("label"), "set_on": sec.get("set_on"),
+                              "tip": sec.get("tip"), "now": stamp}}]
         if t == "shopping":
             lst = self.svc.extras.get("lists")
             items = lst.open_items("shopping") if lst else []
-            if not items:
-                return [] if sec.get("skip_empty", True) else [{"type": "text", "text": "Shopping list is empty."}]
-            return [{"type": "banner", "text": "Shopping"},
-                    {"type": "checklist", "items": [{"text": i} for i in items]}]
+            if not items and sec.get("skip_empty", True):
+                return []
+            return [{"type": "slip", "template": "shopping", "data": {"items": items, "now": stamp}}]
         if t == "divider":
-            return [{"type": "divider", "style": sec.get("style", "dashed")}]
+            return []  # sections are always separated by a cut rule now
         if t == "message":
             doc = sec.get("document") or {}
-            return [b for b in doc.get("blocks", []) if isinstance(b, dict)][:60]
+            blocks = [b for b in doc.get("blocks", []) if isinstance(b, dict)][:60]
+            return [{"type": "group", "blocks": blocks}] if blocks else []
         return []
 
     async def routine_doc(self, sections: list[dict], ctx: dict | None = None) -> dict:
+        """Each block's slip one after another, a dashed cut rule between them; the renderer adds the
+        single end mark after the last block (PRINT_TEMPLATES 1, 4.7)."""
         ctx = ctx or {}
-        blocks: list[dict] = []
+        parts: list[list[dict]] = []
         for sec in sections:
             try:
-                blocks += await self.section_blocks(sec, ctx)
+                b = await self.section_blocks(sec, ctx)
             except Exception:
                 log.exception("section %s failed", sec.get("type"))
-                blocks.append({"type": "text", "text": f"{SECTION_TYPES.get(sec.get('type'), 'Section')} unavailable",
-                               "size": "S"})
-        if not blocks:
-            blocks = [{"type": "text", "text": "Nothing to print.", "size": "S"}]
+                b = [{"type": "slip", "template": "unavailable",
+                      "data": {"source": SECTION_TYPES.get(sec.get("type"), "Section"),
+                               "title": f"{SECTION_TYPES.get(sec.get('type'), 'Section')} unavailable",
+                               "now": self._now().replace(tzinfo=None).isoformat()}}]
+            if b:
+                parts.append(b)
+        if not parts:
+            parts = [[{"type": "slip", "template": "unavailable",
+                       "data": {"source": "ROUTINE", "title": "Nothing to print",
+                                "now": self._now().replace(tzinfo=None).isoformat()}}]]
+        blocks: list[dict] = []
+        for i, p in enumerate(parts):
+            if i:
+                blocks.append({"type": "cut"})
+            blocks += p
         return {"blocks": blocks}

@@ -215,3 +215,4 @@ The Pi has no electronics attached yet, and `design-handoff/` is still on the Wi
 - Phase 0 hardware answers (printer, button, LED, phones).
 - Copy `design-handoff/` from the PC into the repo (needed for Phase 2 UI work).
 - Clone handling (new SSH host keys and machine ID on first boot) is in Phase 9.
+- 24 Nov 2026 · Print templates: print kit (render/kit), 14 weather icons, weather briefing, Weather now, To do, itinerary and every other slip on the design system; one end mark per printed copy; routines joined by cut rules; 37 golden images + preview/printer parity tests (tools/update_goldens.py).

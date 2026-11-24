@@ -22,12 +22,11 @@ class NoteBody(BaseModel):
 
 
 def guest_doc(name: str, text: str, sticker: str | None) -> dict:
-    blocks: list[dict] = [{"type": "banner", "text": f"Note from {name or 'a guest'} · {time.strftime('%H:%M')}"}]
-    if sticker:
-        blocks.append({"type": "sticker", "name": sticker})
-    if text.strip():
-        blocks.append({"type": "text", "text": text.strip(), "size": "L"})
-    return {"blocks": blocks}
+    """Guest note slip (PRINT_TEMPLATES 8b): "from {name}" and the time in the header."""
+    from datetime import datetime
+    return {"blocks": [{"type": "slip", "template": "guest_note",
+                        "data": {"name": name or "a guest", "text": text.strip(), "sticker": sticker,
+                                 "now": datetime.now().isoformat(timespec="minutes")}}]}
 
 
 @router.get("/api/guest")

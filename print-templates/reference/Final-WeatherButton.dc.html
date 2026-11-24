@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Weather on button press</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./rc.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="rc" style="height: 1260px; font-family: 'Space Grotesk', sans-serif; color: #000">
+  <div class="row sp"><span class="px b">Weather now</span><span class="px">Mon 23 Nov · 08:00</span></div>
+  <div class="row sp"><span class="px">London</span><span class="px"><br></span></div>
+
+  <div style="border: 4px solid #000">
+    <div class="inv row sp" style="padding: 8px 12px"><span class="px b">Today</span><span class="px b">Monday 23</span></div>
+    <div class="col" style="padding: 14px 14px 16px; gap: 10px">
+      <div class="row" style="gap: 14px; align-items: center">
+        <dc-import name="WxIcon" icon="rain" size="104" hint-size="104px,104px"></dc-import>
+        <div class="col" style="gap: 6px">
+          <span class="t-xxl">9°</span>
+          <span class="t-l">H 10° · L 6°</span>
+        </div>
+      </div>
+      <span class="t-xl">RAIN AT 2</span>
+      <p class="t-m">Dry until lunch, then rain until about 19:00. Wind 20 km/h.</p>
+
+      <div class="hr"></div>
+      <span class="px">Next 12 hours · temperature °C</span>
+      <div style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px; align-items: end; height: 112px; border-bottom: 3px solid #000">
+        <sc-for list="{{hrs}}" as="x" hint-placeholder-count="12">
+          <div class="col" style="align-items: center; gap: 2px"><span class="t-s" style="font-size: 13px">{{x.t}}</span><div style="width: 100%; height: {{x.th}}; background: #000"></div></div>
+        </sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px">
+        <sc-for list="{{hrs}}" as="x" hint-placeholder-count="12"><span class="px c" style="letter-spacing: 0">{{x.h}}</span></sc-for>
+      </div>
+      <span class="px" style="margin-top: 2px">Chance of rain %</span>
+      <div style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 3px; align-items: start; height: 104px; border-top: 3px solid #000">
+        <sc-for list="{{hrs}}" as="x" hint-placeholder-count="12">
+          <div class="col" style="align-items: center; gap: 2px"><div class="d50" style="width: 100%; height: {{x.rh}}; border: 2px solid #000; border-top: 0"></div><span class="t-s" style="font-size: 13px">{{x.r}}</span></div>
+        </sc-for>
+      </div>
+      <div class="inv t-l c" style="padding: 8px">LEAVE BEFORE 13:30</div>
+    </div>
+  </div>
+
+  <div class="row" style="gap: 8px; margin-top: 4px"><span class="px b">Rest of the week</span><div style="flex: 1; border-top: 2px dashed #000"></div></div>
+  <sc-for list="{{week}}" as="w" hint-placeholder-count="4">
+    <div class="col" style="gap: 8px">
+      <div class="row">
+        <span class="t-l" style="width: 52px">{{w.day}}</span>
+        <dc-import name="WxIcon" icon="{{w.icon}}" size="40" hint-size="40px,40px"></dc-import>
+        <span class="t-m" style="flex: 1; padding-left: 4px; font-weight: 700">{{w.hi}}° / {{w.lo}}°</span>
+        <div class="col" style="width: 92px; gap: 3px"><div class="meter"><i class="d50" style="width: {{w.rain}}%"></i></div><span class="t-s" style="font-size: 13px">Rain {{w.rain}}%</span></div>
+      </div>
+      <div class="hrd"></div>
+    </div>
+  </sc-for>
+  <p class="t-s">Coldest night Fri, -1°. Frost likely Friday morning.</p>
+  <div class="foot"><span>Wall Printer</span><span>Updated 07:58</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":384,"height":1260}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const temps = [8, 8, 9, 9, 10, 10, 10, 9, 9, 8, 8, 7];
+    const rains = [10, 10, 20, 30, 60, 80, 90, 80, 70, 50, 30, 20];
+    const hrs = temps.map((t, i) => ({ t, r: rains[i], h: String(8 + i).padStart(2, '0'), th: ((t - 5) * 17) + 'px', rh: Math.round(rains[i] * 0.75) + 'px' }));
+    return {
+      hrs,
+      week: [
+        { day: 'TUE', icon: 'rain', hi: 11, lo: 7, rain: 80 },
+        { day: 'WED', icon: 'cloudy', hi: 12, lo: 6, rain: 30 },
+        { day: 'THU', icon: 'wind', hi: 10, lo: 5, rain: 40 },
+        { day: 'FRI', icon: 'frost', hi: 6, lo: -1, rain: 0 }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

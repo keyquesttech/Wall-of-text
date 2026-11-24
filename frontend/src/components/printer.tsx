@@ -122,7 +122,6 @@ export function AsPrinted(props: { doc: Doc; caption?: boolean }) {
   const { pv, loading, error } = usePreview(props.doc);
   return (
     <section aria-label="As printed" style="width:100%;display:flex;flex-direction:column;align-items:center">
-      {props.caption !== false && <div class="dotscap">384 DOTS · 48 MM · 1-BIT</div>}
       <div class="rwrap" style="max-width:384px">
         <div class={`receipt bits img ${loading ? "loading" : ""}`}>
           {pv ? <img src={pv.url} alt="Preview of the printed slip" /> : <div class="shim" style="height:120px;margin:0 10px" />}

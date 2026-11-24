@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Itinerary — free day</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./rc.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="rc" style="height: 560px; font-family: 'Space Grotesk', sans-serif; color: #000">
+  <div class="row sp"><span class="px b">Google Calendar</span><span class="px">Sat 28 Nov</span></div>
+  <div class="hr2"></div>
+  <div style="display: flex; justify-content: center; padding: 8px 0 0">
+    <svg viewBox="0 0 120 120" width="140" height="140" role="img" aria-label="Empty calendar page">
+      <rect x="12" y="20" width="96" height="88" fill="none" stroke="#000" stroke-width="7"></rect>
+      <rect x="12" y="20" width="96" height="22" fill="#000"></rect>
+      <path d="M34 10v20M86 10v20" stroke="#000" stroke-width="8"></path>
+      <path d="M30 62h12M54 62h12M78 62h12M30 84h12M54 84h12" stroke="#000" stroke-width="4" stroke-dasharray="2 4"></path>
+    </svg>
+  </div>
+  <div class="t-xl c">NOTHING ON</div>
+  <p class="t-m c" style="margin-top: -4px">No events today. The whole day is yours.</p>
+  <div class="hr"></div>
+  <div class="box row sp"><div class="col"><span class="px">Next event</span><span class="t-l">Team stand-up</span></div><div class="col r"><span class="px">Mon</span><span class="t-l">09:30</span></div></div>
+  <div class="foot"><span>Wall Printer</span><span>Calendars: Personal, Work</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":384,"height":560}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

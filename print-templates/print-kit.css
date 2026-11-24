@@ -1,0 +1,43 @@
+/* Wall Printer — receipt print kit. 1 CSS px = 1 printer dot. Black ink only. */
+.rc{position:relative;width:384px;box-sizing:border-box;background:#F7F5F0;color:#000;font-family:"Space Grotesk",sans-serif;font-size:17px;line-height:1.2;font-weight:500;padding:30px 20px 36px;display:flex;flex-direction:column;gap:14px;-webkit-font-smoothing:none;font-smooth:never;
+  -webkit-mask:conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/12px 51% repeat-x,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/12px 51% repeat-x;
+  mask:conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/12px 51% repeat-x,conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/12px 51% repeat-x}
+.rc *{box-sizing:border-box}
+.rc p{margin:0}
+.px{font-family:"JetBrains Mono",monospace;font-size:12px;line-height:15px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.px.b{font-weight:800}
+.mono{font-family:"JetBrains Mono",monospace;font-size:15px;line-height:20px}
+.mono.b{font-weight:700}
+.t-s{font-size:15px;line-height:1.25}.t-m{font-size:17px;line-height:1.25}.t-l{font-size:23px;line-height:1.1;font-weight:700;letter-spacing:-.01em}.t-xl{font-size:36px;line-height:1;font-weight:700;letter-spacing:-.025em}.t-xxl{font-size:92px;line-height:.85;font-weight:700;letter-spacing:-.05em}
+.c{text-align:center}.r{text-align:right}
+.row{display:flex;align-items:center;gap:10px}.sp{justify-content:space-between}.col{display:flex;flex-direction:column}
+.inv{background:#000;color:#F7F5F0;padding:3px 8px}
+.box{border:3px solid #000;padding:8px 10px}
+.hr{border-top:2px dashed #000}
+.hr2{height:7px;border-top:3px solid #000;border-bottom:2px solid #000}
+.hrd{border-top:3px dotted #000}
+.cut{display:flex;align-items:center;gap:8px;font-family:"JetBrains Mono",monospace;font-weight:700;font-size:12px}
+.cut::before,.cut::after{content:"";flex:1;border-top:2px dashed #000}
+.cb{width:20px;height:20px;border:3px solid #000;flex:none;display:inline-block}
+.cb.lg{width:30px;height:30px;border-width:4px}
+/* 1-bit tones: dither patterns stand in for grey */
+.d25{background-image:radial-gradient(#000 0.9px,transparent 1.1px);background-size:4px 4px}
+.d50{background-image:conic-gradient(#000 25%,transparent 0 50%,#000 0 75%,transparent 0);background-size:4px 4px}
+.d75{background-color:#000;background-image:radial-gradient(#F7F5F0 0.9px,transparent 1.1px);background-size:4px 4px}
+.lines{background-image:repeating-linear-gradient(-45deg,#000 0 2px,transparent 2px 6px)}
+.solidline{background:#000}
+.qon{background:#000}
+.gapline{background-image:repeating-linear-gradient(#000 0 4px,transparent 4px 9px)}
+.meter{height:16px;border:2px solid #000;position:relative}
+.meter i{position:absolute;left:0;top:0;bottom:0;display:block}
+/* End mark: printed after the last block of every slip so an untorn slip never blends into the next one.
+   Rule, fine hatch, label in a black tag on a dashed tear line, fine hatch, rule. */
+.endmark,.rc::after{content:"END \00B7  TEAR HERE";display:block;padding:34px 0;font-family:"JetBrains Mono",monospace;font-weight:800;font-size:12px;line-height:23px;letter-spacing:.2em;text-align:center;color:#F7F5F0;text-transform:uppercase;
+  background:
+    linear-gradient(#000,#000) center/176px 23px no-repeat,
+    repeating-linear-gradient(90deg,#000 0 6px,transparent 6px 11px) center/calc(100% - 24px) 2px no-repeat,
+    linear-gradient(#000,#000) left top/100% 3px no-repeat,
+    repeating-linear-gradient(-45deg,#000 0 2px,transparent 2px 6px) left 0 top 8px/100% 12px no-repeat,
+    repeating-linear-gradient(-45deg,#000 0 2px,transparent 2px 6px) left 0 bottom 8px/100% 12px no-repeat,
+    linear-gradient(#000,#000) left bottom/100% 3px no-repeat}
+.rc::after{margin:auto -20px -14px}

@@ -11,66 +11,15 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from .services import Services
 
+# Only the Wi-Fi card is built in; everything else is made by saving a print with the bookmark
+# button. A saved print may hold {{name}} placeholders, which become fill-in fields.
 BUILTIN_TEMPLATES: list[dict[str, Any]] = [
-    {
-        "id": "b-note", "name": "Note to self", "icon": "note",
-        "fields": [{"key": "text", "label": "Note", "multiline": True}],
-        "document": {"blocks": [{"type": "datetime", "size": "S", "align": "left"},
-                                {"type": "text", "text": "{{text}}", "size": "L"}]},
-    },
-    {
-        "id": "b-big", "name": "Big message", "icon": "big",
-        "fields": [{"key": "text", "label": "Message"}],
-        "document": {"blocks": [{"type": "heading", "text": "{{text}}", "size": "XL", "font": "sans"}],
-                     "options": {"border": True}},
-    },
-    {
-        "id": "b-todo", "name": "To-do list", "icon": "list",
-        "fields": [{"key": "title", "label": "Title"}, {"key": "items", "label": "One thing per line", "multiline": True, "list": True}],
-        "document": {"blocks": [{"type": "heading", "text": "{{title}}", "size": "L", "align": "left"},
-                                {"type": "checklist", "items": "{{items}}"}]},
-        "defaults": {"title": "To do"},
-    },
     {
         "id": "b-wifi", "name": "Wi-Fi for guests", "icon": "wifi",
         "fields": [{"key": "ssid", "label": "Network name"}, {"key": "password", "label": "Password"}],
         "document": {"blocks": [{"type": "heading", "text": "Wi-Fi", "size": "XL"},
                                 {"type": "qr", "data": "WIFI:T:WPA;S:{{ssid}};P:{{password}};;", "size": "M"},
                                 {"type": "text", "text": "Network: {{ssid}}\nPassword: {{password}}", "align": "center"}]},
-    },
-    {
-        "id": "b-card", "name": "Greeting card", "icon": "card",
-        "fields": [{"key": "to", "label": "To"}, {"key": "message", "label": "Message", "multiline": True},
-                   {"key": "from", "label": "From"}],
-        "document": {"blocks": [{"type": "sticker", "name": "heart"},
-                                {"type": "heading", "text": "{{to}}", "size": "XL", "font": "sans"},
-                                {"type": "divider", "style": "wave"},
-                                {"type": "text", "text": "{{message}}", "size": "L", "align": "center"},
-                                {"type": "text", "text": "— {{from}}", "size": "M", "align": "right"}],
-                     "options": {"border": True}},
-    },
-    {
-        "id": "b-recipe", "name": "Recipe card", "icon": "recipe",
-        "fields": [{"key": "title", "label": "Dish"}, {"key": "ingredients", "label": "Ingredients (one per line)", "multiline": True, "list": True},
-                   {"key": "steps", "label": "Method", "multiline": True}],
-        "document": {"blocks": [{"type": "heading", "text": "{{title}}", "size": "L"},
-                                {"type": "banner", "text": "Ingredients"},
-                                {"type": "checklist", "items": "{{ingredients}}", "size": "S"},
-                                {"type": "banner", "text": "Method"},
-                                {"type": "text", "text": "{{steps}}", "size": "S"}]},
-    },
-    {
-        "id": "b-chore", "name": "Chore chart", "icon": "chore",
-        "fields": [{"key": "who", "label": "Who"}, {"key": "items", "label": "Chores (one per line)", "multiline": True, "list": True}],
-        "document": {"blocks": [{"type": "banner", "text": "Chores for {{who}}"},
-                                {"type": "columns", "left": "Mon Tue Wed Thu Fri", "right": "", "size": "S", "font": "mono"},
-                                {"type": "checklist", "items": "{{items}}"}]},
-    },
-    {
-        "id": "b-sticker", "name": "Sticker", "icon": "sticker",
-        "fields": [{"key": "caption", "label": "Caption (optional)"}],
-        "document": {"blocks": [{"type": "sticker", "name": "star", "size": "L"},
-                                {"type": "text", "text": "{{caption}}", "size": "L", "align": "center"}]},
     },
 ]
 
@@ -101,14 +50,26 @@ def fill(template: dict, values: dict[str, str]) -> dict:
     return doc
 
 
+def placeholder_fields(doc: dict) -> list[dict]:
+    """{{name}} placeholders in a saved print → fill-in fields, in the order they appear."""
+    keys: list[str] = []
+    for m in _FIELD.finditer(json.dumps(doc, ensure_ascii=False)):
+        if m.group(1) not in keys:
+            keys.append(m.group(1))
+    return [{"key": k, "label": k.replace("_", " ").capitalize(), "multiline": False} for k in keys[:12]]
+
+
 class Templates:
     def __init__(self, svc: "Services"):
         self.svc = svc
 
     def list(self) -> list[dict]:
         rows = self.svc.store.conn().execute("SELECT * FROM templates ORDER BY created_at DESC").fetchall()
-        user = [{"id": r["id"], "name": r["name"], "icon": r["icon"], "builtin": False, "fields": [],
-                 "document": json.loads(r["document"])} for r in rows]
+        user = []
+        for r in rows:
+            doc = json.loads(r["document"])
+            user.append({"id": r["id"], "name": r["name"], "icon": r["icon"], "builtin": False,
+                         "fields": placeholder_fields(doc), "document": doc})
         return [{**t, "builtin": True} for t in BUILTIN_TEMPLATES] + user
 
     def get(self, tid: str) -> dict | None:
@@ -170,11 +131,9 @@ class Lists:
         return n
 
     def document(self, name: str = "shopping") -> dict:
-        items = self.open_items(name)
-        return {"blocks": [{"type": "heading", "text": name.capitalize(), "size": "L", "align": "left"},
-                           {"type": "datetime", "format": "%a %-d %b", "size": "S", "align": "left"},
-                           {"type": "checklist", "items": [{"text": i} for i in items]} if items else
-                           {"type": "text", "text": "Nothing on the list.", "size": "M"}]}
+        from datetime import datetime
+        return {"blocks": [{"type": "slip", "template": "shopping",
+                            "data": {"items": self.open_items(name), "now": datetime.now().isoformat(timespec="minutes")}}]}
 
     def publish(self, name: str) -> None:
         self.svc.events.publish("list", {"list": name})

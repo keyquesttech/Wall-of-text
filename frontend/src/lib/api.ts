@@ -11,7 +11,7 @@ export type Block =
   | { type: "divider"; style?: "solid" | "dashed" | "dotted" | "wave" | "double" | "stars" }
   | { type: "spacer"; height: number }
   | { type: "qr"; data: string; size?: "S" | "M" | "L"; caption?: string }
-  | { type: "checklist"; items: { text: string; done?: boolean }[]; size?: Size; font?: string }
+  | { type: "checklist"; items: { text: string; done?: boolean }[]; size?: Size; font?: string; align?: Align }
   | { type: "datetime"; format?: string; size?: Size; align?: Align }
   | { type: "image"; src: string; style?: "photo" | "sharp" | "halftone"; dither?: "floyd" | "atkinson" | "ordered"; brightness?: number; contrast?: number; invert?: boolean; lighten?: boolean; rotate?: number }
   | { type: "drawing"; src: string }

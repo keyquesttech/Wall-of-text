@@ -1,0 +1,34 @@
+{
+  "_comment": "Normalised weather data the templates read. Built from one Open-Meteo forecast call (current + hourly + daily, timezone Europe/London). Values match the 'rain' reference print and the button print.",
+  "place": "London",
+  "generatedAt": "2026-11-23T07:58:00+00:00",
+  "current": {
+    "time": "2026-11-23T08:00", "temperature": 9, "apparentTemperature": 7,
+    "weatherCode": 3, "windSpeed": 20, "windGusts": 34, "visibility": 18000, "isDay": true
+  },
+  "today": {
+    "date": "2026-11-23", "tempMax": 10, "tempMin": 6, "precipProbMax": 90,
+    "precipSum": 6.2, "snowfallSum": 0, "uvIndexMax": 1, "weatherCode": 63,
+    "sunrise": "07:31", "sunset": "16:05"
+  },
+  "hourly": [
+    {"time": "08:00", "temperature": 8, "precipProb": 10, "weatherCode": 3},
+    {"time": "09:00", "temperature": 8, "precipProb": 10, "weatherCode": 3},
+    {"time": "10:00", "temperature": 9, "precipProb": 20, "weatherCode": 3},
+    {"time": "11:00", "temperature": 9, "precipProb": 30, "weatherCode": 3},
+    {"time": "12:00", "temperature": 10, "precipProb": 60, "weatherCode": 61},
+    {"time": "13:00", "temperature": 10, "precipProb": 80, "weatherCode": 61},
+    {"time": "14:00", "temperature": 10, "precipProb": 90, "weatherCode": 63},
+    {"time": "15:00", "temperature": 9, "precipProb": 80, "weatherCode": 63},
+    {"time": "16:00", "temperature": 9, "precipProb": 70, "weatherCode": 61},
+    {"time": "17:00", "temperature": 8, "precipProb": 50, "weatherCode": 61},
+    {"time": "18:00", "temperature": 8, "precipProb": 30, "weatherCode": 51},
+    {"time": "19:00", "temperature": 7, "precipProb": 20, "weatherCode": 3}
+  ],
+  "daily": [
+    {"date": "2026-11-24", "day": "TUE", "weatherCode": 61, "tempMax": 11, "tempMin": 7, "precipProbMax": 80},
+    {"date": "2026-11-25", "day": "WED", "weatherCode": 3, "tempMax": 12, "tempMin": 6, "precipProbMax": 30},
+    {"date": "2026-11-26", "day": "THU", "weatherCode": 3, "tempMax": 10, "tempMin": 5, "precipProbMax": 40, "windGustsMax": 65},
+    {"date": "2026-11-27", "day": "FRI", "weatherCode": 0, "tempMax": 6, "tempMin": -1, "precipProbMax": 0}
+  ]
+}

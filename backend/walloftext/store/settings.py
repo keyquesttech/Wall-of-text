@@ -30,6 +30,8 @@ DEFAULTS: dict[str, Any] = {
               "max_chars": 280, "rate_per_10min": 5},
     "remote": {"max_chars": 600, "max_lines": 40, "rate_per_hour": 10, "ack_email": False},
     "display": {"reduce_motion": False, "reduce_transparency": False, "sounds": False},
+    # Scheduled backup to a USB drive: daily | weekly | monthly (the 1st) at `time`; weekly on `weekday` (0 = Mon)
+    "backup": {"usb_enabled": False, "frequency": "weekly", "time": "03:00", "weekday": 6, "keep": 10},
 }
 
 

@@ -160,6 +160,11 @@ input[type="range"] { width: 100%; accent-color: var(--green); height: 28px; }
 .scrimf { position: fixed; inset: 0; z-index: 50; background: rgba(8, 8, 10, .6); animation: fadein .2s both; display: flex; align-items: flex-end; justify-content: center; }
 .sheetf { position: relative; width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; border-radius: 32px 32px 0 0 !important; padding: 10px 20px calc(28px + env(safe-area-inset-bottom)); border-bottom: 0 !important; animation: sheetup .52s var(--spring) both; background-color: rgba(28, 29, 33, .82) !important; }
 .sheetf h2 { margin: 0 0 10px; }
+.grabbtn { display: block; width: calc(100% + 40px); margin: -10px -20px 4px; padding: 12px 0 10px; background: none; border: 0; cursor: pointer; touch-action: none; }
+.grabbtn .grab { display: block; margin: 0 auto; }
+.grabbtn:hover .grab, .grabbtn:focus-visible .grab { background: rgba(201,205,212,.75); }
+.tnew-paper { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #121315; font-weight: 700; font-size: 13px; }
+.tnew-paper .i { width: 26px; height: 26px; }
 @keyframes sheetup { from { transform: translateY(60px); opacity: 0; } }
 @media (min-width: 768px) { .scrimf { align-items: center; } .sheetf { border-radius: 32px !important; border-bottom: 1px solid var(--edge) !important; } }
 .toastf { position: fixed; top: calc(16px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 70; display: flex; align-items: center; gap: 10px; padding: 0 18px; min-height: 46px; border-radius: 23px; font-weight: 600; font-size: 15px; color: var(--hi); animation: drop .5s var(--spring); max-width: calc(100vw - 32px); }

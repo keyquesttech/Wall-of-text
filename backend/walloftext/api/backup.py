@@ -30,9 +30,8 @@ def _table(conn, name: str) -> list[dict]:
         return []
 
 
-@router.get("/backup")
-async def backup(request: Request):
-    svc = request.app.state.svc
+def build_zip(svc) -> tuple[str, bytes]:
+    """(file name, zip bytes) of settings, schedules, templates, lists, fortunes, senders and fonts."""
     conn = svc.store.conn()
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
@@ -57,9 +56,26 @@ async def backup(request: Request):
                 p = fdir / meta["file"]
                 if p.exists():
                     z.write(p, f"fonts/{p.name}")
-    name = f"walloftext-backup-{time.strftime('%Y%m%d-%H%M')}.zip"
-    return Response(buf.getvalue(), media_type="application/zip",
+    return f"walloftext-backup-{time.strftime('%Y%m%d-%H%M')}.zip", buf.getvalue()
+
+
+@router.get("/backup")
+async def backup(request: Request):
+    name, data = build_zip(request.app.state.svc)
+    return Response(data, media_type="application/zip",
                     headers={"Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"})
+
+
+@router.get("/backup/usb")
+async def usb_status(request: Request):
+    import asyncio
+    return await asyncio.to_thread(request.app.state.svc.extras["usb_backup"].status)
+
+
+@router.post("/backup/usb/run")
+async def usb_run(request: Request):
+    import asyncio
+    return await asyncio.to_thread(request.app.state.svc.extras["usb_backup"].run_now)
 
 
 @router.post("/backup")

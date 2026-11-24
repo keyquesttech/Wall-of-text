@@ -44,11 +44,51 @@ export function Sheet(props: { open: boolean; onClose: () => void; title?: strin
     }, 30);
     return () => { document.removeEventListener("keydown", onKey); prev?.focus?.(); };
   }, [props.open]);
+  // Swipe down to close (from the pill, the title, or anywhere once the sheet is scrolled to the top).
+  const drag = useRef<{ y0: number; t0: number; dy: number; on: boolean } | null>(null);
+  const onTouchStart = (e: TouchEvent) => {
+    const el = ref.current;
+    const target = e.target as HTMLElement;
+    if (!el || target.closest("textarea, input[type=range], canvas, .nodrag")) return;
+    const fromTop = !!target.closest(".grabbtn, h2");
+    if (!fromTop && el.scrollTop > 0) return;
+    drag.current = { y0: e.touches[0].clientY, t0: performance.now(), dy: 0, on: false };
+  };
+  const onTouchMove = (e: TouchEvent) => {
+    const d = drag.current, el = ref.current;
+    if (!d || !el) return;
+    d.dy = e.touches[0].clientY - d.y0;
+    if (!d.on && d.dy > 8) { d.on = true; el.style.transition = "none"; }
+    if (d.on) {
+      if (e.cancelable) e.preventDefault();
+      el.style.transform = `translateY(${Math.max(0, d.dy)}px)`;
+    }
+  };
+  const onTouchEnd = () => {
+    const d = drag.current, el = ref.current;
+    drag.current = null;
+    if (!d || !el || !d.on) return;
+    const fast = d.dy / Math.max(1, performance.now() - d.t0) > 0.6;
+    el.style.transition = "transform .22s ease-out";
+    if (d.dy > 110 || (fast && d.dy > 40)) {
+      el.style.transform = "translateY(100%)";
+      window.setTimeout(props.onClose, 200);
+    } else {
+      el.style.transform = "";
+    }
+  };
+  useEffect(() => { // touchmove must be non-passive to stop the page scrolling while dragging
+    const el = ref.current;
+    if (!props.open || !el) return;
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => el.removeEventListener("touchmove", onTouchMove);
+  }, [props.open]);
   if (!props.open) return null;
   return (
     <div class="scrimf" onClick={(e) => e.target === e.currentTarget && props.onClose()}>
-      <section class={`glass sheetf ${props.tint ?? ""}`} role="dialog" aria-modal="true" aria-label={props.label ?? props.title} ref={ref}>
-        <div class="grab" />
+      <section class={`glass sheetf ${props.tint ?? ""}`} role="dialog" aria-modal="true" aria-label={props.label ?? props.title} ref={ref}
+        onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}>
+        <button type="button" class="grabbtn" aria-label="Close" onClick={props.onClose}><span class="grab" /></button>
         {props.title && <h2 class="h2">{props.title}</h2>}
         {props.children}
       </section>

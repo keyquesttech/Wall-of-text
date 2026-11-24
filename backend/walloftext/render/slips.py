@@ -13,6 +13,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from ..config import AP_ADDRESS, LOCAL_ADDRESS, PRODUCT_NAME, SETUP_SSID
 from ..printer.base import WIDTH
+from .kit.slip import with_end_mark
 
 MARGIN = 8
 
@@ -100,7 +101,7 @@ class _Canvas:
         return out
 
     def done(self) -> Image.Image:
-        return self.img.crop((0, 0, WIDTH, self.y + MARGIN))
+        return with_end_mark(self.img.crop((0, 0, WIDTH, self.y + MARGIN)), 14)
 
 
 def setup_slip(fonts_dir: Path, setup_wifi_password: str) -> Image.Image:

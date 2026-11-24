@@ -100,6 +100,10 @@ class Scheduler:
         c = self.svc.store.conn()
         cur = self.get(sid) if sid else None
         merged = {**(cur or {}), **data}
+        today = datetime.fromtimestamp(self.clock()).date().isoformat()
+        for sec in merged.get("sections") or []:
+            if isinstance(sec, dict) and sec.get("type") == "countdown" and not sec.get("set_on"):
+                sec["set_on"] = today  # the countdown meter runs from the day it was set
         tm = merged.get("time")
         if tm:
             parse_hm(tm)  # validates
@@ -168,6 +172,9 @@ class Scheduler:
         while True:
             try:
                 await self.tick()
+                usb = self.svc.extras.get("usb_backup")
+                if usb is not None and not self.waiting_for_clock:
+                    await usb.tick()
             except asyncio.CancelledError:
                 raise
             except Exception:
@@ -272,9 +279,9 @@ class Scheduler:
                 if not ev and not errs:
                     return "Nothing in the calendar."
             if t == "has_tasks":
-                items, err = ctx.get("tasks") or ([], None)
-                if not items and not err:
-                    return "No tasks to do."
+                res = ctx.get("tasks") or ([], None)
+                if not res[1] and not self.svc.extras["sources"].has_due_tasks(res):
+                    return "No tasks due today or late."
         return None
 
     async def _run(self, s: dict, due: datetime, late: bool) -> int | None:

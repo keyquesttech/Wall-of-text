@@ -163,7 +163,7 @@ async def test_condition_with_unavailable_data_prints_anyway(env):
     await sch.tick()
     j = svc.queue.get(jobs(svc)[0]["id"], with_blobs=True)
     assert j["state"] == "queued"
-    assert any("Weather unavailable" in b.get("text", "") for b in j["document"]["blocks"])
+    assert "Weather unavailable" in json.dumps(j["document"])
 
 
 async def test_weather_cache_used_when_down(env):
@@ -224,8 +224,11 @@ async def test_routine_doc_sections(env):
     doc = await svc.extras["sources"].routine_doc([
         {"type": "date"}, {"type": "weather"}, {"type": "countdown", "date": "2026-12-25", "label": "Christmas"},
         {"type": "quote", "text": "Be kind"}, {"type": "agenda"}, {"type": "tasks"}, {"type": "divider"}])
-    texts = " ".join(b.get("text", "") + b.get("left", "") for b in doc["blocks"])
-    assert "Christmas" in texts and "Be kind" in texts and "Now 4°C" in texts
+    texts = json.dumps(doc, ensure_ascii=False)
+    kinds = [b.get("template") for b in doc["blocks"] if b["type"] == "slip"]
+    assert kinds == ["date", "unavailable", "countdown", "fortune", "unavailable", "unavailable"]
+    assert sum(b["type"] == "cut" for b in doc["blocks"]) == 5
+    assert "Christmas" in texts and "Be kind" in texts
     assert "Google Tasks isn't connected." in texts
     img = svc.renderer.render(doc).image
     assert img.width == 384

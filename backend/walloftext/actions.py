@@ -53,11 +53,8 @@ def fortunes(svc: "Services") -> list[str]:
 
 
 def fortune_doc(text: str) -> dict:
-    return {"blocks": [
-        {"type": "divider", "style": "stars"},
-        {"type": "text", "text": text, "size": "L", "align": "center", "font": "mono"},
-        {"type": "divider", "style": "stars"},
-    ]}
+    return {"blocks": [{"type": "slip", "template": "fortune",
+                        "data": {"text": text, "now": datetime.now().isoformat(timespec="minutes")}}]}
 
 
 async def run(svc: "Services", action: str, source: str = "Button") -> str:

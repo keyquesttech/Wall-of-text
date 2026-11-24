@@ -53,7 +53,7 @@ if [[ $MODE != update ]]; then
   say "Packages"
   apt-get update -q
   DEBIAN_FRONTEND=noninteractive apt-get install -y -q \
-    python3-venv python3-gpiozero python3-lgpio avahi-daemon iw network-manager rsync
+    python3-venv python3-gpiozero python3-lgpio avahi-daemon iw network-manager rsync udisks2
 
   say "Hostname"
   if [[ "$(hostname)" != walloftext ]]; then

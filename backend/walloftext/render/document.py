@@ -11,10 +11,12 @@ from __future__ import annotations
 
 import base64
 import io
+import logging
 import math
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
+from functools import lru_cache
 from typing import Any
 
 import numpy as np
@@ -22,7 +24,10 @@ import segno
 from PIL import Image, ImageDraw, ImageEnhance, ImageOps
 
 from ..printer.base import WIDTH
-from .fonts import SIZES, FontRegistry, size_px
+from .fonts import SIZES, FontRegistry, _cmap, size_px
+from .kit.slip import with_end_mark
+
+log = logging.getLogger(__name__)
 
 MARGIN = 6
 GAP = 8
@@ -33,16 +38,75 @@ MAX_IMAGE_BYTES = 12 * 1024 * 1024
 # crossed rectangle that looks like an error).
 PLACEHOLDER = "\u0001"
 PLACEHOLDER_SIZER = "0"
+KIT_BLOCKS = ("slip", "cut", "group")
+END_SPACE = 14  # space between the last block and the end mark
+
+
+# Emoji print from a monochrome emoji font (Noto Emoji, OFL): black outlines suit 1-bit paper.
+EMOJI_FONT = "NotoEmoji-Variable.ttf"
+_EMOJI_DROP = re.compile("[\ufe0e\ufe0f\u200d\U0001f3fb-\U0001f3ff]")  # variation selectors, joiners, skin tones
+
+
+@lru_cache(maxsize=1)
+def _emoji_cmap() -> frozenset[int]:
+    from .kit.tokens import fonts_dir
+
+    cmap = _cmap(str(fonts_dir() / EMOJI_FONT))
+    return frozenset(c for c in cmap if c > 0x2000)  # digits, # and * stay with the text font
+
+
+@lru_cache(maxsize=32)
+def emoji_font(px: int):
+    from PIL import ImageFont
+
+    from .kit.tokens import fonts_dir
+
+    f = ImageFont.truetype(str(fonts_dir() / EMOJI_FONT), px)
+    try:
+        f.set_variation_by_name("Bold")  # thicker outlines print cleanly
+    except Exception:
+        pass
+    return f
+
+
+def is_emoji(ch: str) -> bool:
+    return ord(ch) in _emoji_cmap()
+
+
+def segments(text: str):
+    """Runs of ("t", text) | ("p", placeholder) | ("e", emoji)."""
+    run, kind = "", "t"
+    for ch in text:
+        k = "p" if ch == PLACEHOLDER else "e" if is_emoji(ch) else "t"
+        if k != "t" or kind != "t":
+            if run:
+                yield kind, run
+            run, kind = ch, k
+        else:
+            run += ch
+    if run:
+        yield kind, run
 
 
 class _Measure:
-    """textlength() that measures the placeholder marker as a "0" (used while wrapping)."""
+    """textlength() that measures the placeholder marker as a "0" and emoji with the emoji font."""
 
-    def __init__(self, real):
+    def __init__(self, real, efont=None):
         self.real = real
+        self.efont = efont
 
     def textlength(self, text, font=None):
-        return self.real(text.replace(PLACEHOLDER, PLACEHOLDER_SIZER), font=font)
+        if PLACEHOLDER not in text and not any(is_emoji(c) for c in text):
+            return self.real(text, font=font)
+        total = 0.0
+        for kind, seg in segments(text):
+            if kind == "t":
+                total += self.real(seg, font=font)
+            elif kind == "p":
+                total += self.real(PLACEHOLDER_SIZER, font=font)
+            else:
+                total += self.real(seg, font=self.efont or font)
+        return total
 
 
 class DocumentError(ValueError):
@@ -105,6 +169,10 @@ class Renderer:
                 parts.append(img)
         if not parts:
             parts.append(_blank(1))
+        kit_layout = all(isinstance(b, dict) and b.get("type") in KIT_BLOCKS for b in doc["blocks"]) and parts
+        if kit_layout:  # kit slips carry their own margins: edge to edge, no extra gaps
+            opts["gap"], opts["top_margin"] = 0, 0
+            saver = False
         gap = int(opts.get("gap", GAP))
         height = sum(p.height for p in parts) + gap * (len(parts) - 1) + int(opts.get("top_margin", 4))
         if height > MAX_HEIGHT:
@@ -122,6 +190,9 @@ class Renderer:
         if opts.get("border"):
             d = ImageDraw.Draw(out)
             d.rectangle([0, 0, WIDTH - 1, out.height - 1], outline=0, width=3)
+        if opts.get("end_mark", True):
+            # One end mark per document; copies reprint the whole bitmap, so one per copy (4.7).
+            out = with_end_mark(out, 0 if kit_layout else END_SPACE)
         arr = np.asarray(out, dtype=bool)
         coverage = 1.0 - float(arr.mean()) if arr.size else 0.0
         if coverage > 0.5:
@@ -136,11 +207,13 @@ class Renderer:
 
     def _clean(self, text: str, fid) -> str:
         text = text.replace("\r\n", "\n").replace("\t", "    ")
-        return "".join(ch if self.fonts.covers(fid, ch) else PLACEHOLDER for ch in text)
+        text = _EMOJI_DROP.sub("", text)
+        return "".join(ch if self.fonts.covers(fid, ch) or ch == "\n" else ch if is_emoji(ch) else PLACEHOLDER
+                       for ch in text)
 
-    def _wrap(self, draw, text: str, font, width: int) -> list[str]:
+    def _wrap(self, draw, text: str, font, width: int, efont=None) -> list[str]:
         real = draw.textlength
-        draw = _Measure(real)
+        draw = _Measure(real, efont)
         lines: list[str] = []
         for para in text.split("\n"):
             if para == "":
@@ -174,7 +247,8 @@ class Renderer:
         text = self._clean(str(text), fid)
         probe = ImageDraw.Draw(_blank(1))
         inner = WIDTH - 2 * MARGIN - (8 if invert else 0)
-        lines = self._wrap(probe, text, font, inner)
+        efont = emoji_font(px)
+        lines = self._wrap(probe, text, font, inner, efont)
         if max_lines and len(lines) > max_lines:
             lines = lines[:max_lines]
             lines[-1] = lines[-1][: max(0, len(lines[-1]) - 8)] + "… (cut)"
@@ -187,8 +261,9 @@ class Renderer:
         ink = 1 if invert else 0
         if invert:
             d.rectangle([0, 0, WIDTH - 1, img.height - 1], fill=0)
+        meas = _Measure(d.textlength, efont)
         for i, line in enumerate(lines):
-            w = d.textlength(line.replace(PLACEHOLDER, PLACEHOLDER_SIZER), font=font)
+            w = meas.textlength(line, font=font)
             if align == "center":
                 x = (WIDTH - w) / 2
             elif align == "right":
@@ -196,23 +271,27 @@ class Renderer:
             else:
                 x = MARGIN + (4 if invert else 0)
             y = pad + i * lh
-            shown = line.replace(PLACEHOLDER, " ") if PLACEHOLDER in line else line
             # 1-dot strokes print faint on thermal paper: widen thin fonts by a dot
             extra = (1 if fake_bold else 0) + (1 if thicken else 0)
-            if PLACEHOLDER not in line:
+            if PLACEHOLDER not in line and not any(is_emoji(c) for c in line):
                 for dx in range(0, extra + 1):
-                    d.text((x + dx, y), shown, font=font, fill=ink)
+                    d.text((x + dx, y), line, font=font, fill=ink)
             else:
-                # draw the text in runs so each placeholder gets exactly a "0"'s width
+                # draw in runs: a missing glyph is an empty box the width of a "0"; emoji come from
+                # the emoji font, sitting on the text's baseline
                 cx = x
-                for k, part in enumerate(line.split(PLACEHOLDER)):
-                    if k:
+                for kind, part in segments(line):
+                    if kind == "p":
                         bw = d.textlength(PLACEHOLDER_SIZER, font=font)
                         top = y + max(1, int(asc * 0.25))
                         bot = y + asc - 1
                         d.rectangle([cx + 1, top, cx + bw - 2, bot], outline=ink, width=max(1, px // 16))
                         cx += bw
-                    if part:
+                    elif kind == "e":
+                        for dx in (0, 1):  # thin outlines print faint: widen by a dot
+                            d.text((cx + dx, y + asc), part, font=efont, fill=ink, anchor="ls")
+                        cx += d.textlength(part, font=efont)
+                    else:
                         for dx in range(0, extra + 1):
                             d.text((cx + dx, y), part, font=font, fill=ink)
                         cx += d.textlength(part, font=font)
@@ -243,30 +322,44 @@ class Renderer:
         return self._text_img(text, b.get("size", "S"), b.get("font"), b.get("align", "center"))
 
     def _b_checklist(self, b, warnings):
+        """Checkbox rows. align left (default), center or right moves the whole list as one column,
+        so the boxes stay lined up under each other."""
         size = b.get("size", "M")
         font, _, px = self._font(b.get("font"), size)
-        rows = []
+        align = b.get("align", "left")
         box = max(10, int(px * 0.7))
+        gap = 10
+        avail = WIDTH - 2 * MARGIN - box - gap
+        rows = []
+        probe = ImageDraw.Draw(_blank(1))
+        meas = _Measure(probe.textlength, emoji_font(px))
+        widest = 0
         for item in (b.get("items") or [])[:100]:
             text = item.get("text", "") if isinstance(item, dict) else str(item)
             done = isinstance(item, dict) and bool(item.get("done"))
             t = self._text_img(text, size, b.get("font"))
-            row = _blank(t.height)
-            sub = t.crop((0, 0, WIDTH - box - 10, t.height))
-            row.paste(sub, (box + 10, 0))
-            d = ImageDraw.Draw(row)
-            asc, desc = font.getmetrics()
-            top = max(0, (asc + desc - box) // 2 + 1)
-            d.rectangle([MARGIN, top, MARGIN + box, top + box], outline=0, width=2)
-            if done:
-                d.line([(MARGIN + 2, top + box // 2), (MARGIN + box // 2, top + box - 2), (MARGIN + box, top - 2)],
-                       fill=0, width=3)
-            rows.append(row)
+            lines = self._wrap(probe, self._clean(text, b.get("font")), font, WIDTH - 2 * MARGIN, emoji_font(px))
+            tw = min(avail, int(max((meas.textlength(ln, font=font) for ln in lines), default=0)) + 2)
+            widest = max(widest, tw)
+            rows.append((t, done))
         if not rows:
             return None
-        out = _blank(sum(r.height for r in rows))
+        total = box + gap + widest
+        x0 = MARGIN if align == "left" else WIDTH - MARGIN - total if align == "right" else (WIDTH - total) // 2
+        out_rows = []
+        asc, desc = font.getmetrics()
+        top = max(0, (asc + desc - box) // 2 + 1)
+        for t, done in rows:
+            row = _blank(t.height)
+            row.paste(t.crop((MARGIN, 0, MARGIN + avail, t.height)), (x0 + box + gap, 0))
+            d = ImageDraw.Draw(row)
+            d.rectangle([x0, top, x0 + box, top + box], outline=0, width=2)
+            if done:
+                d.line([(x0 + 2, top + box // 2), (x0 + box // 2, top + box - 2), (x0 + box, top - 2)], fill=0, width=3)
+            out_rows.append(row)
+        out = _blank(sum(r.height for r in out_rows))
         y = 0
-        for r in rows:
+        for r in out_rows:
             out.paste(r, (0, y))
             y += r.height
         return out
@@ -351,6 +444,36 @@ class Renderer:
         align = b.get("align", "center")
         x = MARGIN if align == "left" else WIDTH - MARGIN - size if align == "right" else (WIDTH - size) // 2
         out.paste(st, (x, 0))
+        return out
+
+    # ------------------------------------------------------------ kit --
+    def _b_slip(self, b, warnings):
+        """A whole print-kit slip: {"type": "slip", "template": name, "data": {...}}."""
+        from .kit import render_template
+
+        try:
+            return render_template(str(b.get("template", "")), b.get("data") or {})
+        except KeyError:
+            warnings.append(f"Unknown slip “{b.get('template')}”.")
+        except Exception:
+            log.exception("slip %s failed", b.get("template"))
+            warnings.append(f"The {b.get('template')} slip couldn't be drawn.")
+        return self._text_img(f"[{b.get('template')} unavailable]", "S", None, "center")
+
+    def _b_cut(self, b, warnings):
+        """Dashed cut rule between the blocks of a routine (4.3), with the slip side margins."""
+        from .kit.nodes import Canvas, Cut
+
+        c = Canvas(WIDTH, 15)
+        Cut(str(b.get("label") or "CUT")).draw(c, 20, 0, WIDTH - 40, 15)
+        return c.img
+
+    def _b_group(self, b, warnings):
+        """Free-form Create blocks inside a kit document (a routine's "My message")."""
+        sub = self.render({"blocks": b.get("blocks") or [], "options": {"end_mark": False}})
+        warnings += sub.warnings
+        out = _blank(sub.image.height + 28)
+        out.paste(sub.image, (0, 14))
         return out
 
     def _b_columns(self, b, warnings):

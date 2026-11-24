@@ -93,7 +93,7 @@ export function ImageMode(props: { view: View; wide: boolean }) {
       <input id="pic" type="file" accept="image/*" capture="environment" class="sr-only" onChange={onFile} />
       <input id="pic2" type="file" accept="image/*" class="sr-only" onChange={onFile} />
       <Split view={props.view} wide={props.wide} doc={doc} edit={edit}
-        side={src ? <SideButtons onClear={() => setSrc(null)} /> : undefined} />
+        side={<SideButtons doc={src ? doc : { blocks: [] }} name="Picture" onClear={() => setSrc(null)} />} />
       <Toolbar label="Picture tools">
         <div class="chips" style="gap:4px">
           <label for="pic" class="ib" aria-label="Take a photo"><IconCamera class="i" /></label>

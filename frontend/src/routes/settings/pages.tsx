@@ -443,6 +443,76 @@ export function GuestAndInbox() {
 }
 
 // ------------------------------------------------------------------ Device --
+// ------------------------------------------------------------- USB backup --
+const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+function UsbBackupGroup() {
+  const [s, patch] = useSettings();
+  const [st, setSt] = useState<any>(null);
+  const [busy, setBusy] = useState(false);
+  const load = () => get<any>("/api/backup/usb").then(setSt).catch(() => {});
+  useEffect(() => { load(); const t = window.setInterval(load, 10000); return () => window.clearInterval(t); }, []);
+  if (!s) return null;
+  const b = s.backup ?? { usb_enabled: false, frequency: "weekly", time: "03:00", weekday: 6, keep: 10 };
+  const set = (v: any) => patch({ backup: v }).then(load);
+  const drive = st?.drives?.[0];
+  const last = st?.last;
+  const when = (iso: string) => new Date(iso).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  return (
+    <>
+      <h2 class="section">Backup to USB</h2>
+      <div class="glass grp">
+        <ToggleRow label="Back up to a USB drive" sub="Saves the same backup to a USB stick plugged into the Pi, on a schedule." checked={b.usb_enabled}
+          onChange={(v) => set({ usb_enabled: v })} />
+        {b.usb_enabled && (
+          <>
+            <div class="lrow">
+              <span class="grow">How often</span>
+              <select class="input" style="width:150px" value={b.frequency} aria-label="How often" onChange={(e) => set({ frequency: (e.target as HTMLSelectElement).value })}>
+                <option value="daily">Every day</option>
+                <option value="weekly">Every week</option>
+                <option value="monthly">Every month (1st)</option>
+              </select>
+            </div>
+            {b.frequency === "weekly" && (
+              <div class="lrow">
+                <span class="grow">Day</span>
+                <select class="input" style="width:150px" value={String(b.weekday)} aria-label="Day of the week" onChange={(e) => set({ weekday: Number((e.target as HTMLSelectElement).value) })}>
+                  {WEEKDAYS.map((d, i) => <option value={String(i)}>{d}</option>)}
+                </select>
+              </div>
+            )}
+            <div class="lrow">
+              <span class="grow">Time</span>
+              <input type="time" class="input" style="width:150px" value={b.time} aria-label="Backup time" onChange={(e) => set({ time: (e.target as HTMLInputElement).value })} />
+            </div>
+            <div class="lrow">
+              <div class="grow"><div class="title">Keep</div><div class="sub" style="white-space:normal">Older backups on the drive are deleted.</div></div>
+              <input type="number" min={1} max={100} class="input" style="width:90px" value={b.keep} aria-label="Backups to keep"
+                onChange={(e) => set({ keep: Math.max(1, Math.min(100, Number((e.target as HTMLInputElement).value) || 10)) })} />
+            </div>
+          </>
+        )}
+        <div class="lrow">
+          <div class="grow">
+            <div class="title">{drive ? `Drive: ${drive.label}` : "No USB drive plugged in"}</div>
+            <div class="sub" style="white-space:normal">
+              {last ? `${last.ok ? "Last backup" : "Last try"} ${timeAgo(last.at)}: ${last.message}` : "No USB backup yet."}
+              {b.usb_enabled && st?.next ? ` Next: ${when(st.next)}.` : ""}
+            </div>
+          </div>
+          <button class="btn" disabled={busy || !drive} onClick={async () => {
+            setBusy(true);
+            try { const r = await send<any>("POST", "/api/backup/usb/run"); toast(r.ok ? "Backed up to USB" : r.message); load(); }
+            catch (e) { toast((e as Error).message); } finally { setBusy(false); }
+          }}>{busy ? "Saving…" : "Back up now"}</button>
+        </div>
+      </div>
+      <p class="dim tiny" style="margin:8px 6px">Backups go in a WallOfText-backups folder. The drive is safe to unplug once the backup is done.</p>
+    </>
+  );
+}
+
 function DevicePage() {
   const back = useBack();
   const [d, setD] = useState<any>(null);
@@ -486,6 +556,7 @@ function DevicePage() {
       </div>
       <input ref={file} id="restore" type="file" accept=".zip,application/zip" class="sr-only" onChange={restore} />
       <p class="dim tiny" style="margin:8px 6px">Backups hold settings, schedules, templates, lists and uploaded fonts. Passwords and connection secrets are never included.</p>
+      <UsbBackupGroup />
       <h2 class="section">Power</h2>
       <div class="glass grp">
         <button class="lrow" onClick={() => setConfirm("restart")}>Restart</button>

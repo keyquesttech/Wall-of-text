@@ -88,9 +88,9 @@ def test_allowed_sender_prints_with_format(c):
     j = remote_jobs(c)[0]
     full = c.get(f"/api/history/{j['id']}").json()
     blocks = full["document"]["blocks"]
-    assert blocks[0] == {"type": "banner", "text": "from Sam · via Email · 18:42"}
-    assert blocks[1]["bold"] and blocks[1]["text"] == "Dinner"
-    assert blocks[2]["text"] == "Back at 7"
+    d = blocks[0]["data"]
+    assert blocks[0]["template"] == "message" and d["sender"] == "Sam" and d["now"] == "2026-11-20T18:42"
+    assert d["subject"] == "Dinner" and d["body"] == "Back at 7"
     assert wait(lambda: c.get(f"/api/history/{j['id']}").json()["state"] == "done")
 
 
@@ -157,7 +157,8 @@ def test_long_body_is_capped(c):
     c.patch("/api/settings", json={"remote": {"max_chars": 50, "max_lines": 3}})
     inbound(c, body="word " * 100)
     doc = c.get(f"/api/history/{remote_jobs(c)[0]['id']}").json()["document"]
-    assert doc["blocks"][-1]["text"].endswith("… (cut)") and len(doc["blocks"][-1]["text"]) <= 60
+    body = doc["blocks"][0]["data"]["body"]
+    assert body.endswith("… (cut)") and len(body) <= 60
 
 
 def test_image_attachment_prints_with_paper_safe_limiter(c):
@@ -166,8 +167,7 @@ def test_image_attachment_prints_with_paper_safe_limiter(c):
     Image.new("RGB", (60, 40), "black").save(buf, "PNG")
     inbound(c, attachments=[{"filename": "a.png", "content_type": "image/png", "data": base64.b64encode(buf.getvalue()).decode()}])
     doc = c.get(f"/api/history/{remote_jobs(c)[0]['id']}").json()["document"]
-    img = doc["blocks"][-1]
-    assert img["type"] == "image" and img["lighten"] is True
+    assert doc["blocks"][0]["data"]["image_src"].startswith("data:image/png;base64,")
 
 
 def test_acknowledgement_after_print(c):

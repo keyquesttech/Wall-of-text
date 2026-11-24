@@ -67,8 +67,21 @@ def test_preview_equals_print_path(renderer, tmp_path, name):
 def test_missing_glyph_becomes_box(renderer):
     plain = renderer.render({"blocks": [{"type": "text", "text": "ab", "font": "pixel"}]})
     emoji = renderer.render({"blocks": [{"type": "text", "text": "a😀", "font": "pixel"}]})
-    assert renderer._clean("a😀", "pixel") == "a\u0001"
+    assert renderer._clean("a😀", "pixel") == "a😀"  # emoji print from the emoji font
+    assert renderer._clean("a\u4e2d", "pixel") == "a\u0001"  # anything else no font has: a box
     assert plain.image.tobytes() != emoji.image.tobytes()
+
+
+def test_emoji_print_as_ink_and_checklists_align(renderer):
+    import numpy as np
+    blank = renderer.render({"blocks": [{"type": "text", "text": "a", "font": "mono"}], "options": {"end_mark": False}})
+    pizza = renderer.render({"blocks": [{"type": "text", "text": "a🍕", "font": "mono"}], "options": {"end_mark": False}})
+    assert (~np.asarray(pizza.image)).sum() > (~np.asarray(blank.image)).sum() + 40
+    def left_edge(align):
+        img = renderer.render({"blocks": [{"type": "checklist", "items": [{"text": "Milk"}, {"text": "Bread"}],
+                                           "align": align}], "options": {"end_mark": False}}).image
+        return int(np.where((~np.asarray(img)).any(axis=0))[0].min())
+    assert left_edge("left") < left_edge("center") < left_edge("right")
 
 
 def test_dense_print_warns(renderer):
@@ -279,7 +292,7 @@ def test_missing_glyph_box_and_star_divider_have_no_notdef_boxes(renderer):
     for fid in ("mono", "pixel", "silk", "sans"):
         res = renderer.render({"blocks": [{"type": "text", "text": "hi 😀 ✱ there", "font": fid}]})
         assert res.image.width == WIDTH
-    stars = renderer.render({"blocks": [{"type": "divider", "style": "stars"}]}).image
+    stars = renderer.render({"blocks": [{"type": "divider", "style": "stars"}], "options": {"end_mark": False}}).image
     import numpy as np
     arr = ~np.asarray(stars, dtype=bool)
     assert arr.sum() > 300  # three filled stars

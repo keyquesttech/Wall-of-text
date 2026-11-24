@@ -113,18 +113,15 @@ class Pipeline:
 
     # -------------------------------------------------------- document --
     def document(self, msg: InboundMessage, name: str) -> dict:
+        """Message slip (PRINT_TEMPLATES 8b): subject in t-l, body in t-m, "… (cut)" when truncated."""
         cfg = self.svc.app_settings.get("remote")
-        when = datetime.fromtimestamp(msg.received_at).strftime("%H:%M")
-        blocks: list[dict] = [{"type": "banner", "text": f"from {name} · via {CHANNEL_LABEL.get(msg.channel, msg.channel)} · {when}"}]
-        if msg.subject:
-            blocks.append({"type": "text", "text": msg.subject[:120], "size": "M", "bold": True})
+        data: dict = {"sender": name, "subject": (msg.subject or "")[:120],
+                      "now": datetime.fromtimestamp(msg.received_at).isoformat(timespec="minutes")}
         if msg.body:
-            text, _ = cap(msg.body, int(cfg.get("max_chars", 600)), int(cfg.get("max_lines", 40)))
-            blocks.append({"type": "text", "text": text, "size": "M"})
+            data["body"], _ = cap(msg.body, int(cfg.get("max_chars", 600)), int(cfg.get("max_lines", 40)))
         for a in msg.attachments[:1]:
-            src = f"data:{a.content_type};base64," + base64.b64encode(a.data).decode()
-            blocks.append({"type": "image", "src": src, "style": "photo", "dither": "floyd", "lighten": True})
-        return {"blocks": blocks}
+            data["image_src"] = f"data:{a.content_type};base64," + base64.b64encode(a.data).decode()
+        return {"blocks": [{"type": "slip", "template": "message", "data": data}]}
 
     # ----------------------------------------------------------- handle --
     async def handle(self, msg: InboundMessage, adapter=None) -> str:
@@ -162,7 +159,7 @@ class Pipeline:
         except Exception:
             log.exception("remote: render failed")
             # keep the text, drop the picture
-            doc["blocks"] = [b for b in doc["blocks"] if b["type"] != "image"]
+            doc["blocks"][0]["data"].pop("image_src", None)
             jid = self.svc.print_document(doc, "Remote", title, held_until=held, meta=meta)
         self.mark_seen(msg, "held" if held else "printed")
         if held:

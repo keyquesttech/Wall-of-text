@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Weather print</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./rc.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="rc" style="height: {{h}}; font-family: 'Space Grotesk', sans-serif; color: #000">
+
+<sc-if value="{{L.hero}}" hint-placeholder-val="{{ true }}">
+  <div class="row sp"><span class="px b">Weather</span><span class="px">{{d.date}} · {{d.time}}</span></div>
+  <div class="row sp"><span class="px">London</span><span class="px b">{{d.when}}</span></div>
+  <div class="hr2"></div>
+  <div style="display: flex; justify-content: center; padding: 6px 0 2px"><dc-import name="WxIcon" icon="{{cond}}" size="168" hint-size="168px,168px"></dc-import></div>
+  <div class="t-xl c">{{d.name}}</div>
+  <p class="t-m c" style="margin-top: -6px">{{d.line}}</p>
+  <div class="row" style="justify-content: center; gap: 18px; padding: 4px 0">
+    <span class="t-xxl">{{d.t}}°</span>
+    <div class="col" style="gap: 6px"><span class="t-l">H {{d.hi}}°</span><span class="t-l">L {{d.lo}}°</span></div>
+  </div>
+  <div class="hr"></div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px">
+    <sc-for list="{{d.det}}" as="x" hint-placeholder-count="4">
+      <div class="col" style="gap: 2px"><span class="px" style="font-size: 12px">{{x.k}}</span><span class="t-l">{{x.v}}</span></div>
+    </sc-for>
+  </div>
+  <div class="hr"></div>
+  <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px">
+    <sc-for list="{{d.hours}}" as="hr" hint-placeholder-count="5">
+      <div class="col" style="align-items: center; gap: 4px">
+        <span class="px" style="font-size: 12px">{{hr.time}}</span>
+        <dc-import name="WxIcon" icon="{{hr.icon}}" size="44" hint-size="44px,44px"></dc-import>
+        <span class="t-m">{{hr.t}}°</span>
+      </div>
+    </sc-for>
+  </div>
+  <div class="inv t-l c" style="padding: 8px">{{d.tip}}</div>
+  <div class="foot"><span>Wall Printer</span><span>Updated {{d.upd}}</span></div>
+</sc-if>
+
+<sc-if value="{{L.compact}}" hint-placeholder-val="{{ false }}">
+  <div class="row" style="gap: 14px; align-items: center">
+    <dc-import name="WxIcon" icon="{{cond}}" size="96" hint-size="96px,96px"></dc-import>
+    <div class="col" style="gap: 4px; flex: 1; min-width: 0">
+      <span class="px">London · {{d.date}}</span>
+      <span class="t-xl" style="font-size: 32px">{{d.t}}° {{d.short}}</span>
+      <span class="t-s">H {{d.hi}}° L {{d.lo}}° · Rain {{d.rain}}%</span>
+    </div>
+  </div>
+  <div class="inv t-m c" style="padding: 6px">{{d.tip}}</div>
+</sc-if>
+
+<sc-if value="{{L.week}}" hint-placeholder-val="{{ false }}">
+  <div class="row sp"><span class="px b">5-day forecast</span><span class="px">London</span></div>
+  <div class="t-xl">THIS WEEK</div>
+  <div class="hr2"></div>
+  <div class="row" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: .06em"><span style="width: 56px">DAY</span><span style="width: 56px"></span><span style="flex: 1">HIGH / LOW</span><span style="width: 96px">RAIN</span></div>
+  <sc-for list="{{week}}" as="w" hint-placeholder-count="5">
+    <div class="col" style="gap: 10px">
+      <div class="row">
+        <span class="t-l" style="width: 56px">{{w.day}}</span>
+        <dc-import name="WxIcon" icon="{{w.icon}}" size="52" hint-size="52px,52px"></dc-import>
+        <span class="t-l" style="flex: 1; padding-left: 6px">{{w.hi}}° / {{w.lo}}°</span>
+        <div class="col" style="width: 96px; gap: 3px"><div class="meter"><i class="d50" style="width: {{w.rain}}%"></i></div><span class="t-s">{{w.rain}}%</span></div>
+      </div>
+      <div class="hrd"></div>
+    </div>
+  </sc-for>
+  <div class="box t-m">Wettest: Tue afternoon. Coldest night: Fri, -1°. Frost likely Friday morning.</div>
+  <div class="foot"><span>Wall Printer</span><span>Mon 23 Nov · 07:30</span></div>
+</sc-if>
+
+<sc-if value="{{L.hourly}}" hint-placeholder-val="{{ false }}">
+  <div class="row sp"><span class="px b">Next 12 hours</span><span class="px">London</span></div>
+  <div class="t-xl">RAIN AT 2</div>
+  <p class="t-m" style="margin-top: -6px">Dry until lunch, then rain until about 19:00.</p>
+  <div class="hr2"></div>
+  <span class="px" style="font-size: 12px">Temperature °C</span>
+  <div style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; align-items: end; height: 120px; border-bottom: 3px solid #000">
+    <sc-for list="{{hrs}}" as="x" hint-placeholder-count="12">
+      <div class="col" style="align-items: center; gap: 2px"><span class="t-s">{{x.t}}</span><div style="width: 100%; height: {{x.th}}; background: #000"></div></div>
+    </sc-for>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px">
+    <sc-for list="{{hrs}}" as="x" hint-placeholder-count="12"><span class="px c" style="font-size: 12px; letter-spacing: 0">{{x.h}}</span></sc-for>
+  </div>
+  <span class="px" style="font-size: 12px; margin-top: 4px">Chance of rain %</span>
+  <div style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; align-items: start; height: 110px; border-top: 3px solid #000">
+    <sc-for list="{{hrs}}" as="x" hint-placeholder-count="12">
+      <div class="col" style="align-items: center; gap: 2px"><div class="d50" style="width: 100%; height: {{x.rh}}; border: 2px solid #000; border-top: 0"></div><span class="t-s">{{x.r}}</span></div>
+    </sc-for>
+  </div>
+  <div class="row" style="justify-content: space-around">
+    <dc-import name="WxIcon" icon="cloudy" size="44" hint-size="44px,44px"></dc-import>
+    <dc-import name="WxIcon" icon="rain" size="44" hint-size="44px,44px"></dc-import>
+    <dc-import name="WxIcon" icon="heavy" size="44" hint-size="44px,44px"></dc-import>
+    <dc-import name="WxIcon" icon="drizzle" size="44" hint-size="44px,44px"></dc-import>
+  </div>
+  <div class="inv t-l c" style="padding: 8px">LEAVE BEFORE 13:30</div>
+  <div class="foot"><span>Wall Printer</span><span>Mon 23 Nov · 08:00</span></div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"cond":{"editor":"enum","options":["sunny","night","partly","cloudy","fog","drizzle","rain","heavy","thunder","snow","sleet","frost","wind","heat"],"default":"sunny"},"layout":{"editor":"enum","options":["hero","compact","week","hourly"],"default":"hero"},"$preview":{"width":384,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const cond = this.props.cond || 'sunny';
+    const lay = this.props.layout || 'hero';
+    const day = ['09', '12', '15', '18', '21'];
+    const nite = ['21', '00', '03', '06', '09'];
+    const W = (o) => Object.assign({ date: 'MON 23 NOV', time: '07:30', when: 'TODAY', upd: '07:28', times: day }, o);
+    const D = {
+      sunny: W({ name: 'SUNNY', short: 'SUN', line: 'Clear blue skies all day.', t: 18, hi: 21, lo: 11, rain: 0, wind: '8 km/h', a: ['UV', '5 MOD'], b: ['SUNSET', '21:12'], icons: ['sunny', 'sunny', 'sunny', 'sunny', 'night'], ts: [15, 19, 21, 18, 14], tip: 'SUNSCREEN ON', date: 'SAT 6 JUN' }),
+      night: W({ name: 'CLEAR NIGHT', short: 'CLEAR', line: 'Clear and still. Cold by dawn.', t: 6, hi: 11, lo: 2, rain: 0, wind: '5 km/h', a: ['MOON', 'WAXING'], b: ['SUNRISE', '07:21'], icons: ['night', 'night', 'night', 'frost', 'sunny'], ts: [6, 4, 3, 2, 5], tip: 'A NIGHT FOR STARS', time: '21:30', when: 'TONIGHT', upd: '21:28', times: nite }),
+      partly: W({ name: 'SUNNY SPELLS', short: 'SPELLS', line: 'Bright spells between clouds.', t: 14, hi: 16, lo: 8, rain: 10, wind: '14 km/h', a: ['UV', '3 LOW'], b: ['SUNSET', '20:32'], icons: ['sunny', 'partly', 'partly', 'cloudy', 'night'], ts: [11, 14, 16, 13, 10], tip: 'LIGHT JACKET', date: 'THU 14 MAY' }),
+      cloudy: W({ name: 'OVERCAST', short: 'CLOUD', line: 'Grey all day but staying dry.', t: 11, hi: 12, lo: 7, rain: 20, wind: '12 km/h', a: ['FEELS LIKE', '9°'], b: ['SUNSET', '16:05'], icons: ['cloudy', 'cloudy', 'cloudy', 'cloudy', 'cloudy'], ts: [9, 11, 12, 10, 8], tip: 'GREY BUT DRY' }),
+      fog: W({ name: 'FOG', short: 'FOG', line: 'Thick fog until late morning.', t: 5, hi: 8, lo: 3, rain: 10, wind: '4 km/h', a: ['VISIBILITY', '150 M'], b: ['CLEARS', '11:00'], icons: ['fog', 'fog', 'partly', 'cloudy', 'fog'], ts: [3, 6, 8, 6, 4], tip: 'LIGHTS ON, GO SLOW' }),
+      drizzle: W({ name: 'DRIZZLE', short: 'DRIZZLE', line: 'Fine drizzle on and off.', t: 10, hi: 11, lo: 7, rain: 60, wind: '15 km/h', a: ['FEELS LIKE', '7°'], b: ['SUNSET', '16:05'], icons: ['drizzle', 'drizzle', 'cloudy', 'drizzle', 'cloudy'], ts: [8, 10, 11, 9, 8], tip: 'HOOD UP' }),
+      rain: W({ name: 'RAIN', short: 'RAIN', line: 'Rain from 14:00, easing tonight.', t: 9, hi: 10, lo: 6, rain: 80, wind: '20 km/h', a: ['RAINFALL', '6 MM'], b: ['SUNSET', '16:05'], icons: ['cloudy', 'cloudy', 'rain', 'rain', 'drizzle'], ts: [8, 9, 10, 8, 7], tip: 'TAKE AN UMBRELLA' }),
+      heavy: W({ name: 'HEAVY RAIN', short: 'DOWNPOUR', line: 'Downpours. Puddles everywhere.', t: 8, hi: 9, lo: 6, rain: 95, wind: '30 km/h', a: ['RAINFALL', '24 MM'], b: ['GUSTS', '45 KM/H'], icons: ['rain', 'heavy', 'heavy', 'heavy', 'rain'], ts: [7, 8, 9, 8, 7], tip: 'WATERPROOFS ON' }),
+      thunder: W({ name: 'THUNDERSTORMS', short: 'STORMS', line: 'Storms this afternoon. Hail possible.', t: 22, hi: 25, lo: 15, rain: 85, wind: '35 km/h', a: ['GUSTS', '60 KM/H'], b: ['RAINFALL', '18 MM'], icons: ['partly', 'cloudy', 'thunder', 'thunder', 'rain'], ts: [20, 24, 25, 21, 17], tip: 'STAY IN IF YOU CAN', date: 'WED 12 AUG' }),
+      snow: W({ name: 'SNOW', short: 'SNOW', line: 'Snow showers, settling on grass.', t: 0, hi: 1, lo: -3, rain: 70, wind: '18 km/h', a: ['SNOWFALL', '3 CM'], b: ['FEELS LIKE', '-5°'], icons: ['snow', 'snow', 'cloudy', 'snow', 'frost'], ts: [-1, 0, 1, -1, -2], tip: 'BOOTS ON, GO SLOW', date: 'TUE 12 JAN' }),
+      sleet: W({ name: 'SLEET & HAIL', short: 'SLEET', line: 'Wintry showers with some hail.', t: 2, hi: 3, lo: 0, rain: 75, wind: '28 km/h', a: ['FEELS LIKE', '-3°'], b: ['PAVEMENTS', 'ICY'], icons: ['cloudy', 'sleet', 'sleet', 'rain', 'frost'], ts: [1, 2, 3, 1, 0], tip: 'SLIPPY UNDERFOOT', date: 'FRI 22 JAN' }),
+      frost: W({ name: 'FROST', short: 'FROST', line: 'Hard frost, then crisp sunshine.', t: -2, hi: 4, lo: -4, rain: 0, wind: '6 km/h', a: ['FEELS LIKE', '-6°'], b: ['THAW BY', '11:00'], icons: ['frost', 'partly', 'sunny', 'sunny', 'frost'], ts: [-2, 2, 4, 1, -3], tip: 'ICE ON THE ROADS', date: 'FRI 27 NOV' }),
+      wind: W({ name: 'WINDY', short: 'WIND', line: 'Strong winds, gusting to 80.', t: 12, hi: 13, lo: 9, rain: 30, wind: '55 km/h', a: ['GUSTS', '80 KM/H'], b: ['FEELS LIKE', '8°'], icons: ['wind', 'wind', 'wind', 'cloudy', 'wind'], ts: [11, 12, 13, 12, 10], tip: 'HOLD ON TO YOUR HAT' }),
+      heat: W({ name: 'HEATWAVE', short: 'HOT', line: 'Hot and sunny. Peak at 16:00.', t: 32, hi: 34, lo: 21, rain: 0, wind: '10 km/h', a: ['UV', '9 V.HIGH'], b: ['SUNSET', '21:17'], icons: ['sunny', 'heat', 'heat', 'heat', 'night'], ts: [26, 31, 34, 31, 25], tip: 'WATER AND SHADE', date: 'SAT 18 JUL' })
+    };
+    const d = D[cond] || D.sunny;
+    d.det = [{ k: 'CHANCE OF RAIN', v: d.rain + '%' }, { k: 'WIND', v: d.wind }, { k: d.a[0], v: d.a[1] }, { k: d.b[0], v: d.b[1] }];
+    d.hours = d.icons.map((icon, i) => ({ icon, t: d.ts[i], time: d.times[i] }));
+    const temps = [8, 8, 9, 9, 10, 10, 10, 9, 9, 8, 8, 7];
+    const rains = [10, 10, 20, 30, 60, 80, 90, 80, 70, 50, 30, 20];
+    const hrs = temps.map((t, i) => ({ t, r: rains[i], h: String(9 + i).padStart(2, '0'), th: ((t - 5) * 18) + 'px', rh: Math.round(rains[i] * 0.8) + 'px' }));
+    const heights = { hero: '980px', compact: '250px', week: '700px', hourly: '700px' };
+    return {
+      cond, d, hrs,
+      L: { hero: lay === 'hero', compact: lay === 'compact', week: lay === 'week', hourly: lay === 'hourly' },
+      h: heights[lay] || '980px',
+      week: [
+        { day: 'MON', icon: 'partly', hi: 14, lo: 8, rain: 10 },
+        { day: 'TUE', icon: 'rain', hi: 11, lo: 7, rain: 80 },
+        { day: 'WED', icon: 'cloudy', hi: 12, lo: 6, rain: 30 },
+        { day: 'THU', icon: 'wind', hi: 10, lo: 5, rain: 40 },
+        { day: 'FRI', icon: 'frost', hi: 6, lo: -1, rain: 0 }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

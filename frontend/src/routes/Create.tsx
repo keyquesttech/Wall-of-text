@@ -27,12 +27,12 @@ const SIZES: Size[] = ["S", "M", "L", "XL"];
 // ------------------------------------------------------------------ Text draft --
 interface TextDraft {
   title: string; text: string; font: string; size: Size; align: Align;
-  bold: boolean; underline: boolean; invert: boolean; date: boolean; qr: string; sticker: string;
+  bold: boolean; underline: boolean; invert: boolean; date: boolean; qr: string;
 }
 const DRAFT_KEY = "wot.textDraft.v2";
 const blank = (): TextDraft => ({
   title: "", text: "", font: settings.value?.printer?.default_font ?? "pixel", size: settings.value?.printer?.default_size ?? "M",
-  align: "left", bold: false, underline: false, invert: false, date: false, qr: "", sticker: "",
+  align: "left", bold: false, underline: false, invert: false, date: false, qr: "",
 });
 function loadDraft(): TextDraft {
   try { return { ...blank(), ...JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}") }; } catch { return blank(); }
@@ -42,7 +42,6 @@ function loadDraft(): TextDraft {
 export function textDoc(d: TextDraft): Doc {
   const blocks: Block[] = [];
   if (d.date) blocks.push({ type: "datetime", size: "S", align: "center", format: "%a %-d %b · %H:%M" });
-  if (d.sticker) blocks.push({ type: "sticker", name: d.sticker, size: "M" });
   if (d.title.trim()) blocks.push({ type: "heading", text: d.title.trim(), font: d.font, size: "XL", align: "center", invert: d.invert });
   let para: string[] = [];
   let items: { text: string; done?: boolean }[] = [];
@@ -51,7 +50,7 @@ export function textDoc(d: TextDraft): Doc {
     if (t) blocks.push({ type: "text", text: t, font: d.font, size: d.size, align: d.align, bold: d.bold, underline: d.underline, invert: d.invert && !d.title.trim() });
     para = [];
   };
-  const flushItems = () => { if (items.length) blocks.push({ type: "checklist", items, size: d.size, font: d.font }); items = []; };
+  const flushItems = () => { if (items.length) blocks.push({ type: "checklist", items, size: d.size, font: d.font, align: d.align }); items = []; };
   for (const line of d.text.split("\n")) {
     const m = /^\s*(☐|☑|\[ \]|\[x\])\s?(.*)$/i.exec(line);
     if (/^\s*-{3,}\s*$/.test(line)) { flushPara(); flushItems(); blocks.push({ type: "divider", style: "dashed" }); }
@@ -93,11 +92,28 @@ export function Canvas(props: { children: ComponentChildren; side?: ComponentChi
   );
 }
 
-export function SideButtons(props: { onSave?: () => void; onClear: () => void }) {
+/** Bookmark (save this print as your own template) and Clear, beside the paper in every mode. */
+export function SideButtons(props: { doc?: Doc; name?: string; onClear: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [tname, setTname] = useState("");
+  const empty = !props.doc || props.doc.blocks.length === 0;
   return (
     <>
-      {props.onSave && <button class="ib" aria-label="Save as template" onClick={props.onSave}><IconBookmark class="i" /></button>}
+      {props.doc && (
+        <button class="ib" aria-label="Save as template" onClick={() => {
+          if (empty) { toast("Make something first, then save it as a template."); return; }
+          setTname(props.name ?? ""); setOpen(true);
+        }}><IconBookmark class="i" /></button>
+      )}
       <button class="ib" aria-label="Clear the strip" onClick={props.onClear}><IconTrash class="i" /></button>
+      <Sheet open={open} onClose={() => setOpen(false)} title="Save as template">
+        <label class="field-label" for="tn">Name</label>
+        <input id="tn" class="input" value={tname} maxLength={60} onInput={(e) => setTname((e.target as HTMLInputElement).value)} />
+        <p class="cap" style="margin:10px 4px 0">Tip: write a word in double braces, like {"{{name}}"}, anywhere in your text. It becomes a box to fill in each time you use the template.</p>
+        <button class="btn-green block" style="margin-top:14px" disabled={!tname.trim()} onClick={async () => {
+          try { await send("POST", "/api/templates", { name: tname.trim(), document: props.doc }); toast("Saved to Templates"); setOpen(false); } catch (e) { toast((e as Error).message); }
+        }}>Save</button>
+      </Sheet>
     </>
   );
 }
@@ -195,7 +211,7 @@ export function Create(props: { mode?: string }) {
       {mode === "text" && <TextMode view={view} wide={wide} />}
       {mode === "draw" && <DrawMode view={view} wide={wide} />}
       {mode === "image" && <ImageMode view={view} wide={wide} />}
-      {mode === "templates" && <TemplatesMode />}
+      {mode === "templates" && <TemplatesMode onNew={() => { setMode("text"); setView("edit"); toast("Write your print, then tap the bookmark beside the paper to save it as a template."); }} />}
     </>
   );
 }
@@ -217,9 +233,8 @@ export function Split(props: { view: View; wide: boolean; edit: ComponentChildre
 function TextMode(props: { view: View; wide: boolean }) {
   const [d, setD] = useState<TextDraft>(loadDraft);
   const [fonts, setFonts] = useState<FontInfo[]>([]);
-  const [sheet, setSheet] = useState<null | "font" | "qr" | "sticker" | "save">(null);
+  const [sheet, setSheet] = useState<null | "font" | "qr">(null);
   const [qr, setQr] = useState("");
-  const [tname, setTname] = useState("");
   const ta = useRef<HTMLTextAreaElement>(null);
   const paper = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.75);
@@ -237,7 +252,7 @@ function TextMode(props: { view: View; wide: boolean }) {
     if (t) { t.style.height = "auto"; t.style.height = `${Math.max(220 * scale, t.scrollHeight)}px`; }
   }, [d.text, d.size, d.font, scale, props.view]);
   const doc = useMemo(() => textDoc(d), [d]);
-  const empty = !d.text.trim() && !d.title.trim() && !d.qr && !d.sticker;
+  const empty = !d.text.trim() && !d.title.trim() && !d.qr;
 
   const insertLinePrefix = (prefix: string) => {
     const t = ta.current;
@@ -269,7 +284,6 @@ function TextMode(props: { view: View; wide: boolean }) {
     <div class="rwrap" style="width:100%" ref={paper}>
       <div class="receipt" style="min-height:300px;font-family:inherit">
         {d.date && <div class="r-c" style={{ fontFamily: FONT_CSS.pixel, fontSize: `${18 * scale * 1.25}px` }}>{new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }).toUpperCase()} · {new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</div>}
-        {d.sticker && <div class="r-c" style="font-size:40px;line-height:1.1">{STICKER_GLYPH[d.sticker] ?? "★"}</div>}
         <label class="sr-only" for="ttl">Title</label>
         <input id="ttl" class="onpaper-head" value={d.title} maxLength={60} placeholder="TITLE"
           style={{ fontFamily: FONT_CSS[d.font], fontSize: `${40 * scale * (d.font === "pixel" ? 1.2 : 1)}px`, ...(d.invert ? { background: "#000", color: "var(--paper)" } : {}) }}
@@ -282,7 +296,7 @@ function TextMode(props: { view: View; wide: boolean }) {
     </div>
   );
   const side = (
-    <SideButtons onSave={empty ? undefined : () => { setTname(d.title.trim() || d.text.trim().split("\n")[0].slice(0, 30)); setSheet("save"); }}
+    <SideButtons doc={empty ? { blocks: [] } : doc} name={d.title.trim() || d.text.trim().split("\n")[0].slice(0, 30)}
       onClear={() => setD({ ...blank(), font: d.font, size: d.size })} />
   );
   return (
@@ -302,11 +316,10 @@ function TextMode(props: { view: View; wide: boolean }) {
           <button class={`ib ${d.date ? "on" : ""}`} aria-pressed={d.date} aria-label="Date and time stamp" onClick={() => set({ date: !d.date })}><IconAlarm class="i" /></button>
           <button class="ib" aria-label="Divider line" onClick={() => insertLine("---")}><IconDivider class="i" /></button>
           <button class={`ib ${d.qr ? "on" : ""}`} aria-label="QR code from a link" onClick={() => { setQr(d.qr); setSheet("qr"); }}><IconQR class="i" /></button>
-          <button class={`ib ${d.sticker ? "on" : ""}`} aria-label="Sticker" onClick={() => setSheet("sticker")} style="font-size:18px">★</button>
         </div>
       </Toolbar>
       <ActionRow doc={doc} title={d.title.trim() || undefined} disabled={empty}
-        onPrinted={() => setD((x) => ({ ...x, title: "", text: "", qr: "", sticker: "" }))} />
+        onPrinted={() => setD((x) => ({ ...x, title: "", text: "", qr: "" }))} />
 
       <Sheet open={sheet === "font"} onClose={() => setSheet(null)} title="Print font">
         <div class="stack">
@@ -326,23 +339,7 @@ function TextMode(props: { view: View; wide: boolean }) {
           <button class="btn-green grow" disabled={!qr.trim()} onClick={() => { set({ qr: qr.trim() }); setSheet(null); }}>Add QR code</button>
         </div>
       </Sheet>
-      <Sheet open={sheet === "sticker"} onClose={() => setSheet(null)} title="Sticker">
-        <div class="wtiles" style="grid-template-columns:repeat(4,minmax(0,1fr))">
-          {Object.entries(STICKER_GLYPH).map(([k, g]) => (
-            <button class={`glass ${d.sticker === k ? "selg" : ""}`} style="aspect-ratio:1;border-radius:18px;font-size:30px;color:var(--hi)" aria-label={k} aria-pressed={d.sticker === k}
-              onClick={() => { set({ sticker: d.sticker === k ? "" : k }); setSheet(null); }}>{g}</button>
-          ))}
-        </div>
-      </Sheet>
-      <Sheet open={sheet === "save"} onClose={() => setSheet(null)} title="Save as template">
-        <label class="field-label" for="tn">Name</label>
-        <input id="tn" class="input" value={tname} maxLength={60} onInput={(e) => setTname((e.target as HTMLInputElement).value)} />
-        <button class="btn-green block" style="margin-top:14px" disabled={!tname.trim()} onClick={async () => {
-          try { await send("POST", "/api/templates", { name: tname.trim(), document: doc }); toast("Saved to Templates"); setSheet(null); } catch (e) { toast((e as Error).message); }
-        }}>Save</button>
-      </Sheet>
     </>
   );
 }
 
-export const STICKER_GLYPH: Record<string, string> = { heart: "♥", star: "★", smile: "☺", sun: "☀", flower: "✿", note: "♫", check: "✔", coffee: "☕" };

@@ -153,15 +153,18 @@ async def printer(request: Request):
 @router.post("/printer/test-page", status_code=201)
 async def test_page(request: Request):
     svc = request.app.state.svc
-    doc = {"blocks": [
-        {"type": "heading", "text": "Test page"},
-        {"type": "datetime"},
-        {"type": "divider"},
-        *[{"type": "text", "text": f"{f.name} {s}", "font": f.id, "size": s}
-          for f in svc.fonts.all() if f.builtin for s in ("S", "M")],
-        {"type": "divider", "style": "dashed"},
-        {"type": "qr", "data": "http://walloftext.local", "size": "S", "caption": "walloftext.local"},
-    ]}
+    from datetime import datetime
+
+    from ..config import LOCAL_ADDRESS
+    p = svc.app_settings.get("printer")
+    dark = int(p.get("darkness", 120))
+    st = svc.queue.status()
+    doc = {"blocks": [{"type": "slip", "template": "test_page", "data": {
+        "now": datetime.now().isoformat(timespec="minutes"),
+        "paper": f"About {st['paper_percent']}%",
+        "darkness": "Light" if dark < 100 else "Dark" if dark > 140 else "Normal",
+        "speed": str(p.get("speed", "normal")).capitalize(),
+        "address": LOCAL_ADDRESS}}]}
     job_id = svc.print_document(doc, "System", "Test page")
     return {"job": svc.queue.get(job_id)}
 

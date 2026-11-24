@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Print kit</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./rc.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&amp;family=JetBrains+Mono:wght@400;700;800&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1120px; height: 900px; box-sizing: border-box; background: #121315; color: #C9CDD4; font-family: Inter, sans-serif; padding: 48px; display: grid; grid-template-columns: 384px minmax(0, 1fr); gap: 48px">
+
+<div class="rc" style="height: 804px">
+  <div class="row sp"><span class="px b">Print kit</span><span class="px">v1</span></div>
+  <div class="t-xl">384 DOTS</div>
+  <p class="t-m">Black ink on paper. No grey: tones are dither patterns.</p>
+  <div class="hr2"></div>
+  <span class="px b">Tones</span>
+  <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
+    <div class="col" style="gap: 4px"><div style="height: 54px; border: 2px solid #000"></div><span class="px" style="font-size: 12px">0%</span></div>
+    <div class="col" style="gap: 4px"><div class="d25" style="height: 54px; border: 2px solid #000"></div><span class="px" style="font-size: 12px">25</span></div>
+    <div class="col" style="gap: 4px"><div class="d50" style="height: 54px; border: 2px solid #000"></div><span class="px" style="font-size: 12px">50</span></div>
+    <div class="col" style="gap: 4px"><div class="d75" style="height: 54px; border: 2px solid #000"></div><span class="px" style="font-size: 12px">75</span></div>
+    <div class="col" style="gap: 4px"><div style="height: 54px; background: #000"></div><span class="px" style="font-size: 12px">100</span></div>
+  </div>
+  <div class="hr2"></div>
+  <span class="px b">Type</span>
+  <div class="t-xxl" style="font-size: 72px">18°</div>
+  <div class="t-xl">Display 36</div>
+  <div class="t-l">Title 23 bold</div>
+  <div class="t-m">Body 17 · Space Grotesk</div>
+  <div class="t-s">Small 15 — notes and times</div>
+  <div class="px b">Label · JetBrains Mono 12</div>
+  <div class="mono b">Mono 15 — tickets, data</div>
+  <div class="hr2"></div>
+  <span class="px b">Rules</span>
+  <div class="hr"></div><div class="hrd"></div><div class="hr2"></div><div class="cut">CUT</div>
+  <div class="row"><span class="cb"></span><span class="cb lg"></span><span class="inv t-m">INVERTED</span><span class="box t-s">BOX</span></div>
+  <div class="foot"><span>WALL PRINTER</span><span>58 MM ROLL</span></div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 28px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #8A8F98">Weather icon set · 14 conditions</span>
+    <h1 style="margin: 0; font-size: 40px; line-height: 46px; font-weight: 800; color: #ECEEF2; letter-spacing: -.02em">Every sky, in black ink</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 24px; color: #C9CDD4; max-width: 560px">Thick 4-dot strokes so they survive a cheap print head. Heavy cloud uses the 50% dither; sun and bolts are solid black. Drawn on a 64-dot grid, printed at 160, 64 or 36 dots.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px">
+    <sc-for list="{{icons}}" as="ic" hint-placeholder-count="14">
+      <div style="background: #F7F5F0; border-radius: 12px; padding: 16px 10px 12px; display: flex; flex-direction: column; align-items: center; gap: 10px">
+        <dc-import name="WxIcon" icon="{{ic.k}}" size="80" hint-size="80px,80px"></dc-import>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #000; text-transform: uppercase; letter-spacing: .06em; text-align: center">{{ic.label}}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1120,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const L = [['sunny', 'Sunny'], ['night', 'Clear night'], ['partly', 'Sunny spells'], ['cloudy', 'Overcast'], ['fog', 'Fog'], ['drizzle', 'Drizzle'], ['rain', 'Rain'], ['heavy', 'Heavy rain'], ['thunder', 'Thunder'], ['snow', 'Snow'], ['sleet', 'Sleet / hail'], ['frost', 'Frost'], ['wind', 'Windy'], ['heat', 'Heatwave']];
+    return { icons: L.map(([k, label]) => ({ k, label })) };
+  }
+}
+</script>
+</body>
+</html>
