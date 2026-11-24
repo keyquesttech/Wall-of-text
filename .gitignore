@@ -11,4 +11,7 @@ spikes/*.log
 secrets.json
 passwords.txt
 *.token.json
+# Google Tasks sign-in (tools/google_auth.py): the OAuth client and the token it writes
+client_secret*.json
+*google-token.json
 backend/build/
