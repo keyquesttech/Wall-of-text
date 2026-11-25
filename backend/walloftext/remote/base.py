@@ -27,6 +27,7 @@ class InboundMessage:
     attachments: list[Attachment] = field(default_factory=list)
     authenticated: bool = True  # email: SPF/DKIM pass for the From domain
     reply: object = None  # adapter-specific handle for acknowledgements
+    callback: dict | None = None  # Telegram button tap: {"id", "data", "message_id"}
 
 
 class ChannelError(Exception):

@@ -1,5 +1,17 @@
 # Progress
 
+## 25 Nov 2026 (night): Telegram bot commands
+- `remote/bot.py` + Settings › Telegram bot. Built-in commands: /help, /settings (buttons to set
+  your style and size), /templates (tap one: its text comes back as a block that copies with one
+  tap), /cancel. Custom commands: reply with text (optionally copyable), print an action or routine,
+  or set how the next message prints ("/big Hello" prints at once). The "/" menu is kept in sync
+  with setMyCommands. Only allowed senders get replies.
+- Print styles for remote messages: message slip (default; size now S/M/L/XL), plain text, big
+  text, checklist (a box per line).
+- "Ask how to print each message": the bot answers with style/size buttons and Print/Cancel; with
+  no answer it prints with those settings (or not) after 1-30 min. Waiting messages survive a
+  restart (kv `telegram_pending`). Email is unchanged.
+
 ## 25 Nov 2026 (later): Settings regrouped
 - Six groups instead of four, each page one job (SETTINGS_PAGES in `routes/settings/pages.tsx`):
   **Printing** (Printer, Paper roll, Fonts, History) · **What it prints** (Weather, Google Calendar

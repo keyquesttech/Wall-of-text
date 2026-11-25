@@ -44,6 +44,16 @@ DEFAULTS: dict[str, Any] = {
     "guest": {"enabled": False, "mode": "approve",  # approve | print
               "max_chars": 280, "rate_per_10min": 5},
     "remote": {"max_chars": 600, "max_lines": 40, "rate_per_hour": 10, "ack_email": False},
+    # Telegram bot (remote/bot.py): custom commands, templates to copy, asking how each message prints.
+    # commands: [{name, description, type: reply|action|style, text, copyable, action, style, size}]
+    "telegram": {"ask_options": False, "ask_timeout_s": 120, "on_timeout": "print",
+                 "defaults": {"style": "message", "size": "M"},
+                 "commands": [{"name": "weather", "description": "Print the weather now", "type": "action", "action": "weather_now"},
+                              {"name": "fortune", "description": "Print a fortune", "type": "action", "action": "random_fortune"},
+                              {"name": "big", "description": "Print the next message in big letters", "type": "style",
+                               "style": "big", "size": "XL"}],
+                 "templates": [{"name": "Shopping", "text": "Shopping:\n- \n- \n- "},
+                               {"name": "Dinner", "text": "Back at  . Dinner: "}]},
     "display": {"reduce_motion": False, "reduce_transparency": False, "sounds": False},
     # Scheduled backup to a USB drive: daily | weekly | monthly (the 1st) at `time`; weekly on `weekday` (0 = Mon)
     # Scheduled restart (restarts.py): daily, or weekly on `weekday` (0 = Mon), at `time`

@@ -17,7 +17,7 @@ def from_dict(d: dict) -> InboundMessage:
         channel=d.get("channel", "mock"), sender_id=str(d["sender_id"]), sender_name=d.get("sender_name", ""),
         body=d.get("body", ""), external_id=d.get("external_id") or f"mock:{time.time_ns()}",
         received_at=d.get("received_at", time.time()), subject=d.get("subject"), attachments=atts,
-        authenticated=d.get("authenticated", True))
+        authenticated=d.get("authenticated", True), reply=d.get("reply", "mock-chat"), callback=d.get("callback"))
 
 
 class MockAdapter:
@@ -51,3 +51,20 @@ class MockAdapter:
 
     async def ack(self, msg, text: str) -> None:
         self.acks.append(text)
+
+    # the same bot replies as Telegram, recorded for tests and the dev page
+    sent: list = []
+    menu: list = []
+
+    async def send(self, chat_id, text: str, buttons=None, code: bool = False) -> int:
+        self.sent = self.sent + [{"chat": chat_id, "text": text, "buttons": buttons, "code": code}]
+        return len(self.sent)
+
+    async def edit(self, chat_id, message_id, text: str, buttons=None) -> None:
+        self.sent = self.sent + [{"chat": chat_id, "edit": message_id, "text": text, "buttons": buttons}]
+
+    async def answer(self, callback_id: str, text: str = "") -> None:
+        pass
+
+    async def set_commands(self, commands) -> None:
+        self.menu = list(commands)

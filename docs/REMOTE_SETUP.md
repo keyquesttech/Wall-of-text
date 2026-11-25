@@ -46,3 +46,15 @@ text-message behaviour. Say if you want SMS and which route, and it can be added
 - Quiet hours hold messages until they end. Offline or out of paper: they wait in the queue.
 - Long messages are cut at 600 characters or 40 lines ("… (cut)"); adjustable in settings.
 - A message is never printed twice, even after a restart.
+
+## Telegram bot commands
+
+Settings › Telegram bot (or the button under Telegram in Remote messages):
+
+- **How messages print:** default style (message slip, plain text, big text, checklist) and text
+  size. Turn on **Ask how to print each message** to get buttons after every message.
+- **Commands:** /help, /settings, /templates and /cancel are built in. Add your own: reply with
+  text (e.g. /wifi with the guest password, as a block to copy), print something (weather,
+  fortune, a routine), or set how the next message prints (e.g. /big).
+- **Templates:** text that /templates sends back to copy, fill in and send.
+

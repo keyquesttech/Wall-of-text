@@ -51,7 +51,8 @@ def message(data: dict, now: datetime) -> list:
     right = (f"from {sender} · " if sender else "") + f"{d_label(now)} · {now:%H:%M}"
     return [Header("MESSAGE", right.upper()),
             Text(data.get("subject", ""), T.T_L, max_lines=3) if data.get("subject") else None,
-            Text(data.get("body", ""), T.T_M) if data.get("body") else None,
+            Text(data.get("body", ""), {"S": T.T_S, "L": T.T_L, "XL": T.T_XL}.get(data.get("size"), T.T_M))
+            if data.get("body") else None,
             *_pictures(data)]
 
 

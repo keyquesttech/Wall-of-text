@@ -126,7 +126,7 @@ def run(viewport, tag):
         page.wait_for_timeout(400)
         shot(page, f"{tag}-21-schedules")
         # every settings page renders without errors
-        for sp in ["printer", "paper", "fonts", "history", "weather", "google", "fortunes", "inbox", "guest", "remote",
+        for sp in ["printer", "paper", "fonts", "history", "weather", "google", "fortunes", "inbox", "guest", "remote", "telegram",
                    "schedules", "time", "button", "light", "fan", "strip", "wifi", "access", "backup", "device", "display"]:
             page.goto(args.base + "/settings/" + sp)
             expect(page.locator("h1")).not_to_have_text("Settings")  # a real page, not the index

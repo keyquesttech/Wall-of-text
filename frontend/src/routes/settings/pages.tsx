@@ -5,7 +5,7 @@ import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { api, get, send, upload, type FontInfo } from "../../lib/api";
 import { inboxWaiting, printer, settings, wifi } from "../../lib/state";
-import { IconBulb, IconCalendar, IconClock, IconCloud, IconDevice, IconEye, IconFont, IconHistory, IconLock, IconMail, IconPlus, IconPrinter, IconStar, IconTrash, IconFan, IconStrip, IconRoll, IconInbox, IconNote, IconButton, IconBackup, IconAlarm, IconWifi } from "../../components/icons";
+import { IconBulb, IconCalendar, IconClock, IconCloud, IconDevice, IconEye, IconFont, IconHistory, IconLock, IconMail, IconPlus, IconPrinter, IconStar, IconTrash, IconFan, IconStrip, IconRoll, IconInbox, IconNote, IconButton, IconBackup, IconAlarm, IconBot, IconWifi } from "../../components/icons";
 import { Banner, Chevron, Seg, Sheet, timeAgo, toast, Toggle, ToggleRow, Topbar } from "../../components/ui";
 import { AccessPage, useBack, WifiPage } from "../Settings";
 import { RemotePage } from "./remote";
@@ -928,6 +928,154 @@ function FortunesPage() {
   );
 }
 
+// ----------------------------------------------------------- Telegram bot --
+// Backend remote/bot.py. Commands, templates to copy, and asking how each message prints.
+const TG_STYLES: [string, string][] = [["message", "Message slip"], ["plain", "Plain text"], ["big", "Big text"], ["checklist", "Checklist"]];
+const TG_BUILTINS: [string, string][] = [["help", "What the bot can do"], ["settings", "How your messages print (buttons)"],
+  ["templates", "Get a template back to copy"], ["cancel", "Don't print the message waiting for a choice"]];
+const CMD_RE = /^[a-z0-9_]{1,32}$/;
+
+function TelegramPage() {
+  const back = useBack();
+  const [s, patch] = useSettings();
+  const [actions, setActions] = useState<{ id: string; label: string }[]>([]);
+  const [draft, setDraft] = useState<any[] | null>(null); // commands being edited (saved on blur)
+  const [tdraft, setTdraft] = useState<any[] | null>(null);
+  useEffect(() => { get<{ id: string; label: string }[]>("/api/actions").then((a) => setActions(a.filter((x) => x.id !== "none"))).catch(() => {}); }, []);
+  if (!s) return null;
+  const t = s.telegram;
+  const cmds: any[] = draft ?? t.commands ?? [];
+  const tpls: any[] = tdraft ?? t.templates ?? [];
+  // keep the edited copy until the save has come back, so typing straight on isn't lost
+  const saveCmds = (xs: any[]) => { setDraft(xs); patch({ telegram: { commands: xs } }).finally(() => setDraft((cur) => (cur === xs ? null : cur))); };
+  const saveTpls = (xs: any[]) => { setTdraft(xs); patch({ telegram: { templates: xs } }).finally(() => setTdraft((cur) => (cur === xs ? null : cur))); };
+  const setCmd = (i: number, p: any, save = false) => { const xs = cmds.map((c, k) => (k === i ? { ...c, ...p } : c)); save ? saveCmds(xs) : setDraft(xs); };
+  const setTpl = (i: number, p: any, save = false) => { const xs = tpls.map((c, k) => (k === i ? { ...c, ...p } : c)); save ? saveTpls(xs) : setTdraft(xs); };
+  const names = cmds.map((c) => String(c.name || "").replace(/^\//, "").toLowerCase());
+  const cmdProblem = (i: number) => {
+    const n = names[i];
+    if (!n) return "Give it a name.";
+    if (!CMD_RE.test(n)) return "Use lowercase letters, digits and _ only (up to 32).";
+    if (TG_BUILTINS.some(([b]) => b === n) || n === "start") return `/${n} is built in.`;
+    if (names.indexOf(n) !== i) return `/${n} is used twice.`;
+    return null;
+  };
+  const d = t.defaults ?? { style: "message", size: "M" };
+  return (
+    <>
+      <Topbar title="Telegram bot" back={back} />
+      <p class="cap" style="margin:-4px 4px 0">Commands and buttons for people you've allowed in <a href="/settings/remote" style="color:var(--green);text-decoration:underline">Remote messages</a>. Type “/” in the chat with the bot to see them.</p>
+
+      <h2 class="section">How messages print</h2>
+      <div class="glass grp">
+        <div class="lrow"><label for="tgstyle" style="flex:none">Style</label>
+          <select id="tgstyle" class="input" style="flex:1;min-width:0;max-width:220px;margin-left:auto" value={d.style} onChange={(e) => patch({ telegram: { defaults: { style: (e.target as HTMLSelectElement).value } } })}>
+            {TG_STYLES.map(([v, l]) => <option value={v}>{l}</option>)}
+          </select></div>
+        <div class="lrow col"><span>Text size</span>
+          <Seg label="Text size" value={d.size} onChange={(v) => patch({ telegram: { defaults: { size: v } } })}
+            options={["S", "M", "L", "XL"].map((v) => ({ value: v, label: v }))} /></div>
+        <ToggleRow label="Ask how to print each message" sub="The bot answers with buttons for the style and size, then Print or Cancel." checked={!!t.ask_options}
+          onChange={(v) => patch({ telegram: { ask_options: v } })} />
+        {t.ask_options && (
+          <>
+            <div class="lrow"><label for="tgwait" class="grow">If there's no answer in</label>
+              <select id="tgwait" class="input" style="width:auto" value={String(t.ask_timeout_s)} onChange={(e) => patch({ telegram: { ask_timeout_s: Number((e.target as HTMLSelectElement).value) } })}>
+                {[60, 120, 300, 600, 1800].map((v) => <option value={String(v)}>{v / 60} min</option>)}
+              </select></div>
+            <div class="lrow col"><span>then</span>
+              <Seg label="When there's no answer" value={t.on_timeout} onChange={(v) => patch({ telegram: { on_timeout: v } })}
+                options={[{ value: "print", label: "Print it anyway" }, { value: "cancel", label: "Don't print" }]} /></div>
+          </>
+        )}
+      </div>
+      <p class="dim tiny" style="margin:8px 6px">Each person can change their own style and size with /settings. Big text and Checklist work best for short messages; Checklist puts a box before every line.</p>
+
+      <h2 class="section">Built-in commands</h2>
+      <div class="glass grp">
+        {TG_BUILTINS.map(([n, desc]) => <div class="lrow"><span class="mono" style="flex:none;color:var(--hi)">/{n}</span><span class="grow sub" style="white-space:normal;text-align:right">{desc}</span></div>)}
+      </div>
+
+      <h2 class="section">Your commands</h2>
+      {cmds.map((c, i) => {
+        const prob = cmdProblem(i);
+        return (
+          <div class="glass grp">
+            <div class="lrow">
+              <span class="mono" style="flex:none;color:var(--hi)">/</span>
+              <label class="sr-only" for={`cn${i}`}>Command name</label>
+              <input id={`cn${i}`} class="input mono grow" value={c.name} maxLength={33} placeholder="name" autoCapitalize="none" spellcheck={false}
+                onInput={(e) => setCmd(i, { name: (e.target as HTMLInputElement).value.replace(/^\//, "").toLowerCase() })} onBlur={() => saveCmds(cmds)} />
+              <button class="ib" aria-label={`Remove /${c.name || "command"}`} onClick={() => saveCmds(cmds.filter((_, k) => k !== i))}><IconTrash class="i" /></button>
+            </div>
+            {prob && <div class="lrow"><span class="cap" style="color:var(--pink-text)">{prob}</span></div>}
+            <div class="lrow">
+              <label class="sr-only" for={`cd${i}`}>Description</label>
+              <input id={`cd${i}`} class="input grow" value={c.description ?? ""} maxLength={80} placeholder="What it does (shown in the / menu)"
+                onInput={(e) => setCmd(i, { description: (e.target as HTMLInputElement).value })} onBlur={() => saveCmds(cmds)} />
+            </div>
+            <div class="lrow"><label for={`ct${i}`} style="flex:none">It should</label>
+              <select id={`ct${i}`} class="input" style="flex:1;min-width:0;max-width:240px;margin-left:auto" value={c.type} onChange={(e) => setCmd(i, { type: (e.target as HTMLSelectElement).value }, true)}>
+                <option value="reply">Reply with text</option>
+                <option value="action">Print something</option>
+                <option value="style">Set how the next message prints</option>
+              </select></div>
+            {c.type === "reply" && (
+              <>
+                <div class="lrow col">
+                  <label class="sr-only" for={`cr${i}`}>Reply</label>
+                  <textarea id={`cr${i}`} class="input" style="min-height:80px" maxLength={3500} placeholder="What the bot sends back" value={c.text ?? ""}
+                    onInput={(e) => setCmd(i, { text: (e.target as HTMLTextAreaElement).value })} onBlur={() => saveCmds(cmds)} />
+                </div>
+                <ToggleRow label="Send as a block to copy" sub="One tap copies it in Telegram." checked={!!c.copyable} onChange={(v) => setCmd(i, { copyable: v }, true)} />
+              </>
+            )}
+            {c.type === "action" && (
+              <div class="lrow"><label for={`ca${i}`} style="flex:none">Print</label>
+                <select id={`ca${i}`} class="input" style="flex:1;min-width:0;max-width:240px;margin-left:auto" value={c.action ?? ""} onChange={(e) => setCmd(i, { action: (e.target as HTMLSelectElement).value }, true)}>
+                  <option value="" disabled>Choose…</option>
+                  {actions.map((a) => <option value={a.id}>{a.label.replace("Run routine: ", "Routine: ")}</option>)}
+                </select></div>
+            )}
+            {c.type === "style" && (
+              <>
+                <div class="lrow"><label for={`cs${i}`} style="flex:none">Style</label>
+                  <select id={`cs${i}`} class="input" style="flex:1;min-width:0;max-width:220px;margin-left:auto" value={c.style ?? "big"} onChange={(e) => setCmd(i, { style: (e.target as HTMLSelectElement).value }, true)}>
+                    {TG_STYLES.map(([v, l]) => <option value={v}>{l}</option>)}
+                  </select></div>
+                <div class="lrow col"><span>Text size</span>
+                  <Seg label={`/${c.name} text size`} value={c.size ?? "M"} onChange={(v) => setCmd(i, { size: v }, true)}
+                    options={["S", "M", "L", "XL"].map((v) => ({ value: v, label: v }))} /></div>
+                <div class="lrow"><span class="cap">“/{c.name || "name"} Hello” prints “Hello” now; “/{c.name || "name"}” on its own applies to the next message.</span></div>
+              </>
+            )}
+          </div>
+        );
+      })}
+      <button class="add-row" onClick={() => saveCmds([...cmds, { name: "", description: "", type: "reply", text: "", copyable: false }])}><IconPlus class="i" width={18} />Add a command</button>
+
+      <h2 class="section">Templates</h2>
+      <p class="dim tiny" style="margin:0 6px 8px">/templates shows these as buttons. Tapping one sends its text back as a block to copy, fill in and send.</p>
+      {tpls.map((tp, i) => (
+        <div class="glass grp">
+          <div class="lrow">
+            <label class="sr-only" for={`tn${i}`}>Template name</label>
+            <input id={`tn${i}`} class="input grow" value={tp.name ?? ""} maxLength={40} placeholder="Name (the button)"
+              onInput={(e) => setTpl(i, { name: (e.target as HTMLInputElement).value })} onBlur={() => saveTpls(tpls)} />
+            <button class="ib" aria-label={`Remove template ${tp.name || i + 1}`} onClick={() => saveTpls(tpls.filter((_, k) => k !== i))}><IconTrash class="i" /></button>
+          </div>
+          <div class="lrow col">
+            <label class="sr-only" for={`tt${i}`}>Template text</label>
+            <textarea id={`tt${i}`} class="input mono" style="min-height:90px" maxLength={3500} value={tp.text ?? ""}
+              onInput={(e) => setTpl(i, { text: (e.target as HTMLTextAreaElement).value })} onBlur={() => saveTpls(tpls)} />
+          </div>
+        </div>
+      ))}
+      <button class="add-row" onClick={() => saveTpls([...tpls, { name: "", text: "" }])}><IconPlus class="i" width={18} />Add a template</button>
+    </>
+  );
+}
+
 // ------------------------------------------------------------ Date & time --
 interface TimeState { epoch: number; timezone: string; system_timezone: string; ntp: boolean; synced: boolean; manual_this_boot: boolean; scheduler_waiting: boolean }
 const fmtTime = (epoch: number, tz: string) => {
@@ -1262,6 +1410,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   { id: "inbox", Icon: IconInbox, title: "Waiting for your OK", group: "Messages", Component: InboxPage, meta: () => (inboxWaiting.value ? `${inboxWaiting.value} waiting` : "None") },
   { id: "guest", Icon: IconNote, title: "Guest page", group: "Messages", Component: GuestPage, meta: () => (settings.value?.guest?.enabled ? (settings.value.guest.mode === "print" ? "Prints straight away" : "Waits for your OK") : "Off") },
   { id: "remote", Icon: IconMail, title: "Remote messages", group: "Messages", Component: RemotePage },
+  { id: "telegram", Icon: IconBot, title: "Telegram bot", group: "Messages", Component: TelegramPage, meta: () => { const t = settings.value?.telegram; return t ? `${(t.commands ?? []).length + 4} commands` : ""; } },
   // Time & schedules
   { id: "schedules", Icon: IconAlarm, title: "Schedules", group: "Time & schedules", Component: SchedulePrefs, meta: quietMeta },
   { id: "time", Icon: IconClock, title: "Date & time", group: "Time & schedules", Component: TimePage, meta: () => settings.value?.schedules?.timezone?.replace(/_/g, " ") ?? "" },

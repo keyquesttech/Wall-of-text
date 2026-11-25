@@ -64,3 +64,4 @@ export const IconInbox = (p: P) => (<svg {...base} {...p}><path d="M4 13l2.5-8h1
 export const IconNote = (p: P) => (<svg {...base} {...p}><path d="M5 4h14v11l-5 5H5z" /><path d="M14 20v-5h5M9 9h6M9 12.5h4" /></svg>);
 export const IconButton = (p: P) => (<svg {...base} {...p}><ellipse cx="12" cy="15" rx="8" ry="3.5" /><path d="M6 13.5V11c0-2 2.7-3.5 6-3.5s6 1.5 6 3.5v2.5" /><path d="M12 3v2" /></svg>);
 export const IconBackup = (p: P) => (<svg {...base} {...p}><path d="M12 4v10M8 10l4 4 4-4" /><path d="M4 15v4h16v-4" /></svg>);
+export const IconBot = (p: P) => (<svg {...base} {...p}><rect x="4" y="8" width="16" height="11" rx="3" /><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5" /></svg>);

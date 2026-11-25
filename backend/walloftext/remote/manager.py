@@ -81,6 +81,15 @@ class RemoteManager:
                 log.exception("remote pipeline failed on a %s message", cid)
         if hasattr(a, "commit"):
             a.commit()
+        if hasattr(a, "send"):  # bot: unanswered "how should this print?" questions, and the "/" menu
+            await self.pipeline.bot.expire(a)
+            menu = self.pipeline.bot.menu()
+            if getattr(a, "_menu", None) != menu:
+                try:
+                    await a.set_commands(menu)
+                    a._menu = menu
+                except ChannelError:
+                    pass
         return len(msgs)
 
     async def _run(self, cid: str) -> None:

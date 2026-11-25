@@ -84,6 +84,8 @@ class Pipeline:
         self.senders = Senders(svc)
         self._hits: dict[str, list[float]] = {}
         self._acks: dict[int, tuple] = {}
+        from .bot import Bot
+        self.bot = Bot(self)
 
     # ----------------------------------------------------------- state --
     def seen(self, external_id: str) -> bool:
@@ -112,20 +114,53 @@ class Pipeline:
         return True
 
     # -------------------------------------------------------- document --
-    def document(self, msg: InboundMessage, name: str) -> dict:
-        """Message slip (PRINT_TEMPLATES 8b): subject in t-l, body in t-m, "… (cut)" when truncated."""
+    def document(self, msg: InboundMessage, name: str, opts: dict | None = None) -> dict:
+        """The print for a message. Style "message" (default) is the message slip (PRINT_TEMPLATES 8b:
+        subject in t-l, body in t-m, "… (cut)" when truncated); "plain", "big" and "checklist" are
+        plain blocks like Create makes. `size` S/M/L/XL sets the body text size."""
         cfg = self.svc.app_settings.get("remote")
-        data: dict = {"sender": name, "subject": (msg.subject or "")[:120],
-                      "now": datetime.fromtimestamp(msg.received_at).isoformat(timespec="minutes")}
+        opts = opts or {}
+        style, size = opts.get("style", "message"), opts.get("size", "M")
+        size = size if size in ("S", "M", "L", "XL") else "M"
+        when = datetime.fromtimestamp(msg.received_at)
+        body = ""
         if msg.body:
-            data["body"], _ = cap(msg.body, int(cfg.get("max_chars", 600)), int(cfg.get("max_lines", 40)))
+            body, _ = cap(msg.body, int(cfg.get("max_chars", 600)), int(cfg.get("max_lines", 40)))
+        pic = None
         for a in msg.attachments[:1]:
-            data["image_src"] = f"data:{a.content_type};base64," + base64.b64encode(a.data).decode()
-        return {"blocks": [{"type": "slip", "template": "message", "data": data}]}
+            pic = f"data:{a.content_type};base64," + base64.b64encode(a.data).decode()
+        if style not in ("plain", "big", "checklist"):
+            data: dict = {"sender": name, "subject": (msg.subject or "")[:120], "now": when.isoformat(timespec="minutes")}
+            if size != "M":
+                data["size"] = size
+            if body:
+                data["body"] = body
+            if pic:
+                data["image_src"] = pic
+            return {"blocks": [{"type": "slip", "template": "message", "data": data}]}
+        blocks: list[dict] = [{"type": "text", "text": f"From {name} · {when:%H:%M}", "size": "S", "bold": True},
+                              {"type": "divider"}]
+        if msg.subject:
+            blocks.append({"type": "text", "text": msg.subject[:120], "size": "L", "bold": True})
+        if body and style == "big":
+            blocks.append({"type": "heading", "text": body, "size": size if size in ("L", "XL") else "XL"})
+        elif body and style == "checklist":
+            items = [ln.strip().lstrip("-*•☐[] ").strip() for ln in body.splitlines()]
+            blocks.append({"type": "checklist", "size": size, "items": [{"text": t} for t in items if t][:60]})
+        elif body:
+            blocks.append({"type": "text", "text": body, "size": size})
+        if pic:
+            blocks.append({"type": "image", "src": pic, "style": "photo"})
+        return {"blocks": blocks}
 
     # ----------------------------------------------------------- handle --
+    @staticmethod
+    def _bot_capable(adapter) -> bool:
+        return adapter is not None and hasattr(adapter, "send")
+
     async def handle(self, msg: InboundMessage, adapter=None) -> str:
-        """Returns the outcome: duplicate | blocked | rate_limited | waiting | limit | held | printed | queued."""
+        """Returns the outcome: duplicate | blocked | rate_limited | waiting | limit | held | printed | queued
+        | command | asking | cancelled."""
         if self.seen(msg.external_id):
             return "duplicate"
         sender = self.senders.find(msg.channel, msg.sender_id)
@@ -134,10 +169,24 @@ class Pipeline:
             log.info("remote: dropped message from an unknown %s sender", msg.channel)
             self.svc.events.publish("remote", {"blocked_week": self.blocked_count()})
             return "blocked"
+        bot = self._bot_capable(adapter)
+        if msg.callback is not None:
+            self.mark_seen(msg, "command")
+            return await self.bot.on_callback(msg, sender, adapter) if bot else "command"
+        if bot and msg.body.startswith("/") and not msg.attachments:
+            self.mark_seen(msg, "command")
+            return await self.bot.on_command(msg, sender, adapter)
         if not self._rate_ok(sender["id"]):
             self.mark_seen(msg, "rate_limited")
             return "rate_limited"
-        doc = self.document(msg, sender["name"])
+        opts = self.bot.options_for(sender)
+        if bot and self.svc.app_settings.get("telegram").get("ask_options"):
+            return await self.bot.ask(msg, sender, opts, adapter)
+        return await self.deliver(msg, sender, opts, adapter)
+
+    async def deliver(self, msg: InboundMessage, sender: dict, opts: dict | None = None, adapter=None) -> str:
+        """After the checks: approval, daily limit, quiet hours, print, acknowledgement."""
+        doc = self.document(msg, sender["name"], opts)
         title = f"From {sender['name']}" + (f": {msg.subject[:40]}" if msg.subject else "")
         meta = {"channel": msg.channel, "sender": sender["id"]}
         sched = self.svc.extras["scheduler"]
@@ -159,7 +208,9 @@ class Pipeline:
         except Exception:
             log.exception("remote: render failed")
             # keep the text, drop the picture
-            doc["blocks"][0]["data"].pop("image_src", None)
+            for b in doc["blocks"]:
+                (b.get("data") or {}).pop("image_src", None)
+            doc["blocks"] = [b for b in doc["blocks"] if b.get("type") != "image"]
             jid = self.svc.print_document(doc, "Remote", title, held_until=held, meta=meta)
         self.mark_seen(msg, "held" if held else "printed")
         if held:

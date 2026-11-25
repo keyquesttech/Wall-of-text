@@ -128,6 +128,7 @@ function ChannelSheet(props: { ch: Channel; senders: Sender[]; onClose: () => vo
           <label class="field-label" for="ttok">Bot token {c.settings.has_token && <span>(saved; leave blank to keep)</span>}</label>
           <input id="ttok" class="input" type="password" autoComplete="off" value={token} placeholder="123456:ABC-…" onInput={(e) => setToken((e.target as HTMLInputElement).value)} />
           {c.settings.bot_username && <p class="dim small">Your bot: <span class="mono">@{c.settings.bot_username}</span></p>}
+          {c.configured && <a class="btn block" style="margin-top:10px" href="/settings/telegram">Commands, templates and print style</a>}
           <button class="btn btn-green block" style="margin-top:12px" disabled={busy || (!token && !c.settings.has_token)} onClick={save}>{busy ? "Checking…" : "Save and test"}</button>
           {c.configured && !pairing?.captured && (
             <button class="btn block" style="margin-top:10px" disabled={pairing?.active} onClick={() => send<any>("POST", "/api/remote/pairing/start").then(setPairing).catch((e) => toast(e.message))}>

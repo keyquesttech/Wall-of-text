@@ -86,12 +86,21 @@ class TelegramAdapter:
             return []
         offset = int(self.store.get("telegram_offset", "0") or 0)
         updates = await self._call("getUpdates", offset=offset, timeout=self.long_poll_s,
-                                   allowed_updates=["message"])
+                                   allowed_updates=["message", "callback_query"])
         out: list[InboundMessage] = []
         for u in updates:
             # The offset is committed after the pipeline has handled these (commit()); if we
             # crash first, Telegram resends them and the external_id table stops a repeat print.
             self._pending_offset = max(getattr(self, "_pending_offset", 0), u["update_id"] + 1)
+            cq = u.get("callback_query")
+            if cq and "from" in cq and cq.get("message"):  # a tap on one of the bot's buttons
+                frm = cq["from"]
+                name = " ".join(x for x in (frm.get("first_name"), frm.get("last_name")) if x) or frm.get("username", "")
+                out.append(InboundMessage(
+                    channel="telegram", sender_id=str(frm["id"]), sender_name=name, body="",
+                    external_id=f"telegram:{u['update_id']}", received_at=time.time(), reply=cq["message"]["chat"]["id"],
+                    callback={"id": cq["id"], "data": cq.get("data") or "", "message_id": cq["message"]["message_id"]}))
+                continue
             m = u.get("message")
             if not m or "from" not in m or m["from"].get("is_bot"):
                 continue
@@ -128,6 +137,48 @@ class TelegramAdapter:
             await self._call("sendMessage", chat_id=chat_id, text=text)
         except ChannelError:
             pass
+
+    # ---------------------------------------------- bot replies (remote/bot.py) --
+    @staticmethod
+    def _markup(buttons):
+        if buttons is None:
+            return None
+        return {"inline_keyboard": [[{"text": t, "callback_data": d} for t, d in row] for row in buttons]}
+
+    @staticmethod
+    def _body(text: str, code: bool) -> dict:
+        if not code:
+            return {"text": text[:4000]}
+        import html
+        return {"text": f"<pre>{html.escape(text[:3900])}</pre>", "parse_mode": "HTML"}
+
+    async def send(self, chat_id, text: str, buttons=None, code: bool = False) -> int | None:
+        """Send a message (optionally with buttons, or as a block that copies with one tap)."""
+        params = {"chat_id": chat_id, **self._body(text, code)}
+        if buttons is not None:
+            params["reply_markup"] = self._markup(buttons)
+        try:
+            return (await self._call("sendMessage", **params)).get("message_id")
+        except ChannelError:
+            return None
+
+    async def edit(self, chat_id, message_id, text: str, buttons=None) -> None:
+        params = {"chat_id": chat_id, "message_id": message_id, "text": text[:4000]}
+        params["reply_markup"] = self._markup(buttons) or {"inline_keyboard": []}
+        try:
+            await self._call("editMessageText", **params)
+        except ChannelError:
+            pass  # "message is not modified" and the like
+
+    async def answer(self, callback_id: str, text: str = "") -> None:
+        try:
+            await self._call("answerCallbackQuery", callback_query_id=callback_id, text=text[:180])
+        except ChannelError:
+            pass
+
+    async def set_commands(self, commands: list[tuple[str, str]]) -> None:
+        """The "/" menu in Telegram."""
+        await self._call("setMyCommands", commands=[{"command": c, "description": d[:256] or c} for c, d in commands])
 
     async def ack(self, msg: InboundMessage, text: str) -> None:
         if msg.reply is not None:
