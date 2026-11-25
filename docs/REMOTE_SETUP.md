@@ -49,7 +49,7 @@ text-message behaviour. Say if you want SMS and which route, and it can be added
 
 ## Telegram bot commands
 
-Settings › Telegram bot (or the button under Telegram in Remote messages):
+Settings › Telegram (also reached from the Telegram row in Remote messages):
 
 - **How messages print:** default style (message slip, plain text, big text, checklist) and text
   size. Turn on **Ask how to print each message** to get buttons after every message.

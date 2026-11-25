@@ -8,7 +8,7 @@ import { inboxWaiting, printer, settings, wifi } from "../../lib/state";
 import { IconBulb, IconCalendar, IconClock, IconCloud, IconDevice, IconEye, IconFont, IconHistory, IconLock, IconMail, IconPlus, IconPrinter, IconStar, IconTrash, IconFan, IconStrip, IconRoll, IconInbox, IconNote, IconButton, IconBackup, IconAlarm, IconBot, IconWifi } from "../../components/icons";
 import { Banner, Chevron, Seg, Sheet, timeAgo, toast, Toggle, ToggleRow, Topbar } from "../../components/ui";
 import { AccessPage, useBack, WifiPage } from "../Settings";
-import { RemotePage } from "./remote";
+import { RemotePage, TelegramConnection, TelegramRemove } from "./remote";
 
 export interface SettingsPage {
   id: string;
@@ -963,8 +963,9 @@ function TelegramPage() {
   const d = t.defaults ?? { style: "message", size: "M" };
   return (
     <>
-      <Topbar title="Telegram bot" back={back} />
-      <p class="cap" style="margin:-4px 4px 0">Commands and buttons for people you've allowed in <a href="/settings/remote" style="color:var(--green);text-decoration:underline">Remote messages</a>. Type “/” in the chat with the bot to see them.</p>
+      <Topbar title="Telegram" back={back} />
+      <p class="cap" style="margin:-4px 4px 0">Message the printer from Telegram. Everything for the bot is here: connection, people, how messages print, commands and templates.</p>
+      <TelegramConnection />
 
       <h2 class="section">How messages print</h2>
       <div class="glass grp">
@@ -991,12 +992,13 @@ function TelegramPage() {
       </div>
       <p class="dim tiny" style="margin:8px 6px">Each person can change their own style and size with /settings. Big text and Checklist work best for short messages; Checklist puts a box before every line.</p>
 
-      <h2 class="section">Built-in commands</h2>
+      <h2 class="section">Commands</h2>
+      <p class="dim tiny" style="margin:0 6px 8px">Type “/” in the chat with the bot to see them.</p>
       <div class="glass grp">
         {TG_BUILTINS.map(([n, desc]) => <div class="lrow"><span class="mono" style="flex:none;color:var(--hi)">/{n}</span><span class="grow sub" style="white-space:normal;text-align:right">{desc}</span></div>)}
       </div>
 
-      <h2 class="section">Your commands</h2>
+      <span class="sect" style="margin-top:8px">Your commands</span>
       {cmds.map((c, i) => {
         const prob = cmdProblem(i);
         return (
@@ -1072,6 +1074,7 @@ function TelegramPage() {
         </div>
       ))}
       <button class="add-row" onClick={() => saveTpls([...tpls, { name: "", text: "" }])}><IconPlus class="i" width={18} />Add a template</button>
+      <TelegramRemove />
     </>
   );
 }
@@ -1409,8 +1412,8 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   // Messages
   { id: "inbox", Icon: IconInbox, title: "Waiting for your OK", group: "Messages", Component: InboxPage, meta: () => (inboxWaiting.value ? `${inboxWaiting.value} waiting` : "None") },
   { id: "guest", Icon: IconNote, title: "Guest page", group: "Messages", Component: GuestPage, meta: () => (settings.value?.guest?.enabled ? (settings.value.guest.mode === "print" ? "Prints straight away" : "Waits for your OK") : "Off") },
-  { id: "remote", Icon: IconMail, title: "Remote messages", group: "Messages", Component: RemotePage },
-  { id: "telegram", Icon: IconBot, title: "Telegram bot", group: "Messages", Component: TelegramPage, meta: () => { const t = settings.value?.telegram; return t ? `${(t.commands ?? []).length + 4} commands` : ""; } },
+  { id: "remote", Icon: IconMail, title: "Remote messages", group: "Messages", Component: RemotePage, meta: () => "Email, allowed senders" },
+  { id: "telegram", Icon: IconBot, title: "Telegram", group: "Messages", Component: TelegramPage },
   // Time & schedules
   { id: "schedules", Icon: IconAlarm, title: "Schedules", group: "Time & schedules", Component: SchedulePrefs, meta: quietMeta },
   { id: "time", Icon: IconClock, title: "Date & time", group: "Time & schedules", Component: TimePage, meta: () => settings.value?.schedules?.timezone?.replace(/_/g, " ") ?? "" },

@@ -1,7 +1,7 @@
 # Progress
 
 ## 25 Nov 2026 (night): Telegram bot commands
-- `remote/bot.py` + Settings › Telegram bot. Built-in commands: /help, /settings (buttons to set
+- `remote/bot.py` + Settings › Telegram. Built-in commands: /help, /settings (buttons to set
   your style and size), /templates (tap one: its text comes back as a block that copies with one
   tap), /cancel. Custom commands: reply with text (optionally copyable), print an action or routine,
   or set how the next message prints ("/big Hello" prints at once). The "/" menu is kept in sync

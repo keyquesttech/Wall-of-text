@@ -1,5 +1,6 @@
 // Settings › Messages › Remote messages (BUILD_PLAN 9.2). DESIGN REVIEW: new screen.
 import { useEffect, useState } from "preact/hooks";
+import { useLocation } from "preact-iso";
 import { get, send } from "../../lib/api";
 import { IconPlus, IconTrash } from "../../components/icons";
 import { Banner, Seg, Sheet, timeAgo, toast, Toggle, Topbar } from "../../components/ui";
@@ -16,6 +17,7 @@ const CH_LABEL: Record<string, string> = { email: "Email", telegram: "Telegram",
 
 export function RemotePage() {
   const back = useBack();
+  const { route } = useLocation();
   const [chs, setChs] = useState<Channel[]>([]);
   const [blocked, setBlocked] = useState(0);
   const [senders, setSenders] = useState<Sender[]>([]);
@@ -32,7 +34,7 @@ export function RemotePage() {
       <p class="dim small" style="margin:0 6px 12px">Send a message from anywhere and it prints on the wall. The printer only ever checks out to the internet; nothing is opened up to it. Only people on your allowed list get printed.</p>
       <div class="glass grp">
         {chs.map((c) => (
-          <button class="lrow" onClick={() => setOpen(c.id)}>
+          <button class="lrow" onClick={() => (c.id === "telegram" ? route("/settings/telegram") : setOpen(c.id))}>
             <div class="grow">
               <div class="title">{c.label}</div>
               <div class="sub">{!c.configured ? "Not set up" : c.enabled ? STATUS[c.status] + (c.last_ok ? ` · checked ${timeAgo(c.last_ok)}` : "") : "Off"}</div>
@@ -69,24 +71,16 @@ function ChannelSheet(props: { ch: Channel; senders: Sender[]; onClose: () => vo
   const [addr, setAddr] = useState(c.settings.address ?? "");
   const [pw, setPw] = useState("");
   const [host, setHost] = useState(c.settings.imap_host ?? "imap.gmail.com");
-  const [token, setToken] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [pairing, setPairing] = useState<any>(null);
-  const [pairName, setPairName] = useState("");
-  useEffect(() => {
-    if (!pairing?.active) return;
-    const t = setInterval(() => get<any>("/api/remote/pairing").then(setPairing), 2000);
-    return () => clearInterval(t);
-  }, [pairing?.active]);
   const save = async () => {
     setBusy(true); setMsg(null);
     try {
-      const creds: any = c.id === "email" ? { address: addr, imap_host: host, ...(pw ? { app_password: pw } : {}) } : token ? { bot_token: token } : {};
+      const creds: any = c.id === "email" ? { address: addr, imap_host: host, ...(pw ? { app_password: pw } : {}) } : {};
       await send("PATCH", `/api/remote/channels/${c.id}`, { credentials: creds });
       const r = await send<{ message: string }>("POST", `/api/remote/channels/${c.id}/test`);
       await send("PATCH", `/api/remote/channels/${c.id}`, { enabled: true });
-      setMsg({ ok: true, t: r.message }); setPw(""); setToken("");
+      setMsg({ ok: true, t: r.message }); setPw("");
     } catch (e) { setMsg({ ok: false, t: (e as Error).message }); } finally { setBusy(false); }
   };
   return (
@@ -116,34 +110,6 @@ function ChannelSheet(props: { ch: Channel; senders: Sender[]; onClose: () => vo
           </details>
           <p class="dim tiny">The printer checks this inbox every minute. Only mail that passes the sender's SPF or DKIM check counts, so a faked From address is ignored.</p>
           <button class="btn btn-green block" disabled={busy || !addr || (!pw && !c.settings.has_password)} onClick={save}>{busy ? "Checking…" : "Save and test"}</button>
-        </>
-      )}
-      {c.id === "telegram" && (
-        <>
-          <ol class="small dim" style="padding-left:20px;margin-top:0">
-            <li>In Telegram, message <b>@BotFather</b> and send <span class="mono">/newbot</span>.</li>
-            <li>Pick a name; BotFather replies with a token. Paste it here.</li>
-            <li>Press <b>Add me</b>, then send your new bot any message within 5 minutes.</li>
-          </ol>
-          <label class="field-label" for="ttok">Bot token {c.settings.has_token && <span>(saved; leave blank to keep)</span>}</label>
-          <input id="ttok" class="input" type="password" autoComplete="off" value={token} placeholder="123456:ABC-…" onInput={(e) => setToken((e.target as HTMLInputElement).value)} />
-          {c.settings.bot_username && <p class="dim small">Your bot: <span class="mono">@{c.settings.bot_username}</span></p>}
-          {c.configured && <a class="btn block" style="margin-top:10px" href="/settings/telegram">Commands, templates and print style</a>}
-          <button class="btn btn-green block" style="margin-top:12px" disabled={busy || (!token && !c.settings.has_token)} onClick={save}>{busy ? "Checking…" : "Save and test"}</button>
-          {c.configured && !pairing?.captured && (
-            <button class="btn block" style="margin-top:10px" disabled={pairing?.active} onClick={() => send<any>("POST", "/api/remote/pairing/start").then(setPairing).catch((e) => toast(e.message))}>
-              {pairing?.active ? `Waiting for your message… ${pairing.seconds_left}s` : "Add me"}
-            </button>
-          )}
-          {pairing?.captured && (
-            <div class="glass card" style="margin-top:12px">
-              <p style="margin-top:0">Got a message from <b>{pairing.captured.name}</b> (ID {pairing.captured.user_id}). Is that you?</p>
-              <label class="field-label" for="pname">Name to print</label>
-              <input id="pname" class="input" value={pairName || pairing.captured.name} onInput={(e) => setPairName((e.target as HTMLInputElement).value)} />
-              <button class="btn btn-green block" style="margin-top:12px" onClick={() => send("POST", "/api/remote/pairing/confirm", { name: pairName || pairing.captured.name }).then(() => { toast("Added to allowed senders"); props.onClose(); })}>Yes, allow</button>
-            </div>
-          )}
-          <p class="dim tiny" style="margin-top:12px">The bot replies "Printed" when your message comes out.</p>
         </>
       )}
       {c.id === "mock" && <p class="dim">Drop JSON files into <span class="mono">{c.settings.folder}</span> or POST to /api/dev/inbound.</p>}
@@ -193,4 +159,99 @@ function SenderSheet(props: { sender: Sender | null; onClose: () => void }) {
       {s && <button class="btn btn-ghost btn-danger block" style="margin-top:8px" onClick={() => send("DELETE", `/api/remote/senders/${s.id}`).then(props.onClose)}>Remove {s.name}</button>}
     </Sheet>
   );
+}
+
+/** Telegram connection for Settings › Telegram: bot token, on/off, status, and "Add me". */
+export function TelegramConnection() {
+  const [c, setC] = useState<Channel | null>(null);
+  const [senders, setSenders] = useState<Sender[]>([]);
+  const [token, setToken] = useState("");
+  const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [pairing, setPairing] = useState<any>(null);
+  const [pairName, setPairName] = useState("");
+  const [editing, setEditing] = useState<Sender | null>(null);
+  const load = () => {
+    get<{ channels: Channel[] }>("/api/remote/channels").then((r) => setC(r.channels.find((x) => x.id === "telegram") ?? null));
+    get<{ items: Sender[] }>("/api/remote/senders").then((r) => setSenders(r.items.filter((x) => x.identifiers.some((i) => i.channel === "telegram"))));
+  };
+  useEffect(() => { load(); const t = setInterval(load, 8000); return () => clearInterval(t); }, []);
+  useEffect(() => {
+    if (!pairing?.active) return;
+    const t = setInterval(() => get<any>("/api/remote/pairing").then(setPairing), 2000);
+    return () => clearInterval(t);
+  }, [pairing?.active]);
+  if (!c) return <div class="shim" style="height:120px" />;
+  const save = async () => {
+    setBusy(true); setMsg(null);
+    try {
+      if (token) await send("PATCH", "/api/remote/channels/telegram", { credentials: { bot_token: token } });
+      const r = await send<{ message: string }>("POST", "/api/remote/channels/telegram/test");
+      await send("PATCH", "/api/remote/channels/telegram", { enabled: true });
+      setMsg({ ok: true, t: r.message }); setToken(""); load();
+    } catch (e) { setMsg({ ok: false, t: (e as Error).message }); } finally { setBusy(false); }
+  };
+  const status = !c.configured ? "Not set up" : c.enabled ? STATUS[c.status] + (c.last_ok ? ` · checked ${timeAgo(c.last_ok)}` : "") : "Off";
+  return (
+    <>
+      <h2 class="section">Connection</h2>
+      {c.enabled && c.status !== "ok" && c.message && <Banner>{c.message}</Banner>}
+      {msg && <Banner kind={msg.ok ? "info" : undefined}>{msg.t}</Banner>}
+      <div class="glass grp">
+        <div class="lrow">
+          <div class="grow"><div class="title">{c.settings.bot_username ? `@${c.settings.bot_username}` : "Your bot"}</div><div class="sub">{status}</div></div>
+          {c.configured && <Toggle label="Telegram on" checked={c.enabled} onChange={(v) => send("PATCH", "/api/remote/channels/telegram", { enabled: v }).then(load)} />}
+        </div>
+        <div class="lrow col">
+          {!c.configured && (
+            <ol class="small dim" style="padding-left:20px;margin:0">
+              <li>In Telegram, message <b>@BotFather</b> and send <span class="mono">/newbot</span>.</li>
+              <li>Pick a name; BotFather replies with a token. Paste it below.</li>
+            </ol>
+          )}
+          <label class="field-label" for="ttok" style="margin-top:4px">Bot token {c.settings.has_token && <span>(saved; leave blank to keep)</span>}</label>
+          <input id="ttok" class="input" type="password" autoComplete="off" value={token} placeholder="123456:ABC-…" onInput={(e) => setToken((e.target as HTMLInputElement).value)} />
+          <button class="btn btn-green block" disabled={busy || (!token && !c.settings.has_token)} onClick={save}>{busy ? "Checking…" : c.configured ? "Save and test" : "Connect"}</button>
+        </div>
+      </div>
+
+      {c.configured && (
+        <>
+          <h2 class="section">People</h2>
+          <div class="glass grp">
+            {senders.length === 0 && <div class="lrow dim">Nobody can message the bot yet.</div>}
+            {senders.map((x) => (
+              <button class="lrow" onClick={() => setEditing(x)}>
+                <div class="grow"><div class="title">{x.name}</div><div class="sub">ID {x.identifiers.find((i) => i.channel === "telegram")?.value}</div></div>
+                <span class="meta">{x.approval === "approve" ? "Waits for OK" : "Prints straight away"}</span>
+              </button>
+            ))}
+            {!pairing?.captured && (
+              <button class="lrow" disabled={pairing?.active} onClick={() => send<any>("POST", "/api/remote/pairing/start").then(setPairing).catch((e) => toast(e.message))}>
+                <IconPlus width={18} /><span class="grow">{pairing?.active ? `Send the bot a message now… ${pairing.seconds_left}s` : "Add someone (they message the bot)"}</span>
+              </button>
+            )}
+          </div>
+          {pairing?.captured && (
+            <div class="glass card" style="margin-top:12px">
+              <p style="margin-top:0">Got a message from <b>{pairing.captured.name}</b> (ID {pairing.captured.user_id}). Allow them?</p>
+              <label class="field-label" for="pname">Name to print</label>
+              <input id="pname" class="input" value={pairName || pairing.captured.name} onInput={(e) => setPairName((e.target as HTMLInputElement).value)} />
+              <button class="btn btn-green block" style="margin-top:12px" onClick={() => send("POST", "/api/remote/pairing/confirm", { name: pairName || pairing.captured.name }).then(() => { toast("Added"); setPairing(null); setPairName(""); load(); })}>Yes, allow</button>
+            </div>
+          )}
+          <p class="dim tiny" style="margin:8px 6px">Tap Add someone, then they send the bot any message within 5 minutes. People with email too are in <a href="/settings/remote" style="color:var(--green);text-decoration:underline">Remote messages</a>.</p>
+        </>
+      )}
+      {editing && <SenderSheet sender={editing} onClose={() => { setEditing(null); load(); }} />}
+    </>
+  );
+}
+
+/** Remove the bot token (bottom of the Telegram page). */
+export function TelegramRemove() {
+  const [has, setHas] = useState(false);
+  useEffect(() => { get<{ channels: Channel[] }>("/api/remote/channels").then((r) => setHas(!!r.channels.find((x) => x.id === "telegram")?.configured)); }, []);
+  if (!has) return null;
+  return <button class="btn btn-ghost btn-danger block" style="margin-top:16px" onClick={() => send("DELETE", "/api/remote/channels/telegram/credentials").then(() => location.reload())}>Disconnect the bot</button>;
 }

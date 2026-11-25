@@ -5,7 +5,7 @@ Only allowed senders reach this (the pipeline drops everyone else first).
 * Built-in commands: /help (/start), /settings (pick your default print style and size with
   buttons), /templates (tap one to get its text back in a block that copies with one tap),
   /cancel (drop a message that's waiting for your choice).
-* Custom commands (Settings › Telegram bot): reply with text, run a print action (weather,
+* Custom commands (Settings › Telegram): reply with text, run a print action (weather,
   fortune, a routine...), or set how the next message prints ("/big Hello" prints at once).
 * "Ask how to print": after each message the bot answers with buttons for the style and size,
   then Print or Cancel. With no answer it prints with the defaults (or doesn't) after a while.
@@ -112,7 +112,7 @@ class Bot:
         if name == "templates":
             tpls = [t for t in self.cfg().get("templates") or [] if (t.get("text") or "").strip()]
             if not tpls:
-                await adapter.send(chat, "No templates yet. They're added in the app: Settings › Telegram bot.")
+                await adapter.send(chat, "No templates yet. They're added in the app: Settings › Telegram.")
             else:
                 await adapter.send(chat, "Tap one and I'll send it back to copy:",
                                    [[(t.get("name") or f"Template {i + 1}", f"tpl:{i}")] for i, t in enumerate(tpls)][:20])
