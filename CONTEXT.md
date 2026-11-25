@@ -9,7 +9,7 @@ for a dated log `docs/PROGRESS.md`.
 | What | Where |
 |---|---|
 | Code | GitHub `keyquesttech/Wall-of-text`, branch `main`. Working copy on the Pi at `~/Wall_of_text` |
-| Running app | `http://walloftext.local/` (or the Pi's IP, currently `192.168.86.250`), port 80 |
+| Running app | `http://walloftext.local/` (or the Pi's IP address on your network), port 80 |
 | Installed copy | `/opt/walloftext` (code + `venv`), service `walloftext.service` (user `walloftext`) |
 | Data | `/var/lib/walloftext` (SQLite `walloftext.db`, uploaded fonts, `secrets.json`, Google token) |
 | Passwords | `/etc/walloftext/passwords.txt`: site `root`, setup Wi-Fi `rootroot` (defaults, still in use) |

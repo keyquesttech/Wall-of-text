@@ -6,7 +6,7 @@ never logged and never included in backups.
 
 ## Email (free)
 
-1. Create a **new personal Gmail account** just for the printer, e.g. `ourwallprinter@gmail.com`.
+1. Create a **new personal Gmail account** just for the printer, e.g. `yourname.printer@gmail.com`.
    Don't use a Google Workspace (work/school) address: those need OAuth, which this doesn't do.
 2. In that account: Google Account › Security › turn on **2-Step Verification**.
 3. Google Account › Security › **App passwords** › create one (name it "Wall Printer").

@@ -45,7 +45,7 @@ async def delete_template(tid: str, request: Request):
 
 
 SAMPLE = {"text": "See you at 7!", "title": "Groceries", "items": "Oat milk\nEggs\nCoffee", "ssid": "HomeWiFi",
-          "password": "••••••", "to": "Sam", "message": "Happy birthday!", "from": "Matias", "ingredients": "Flour\nEggs",
+          "password": "••••••", "to": "Sam", "message": "Happy birthday!", "from": "Alex", "ingredients": "Flour\nEggs",
           "steps": "Mix, then bake.", "who": "Sam", "caption": "Well done"}
 
 

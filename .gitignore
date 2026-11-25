@@ -7,7 +7,19 @@ backend/var/
 node_modules/
 frontend/dist/
 spikes/*.log
-# secrets never belong in git
+# secrets and private data never belong in git
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+walloftext-backup-*.zip
+mock-inbox/
 secrets.json
 passwords.txt
 *.token.json

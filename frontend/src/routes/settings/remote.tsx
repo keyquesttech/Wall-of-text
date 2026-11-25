@@ -107,7 +107,7 @@ function ChannelSheet(props: { ch: Channel; senders: Sender[]; onClose: () => vo
             <li>Enter the address and app password here. Then email that address from anywhere.</li>
           </ol>
           <label class="field-label" for="eaddr">Printer's email address</label>
-          <input id="eaddr" class="input" type="email" value={addr} placeholder="ourwallprinter@gmail.com" onInput={(e) => setAddr((e.target as HTMLInputElement).value)} />
+          <input id="eaddr" class="input" type="email" value={addr} placeholder="printer@gmail.com" onInput={(e) => setAddr((e.target as HTMLInputElement).value)} />
           <label class="field-label" for="epw">App password {c.settings.has_password && <span>(saved; leave blank to keep)</span>}</label>
           <input id="epw" class="input" type="password" autoComplete="off" value={pw} placeholder="xxxx xxxx xxxx xxxx" onInput={(e) => setPw((e.target as HTMLInputElement).value)} />
           <details style="margin-top:10px"><summary class="dim small">Not Gmail?</summary>
