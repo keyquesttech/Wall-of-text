@@ -1,4 +1,4 @@
-"""Settings › Connections › Google: one sign-in for Google Calendar and Google Tasks
+"""Settings › Google Calendar & Tasks: one sign-in for Google Calendar and Google Tasks
 (sources/google.py explains the flow)."""
 from __future__ import annotations
 

@@ -104,6 +104,7 @@ def test_switch_devices_on_and_off_and_move_pins(client):
 
 
 def test_fan_and_strip_through_the_api(client):
+    client.patch("/api/settings", json={"schedules": {"quiet_hours": {"enabled": False}}})  # no dimming at night
     assert client.post("/api/hw/fan/test").status_code == 409
     client.patch("/api/settings", json={"fan": {"enabled": True, "pin": 12, "mode": "always", "max_speed": 80}})
     st = client.get("/api/hw").json()["fan"]

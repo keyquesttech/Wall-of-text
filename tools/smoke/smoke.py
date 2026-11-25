@@ -126,10 +126,10 @@ def run(viewport, tag):
         page.wait_for_timeout(400)
         shot(page, f"{tag}-21-schedules")
         # every settings page renders without errors
-        for sp in ["printer", "fonts", "button", "schedules", "history", "fortunes", "weather", "google",
-                   "remote", "access", "wifi", "device", "time", "fan", "strip", "display"]:
+        for sp in ["printer", "paper", "fonts", "history", "weather", "google", "fortunes", "inbox", "guest", "remote",
+                   "schedules", "time", "button", "light", "fan", "strip", "wifi", "access", "backup", "device", "display"]:
             page.goto(args.base + "/settings/" + sp)
-            expect(page.locator("h1")).not_to_have_text("Not found")
+            expect(page.locator("h1")).not_to_have_text("Settings")  # a real page, not the index
             page.wait_for_timeout(250)
             if sp in ("printer", "button", "access", "device", "schedules"):
                 shot(page, f"{tag}-30-settings-{sp}")
@@ -142,7 +142,7 @@ def run(viewport, tag):
         shot(g, f"{tag}-40-guest")
         g.click("#go")
         expect(g.locator("#msg")).to_contain_text("approved")
-        page.goto(args.base + "/settings/access")
+        page.goto(args.base + "/settings/inbox")
         expect(page.locator("text=Hello from the hallway")).to_be_visible()
         shot(page, f"{tag}-41-inbox")
         page.click("button:has-text('Print it')")

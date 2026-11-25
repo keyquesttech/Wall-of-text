@@ -2,7 +2,7 @@
 
 Sign-in happens in the Wall of Text app, from any phone or computer:
 1. The user creates a free Google Cloud "Desktop app" OAuth client once and pastes its
-   client ID and secret into Settings › Connections › Google (docs/GOOGLE_SETUP.md).
+   client ID and secret into Settings › Google Calendar & Tasks (docs/GOOGLE_SETUP.md).
 2. "Sign in with Google" opens Google's consent page. Google then sends the browser to
    http://127.0.0.1:53682/?code=… . Nothing listens there, so the page fails to load,
    but its address holds the one-time code. The user copies that address back into the app.
@@ -200,7 +200,7 @@ class GoogleAuth:
         r = await c.post(TOKEN_URL, data={"client_id": cfg["client_id"], "client_secret": cfg["client_secret"],
                                           "refresh_token": cfg["refresh_token"], "grant_type": "refresh_token"})
         if r.status_code in (400, 401):
-            raise GoogleError("Google stopped accepting the sign-in. Sign in again in Settings › Connections › Google.",
+            raise GoogleError("Google stopped accepting the sign-in. Sign in again in Settings › Google Calendar & Tasks.",
                               reauth=True)
         r.raise_for_status()
         d = r.json()

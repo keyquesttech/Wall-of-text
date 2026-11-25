@@ -1,11 +1,11 @@
 import { useEffect, useState } from "preact/hooks";
 import { useLocation, useRoute } from "preact-iso";
 import { api, send } from "../lib/api";
-import { auth, printer, settings, wifi } from "../lib/state";
+import { auth, printer, wifi } from "../lib/state";
 import { STATE_TEXT, StatusPill } from "../components/printer";
 import { HOSTNAME, PRODUCT_NAME } from "../lib/config";
 import { Banner, Chevron, Group, Sheet, toast, ToggleRow, Topbar } from "../components/ui";
-import { GuestAndInbox, SETTINGS_PAGES } from "./settings/pages";
+import { SETTINGS_PAGES } from "./settings/pages";
 
 const MODES: Record<string, string> = { online: "Connected", connecting: "Connecting", setup_ap: "Setup network", fallback_ap: "Can't find your Wi-Fi" };
 
@@ -148,7 +148,7 @@ export function AccessPage() {
   };
   return (
     <>
-      <Topbar title="Access" back={back} />
+      <Topbar title="Passwords & access" back={back} />
       {a?.password_file_warning && <Banner>{a.password_file_warning}</Banner>}
       {a?.default_password_in_use && <Banner>You're still using the default password.</Banner>}
       {a?.default_setup_wifi_password_in_use && <Banner kind="warn">You're still using the default setup Wi-Fi password.</Banner>}
@@ -174,7 +174,6 @@ export function AccessPage() {
         <button class="btn btn-green block" style="margin-top:16px" disabled={!apCur || apNew.length < 8}>Change setup Wi-Fi password</button>
       </form>
       <p class="dim tiny" style="margin:14px 6px">Both passwords are stored as plain text on the printer and typed over plain HTTP on your home network. Treat them as a household lock, not strong security.</p>
-      {settings.value && <GuestAndInbox />}
     </>
   );
 }

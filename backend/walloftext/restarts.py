@@ -1,4 +1,4 @@
-"""Scheduled restarts (Settings › Device › Restart on a schedule).
+"""Scheduled restarts (Settings › Device › Scheduled restart).
 
 A restart clears any slow memory leak or stuck USB/printer state. Rules:
 * Daily or weekly at a set time, in the app's time zone.

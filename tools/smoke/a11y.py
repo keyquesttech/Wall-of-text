@@ -13,9 +13,10 @@ from playwright.sync_api import sync_playwright
 B = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8099"
 AXE = (Path(__file__).resolve().parents[2] / "frontend/node_modules/axe-core/axe.min.js").read_text()
 PAGES = ["/signin", "/setup", "/note", "/", "/create/draw", "/create/image", "/create/templates", "/create/list",
-         "/schedules", "/history", "/settings", "/settings/printer", "/settings/fonts", "/settings/button",
-         "/settings/schedules", "/settings/history", "/settings/weather", "/settings/google", "/settings/fortunes", "/settings/time", "/settings/fan", "/settings/strip", "/schedules/new",
-         "/settings/remote", "/settings/access", "/settings/wifi", "/settings/device", "/settings/display"]
+         "/schedules", "/history", "/settings", "/settings/printer", "/settings/paper", "/settings/fonts", "/settings/history",
+         "/settings/weather", "/settings/google", "/settings/fortunes", "/settings/inbox", "/settings/guest", "/settings/remote",
+         "/settings/schedules", "/settings/time", "/settings/button", "/settings/light", "/settings/fan", "/settings/strip",
+         "/settings/wifi", "/settings/access", "/settings/backup", "/settings/device", "/settings/display", "/schedules/new"]
 bad = 0
 with sync_playwright() as p:
     b = p.chromium.launch()

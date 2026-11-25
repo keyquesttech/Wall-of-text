@@ -46,7 +46,7 @@ on a computer, in about 10 minutes. After that everything happens in the Wall of
 
 ## 2. Connect in the app (from your phone or computer)
 
-1. Open http://walloftext.local/ and go to **Settings › Google**.
+1. Open http://walloftext.local/ and go to **Settings › Google Calendar & Tasks**.
 2. Paste the **Client ID** and **Client secret**, then tap **Save and continue**.
 3. Tap **Sign in with Google** and choose your account (with an Internal project, your account
    in that organisation).

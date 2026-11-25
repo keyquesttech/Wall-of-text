@@ -1,11 +1,11 @@
-// Settings sub-pages, grouped as in Settings › index. DESIGN REVIEW: built from the shared
+// Settings sub-pages; SETTINGS_PAGES at the end sets the groups and their order on Settings. DESIGN REVIEW: built from the shared
 // components without the handoff's Settings mockups.
 import type { FunctionComponent } from "preact";
 import { signal } from "@preact/signals";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { api, get, send, upload, type FontInfo } from "../../lib/api";
 import { inboxWaiting, printer, settings, wifi } from "../../lib/state";
-import { IconBulb, IconCalendar, IconClock, IconCloud, IconDevice, IconEye, IconFont, IconHistory, IconLock, IconMail, IconPlus, IconPrinter, IconStar, IconTrash, IconFan, IconStrip, IconWifi } from "../../components/icons";
+import { IconBulb, IconCalendar, IconClock, IconCloud, IconDevice, IconEye, IconFont, IconHistory, IconLock, IconMail, IconPlus, IconPrinter, IconStar, IconTrash, IconFan, IconStrip, IconRoll, IconInbox, IconNote, IconButton, IconBackup, IconAlarm, IconWifi } from "../../components/icons";
 import { Banner, Chevron, Seg, Sheet, timeAgo, toast, Toggle, ToggleRow, Topbar } from "../../components/ui";
 import { AccessPage, useBack, WifiPage } from "../Settings";
 import { RemotePage } from "./remote";
@@ -54,7 +54,23 @@ function PrinterPage() {
         <ToggleRow label="Rotate prints 180°" sub="Turns every slip round so it reads the right way up as it hangs from the printer." checked={p.rotate_180 ?? true}
           onChange={(v) => patch({ printer: { rotate_180: v } })} />
       </div>
-      <h2 class="section">Paper</h2>
+      <div class="glass grp" style="margin-top:12px">
+        <button class="lrow" onClick={() => api.testPage().then(() => toast("Printing a test page"))}>Print a test page</button>
+      </div>
+      <p class="dim tiny" style="margin:8px 6px">The test page shows the darkness and speed, a ruler and grey tones.</p>
+    </>
+  );
+}
+
+// ------------------------------------------------------------- Paper roll --
+function PaperPage() {
+  const back = useBack();
+  const [s, patch] = useSettings();
+  if (!s) return null;
+  const p = s.printer;
+  return (
+    <>
+      <Topbar title="Paper roll" back={back} />
       <div class="glass grp">
         <div class="lrow kv-row"><span class="grow">Left on the roll</span>
           <span class="meta">About {printer.value?.paper_percent ?? 100}%{printer.value?.paper_left_m != null ? ` · ${printer.value.paper_left_m} m` : ""}</span></div>
@@ -65,7 +81,6 @@ function PrinterPage() {
           <span class="dim">m</span>
         </div>
         <button class="lrow" onClick={() => api.newRoll().then((x) => { printer.value = x; toast("Paper counter reset"); })}>I loaded a new roll</button>
-        <button class="lrow" onClick={() => api.testPage().then(() => toast("Printing a test page"))}>Print a test page</button>
       </div>
       <p class="dim tiny" style="margin:8px 6px">The printer can't measure the roll, so this is an estimate from how much has been printed, the roll length and the calibration below.</p>
       <Calibration mmPerRow={p.mm_per_row ?? 0.125} />
@@ -220,65 +235,89 @@ function ButtonPage() {
   useEffect(() => { get<{ id: string; label: string }[]>("/api/actions").then(setActions); }, []);
   const [hw] = useHw();
   if (!s) return null;
-  const led = s.led;
-  const events: [string, string][] = [["idle", "Idle"], ["printing", "Printing"], ["message_waiting", "New message waiting"], ["paper_out", "Paper out"], ["error", "Error"]];
+  const on = s.button.enabled !== false;
   return (
     <>
-      <Topbar title="Button & light" back={back} />
-      <h2 class="section">Button</h2>
+      <Topbar title="Button" back={back} />
       <HwError msg={hw?.button.error} />
       <div class="glass grp">
-        <ToggleRow label="Use the button" sub="Switch off if no button is wired, or to stop presses doing anything." checked={s.button.enabled !== false}
+        <ToggleRow label="Use the button" sub="Switch off if no button is wired, or to stop presses doing anything." checked={on}
           onChange={(v) => patch({ button: { enabled: v } })} />
-        {s.button.enabled !== false && (
+        {on && (
           <div class="lrow"><label for="bpin" style="flex:none">Connected to</label>
             <PinSelect id="bpin" label="Button GPIO pin" value={s.button.pin ?? 17} used={usedPins(s, "button")} onChange={(v) => patch({ button: { pin: v } })} />
           </div>
         )}
       </div>
-      {s.button.enabled !== false && <p class="dim tiny" style="margin:8px 6px">Wire the button between that pin and a ground pin (GND). No resistor needed: the Pi's own pull-up is used.</p>}
-      {s.button.enabled !== false && <div class="glass grp">
-        {(["single", "double", "long"] as const).map((g) => (
-          <div class="lrow">
-            <span style="flex:none">{g === "single" ? "Press" : g === "double" ? "Double press" : "Long press"}</span>
-            <select class="input" style="flex:1;min-width:0;max-width:260px;margin-left:auto;text-overflow:ellipsis" aria-label={`${g} press action`} value={s.button[g]}
-              onChange={(e) => patch({ button: { [g]: (e.target as HTMLSelectElement).value } })}>
-              {actions.map((a) => <option value={a.id}>{a.label}</option>)}
-            </select>
+      {on && (
+        <>
+          <p class="dim tiny" style="margin:8px 6px">Wire the button between that pin and a ground pin (GND). No resistor needed: the Pi's own pull-up is used.</p>
+          <h2 class="section">What a press does</h2>
+          <div class="glass grp">
+            {(["single", "double", "long"] as const).map((g) => (
+              <div class="lrow">
+                <span style="flex:none">{g === "single" ? "Press" : g === "double" ? "Double press" : "Long press"}</span>
+                <select class="input" style="flex:1;min-width:0;max-width:260px;margin-left:auto;text-overflow:ellipsis" aria-label={`${g} press action`} value={s.button[g]}
+                  onChange={(e) => patch({ button: { [g]: (e.target as HTMLSelectElement).value } })}>
+                  {actions.map((a) => <option value={a.id}>{a.label}</option>)}
+                </select>
+              </div>
+            ))}
+            <div class="lrow"><span class="grow">Hold for 30 seconds</span><span class="meta">Reset Wi-Fi (fixed)</span></div>
           </div>
-        ))}
-        <div class="lrow"><span class="grow">Hold for 30 seconds</span><span class="meta">Reset Wi-Fi (fixed)</span></div>
-      </div>}
-      {s.button.enabled !== false && <p class="dim tiny" style="margin:8px 6px">Holding the button for 30 seconds always starts Wi-Fi setup again: the light blinks three times, then let go.</p>}
-      <h2 class="section">Light</h2>
+          <p class="dim tiny" style="margin:8px 6px">Holding the button for 30 seconds always starts Wi-Fi setup again: the light blinks three times, then let go.</p>
+        </>
+      )}
+    </>
+  );
+}
+
+// ------------------------------------------------------------ Panel light --
+function LightPage() {
+  const back = useBack();
+  const [s, patch] = useSettings();
+  const [hw] = useHw();
+  if (!s) return null;
+  const led = s.led;
+  const on = led.enabled !== false;
+  const events: [string, string][] = [["idle", "Idle"], ["printing", "Printing"], ["message_waiting", "New message waiting"], ["paper_out", "Paper out"], ["error", "Error"]];
+  return (
+    <>
+      <Topbar title="Panel light" back={back} />
       <HwError msg={hw?.led.error} />
       <div class="glass grp">
-        <ToggleRow label="Use the panel light" sub="A single LED that shows what the printer is doing." checked={led.enabled !== false}
+        <ToggleRow label="Use the panel light" sub="A single LED that shows what the printer is doing." checked={on}
           onChange={(v) => patch({ led: { enabled: v } })} />
-        {led.enabled !== false && (
+        {on && (
           <div class="lrow"><label for="lpin" style="flex:none">Connected to</label>
             <PinSelect id="lpin" label="Light GPIO pin" value={led.pin ?? 18} used={usedPins(s, "led")} onChange={(v) => patch({ led: { pin: v } })} />
           </div>
         )}
       </div>
-      {led.enabled !== false && <p class="dim tiny" style="margin:8px 6px">Wire the LED's long leg to that pin through a resistor (about 330 Ω), and its short leg to GND.</p>}
-      {led.enabled !== false && <><div class="glass card">
-        <label class="field-label" for="bright" style="margin-top:0">Brightness</label>
-        <input id="bright" type="range" min={0} max={100} step={5} value={led.brightness}
-          onChange={(e) => patch({ led: { brightness: Number((e.target as HTMLInputElement).value) } })} />
-      </div>
-      <div class="glass grp" style="margin-top:12px">
-        {events.map(([k, label]) => (
-          <div class="lrow">
-            <span class="grow">{label}</span>
-            <select class="input" style="width:auto" aria-label={`Light when ${label}`} value={led.patterns[k]}
-              onChange={(e) => patch({ led: { patterns: { [k]: (e.target as HTMLSelectElement).value } } })}>
-              <option value="off">Off</option><option value="solid">Solid</option><option value="slow_pulse">Slow pulse</option><option value="blink">Blink</option>
-            </select>
+      {on && (
+        <>
+          <p class="dim tiny" style="margin:8px 6px">Wire the LED's long leg to that pin through a resistor (about 330 Ω), and its short leg to GND.</p>
+          <h2 class="section">Look</h2>
+          <div class="glass card">
+            <label class="field-label" for="bright" style="margin-top:0">Brightness</label>
+            <input id="bright" type="range" min={0} max={100} step={5} value={led.brightness}
+              onChange={(e) => patch({ led: { brightness: Number((e.target as HTMLInputElement).value) } })} />
           </div>
-        ))}
-      </div></>}
-      <p class="dim tiny" style="margin:8px 6px">Fan and LED strip: <a href="/settings/fan" style="color:var(--green);text-decoration:underline">Settings › Fan</a> and <a href="/settings/strip" style="color:var(--green);text-decoration:underline">LED strip</a>.</p>
+          <h2 class="section">What it shows</h2>
+          <div class="glass grp">
+            {events.map(([k, label]) => (
+              <div class="lrow">
+                <span class="grow">{label}</span>
+                <select class="input" style="width:auto" aria-label={`Light when ${label}`} value={led.patterns[k]}
+                  onChange={(e) => patch({ led: { patterns: { [k]: (e.target as HTMLSelectElement).value } } })}>
+                  <option value="off">Off</option><option value="solid">Solid</option><option value="slow_pulse">Slow pulse</option><option value="blink">Blink</option>
+                </select>
+              </div>
+            ))}
+          </div>
+          <p class="dim tiny" style="margin:8px 6px">In Wi-Fi setup mode the light always pulses slowly.</p>
+        </>
+      )}
     </>
   );
 }
@@ -963,17 +1002,16 @@ function TimePage() {
 }
 
 // ----------------------------------------------------------- Guest & inbox --
-export function GuestAndInbox() {
-  const [s, patch] = useSettings();
-  const [items, setItems] = useState<any[]>([]);
+/** Guest notes and remote messages that need a yes before they print. */
+function InboxPage() {
+  const back = useBack();
+  const [items, setItems] = useState<any[] | null>(null);
   const load = () => get<{ items: any[] }>("/api/inbox").then((r) => setItems(r.items));
   useEffect(() => { load(); }, [inboxWaiting.value]);
-  if (!s) return null;
-  const g = s.guest;
   return (
     <>
-      <h2 class="section">Waiting for your OK</h2>
-      <div class="glass grp">
+      <Topbar title="Waiting for your OK" back={back} />
+      {items === null ? <div class="shim" style="height:60px" /> : <div class="glass grp">
         {items.length === 0 && <div class="lrow dim">Nothing waiting.</div>}
         {items.map((i) => (
           <div class="lrow" style="flex-wrap:wrap">
@@ -987,8 +1025,21 @@ export function GuestAndInbox() {
             </div>
           </div>
         ))}
-      </div>
-      <h2 class="section">Guest page</h2>
+      </div>}
+      <p class="dim tiny" style="margin:8px 6px">Guest notes (when the guest page waits for your OK) and remote messages from senders you haven't allowed to print straight away land here.
+        Set them up in <a href="/settings/guest" style="color:var(--green);text-decoration:underline">Guest page</a> and <a href="/settings/remote" style="color:var(--green);text-decoration:underline">Remote messages</a>.</p>
+    </>
+  );
+}
+
+function GuestPage() {
+  const back = useBack();
+  const [s, patch] = useSettings();
+  if (!s) return null;
+  const g = s.guest;
+  return (
+    <>
+      <Topbar title="Guest page" back={back} />
       <div class="glass grp">
         <ToggleRow label="Guest page" sub={`Visitors on your Wi-Fi can leave a note at ${wifi.value?.hostname ?? "walloftext.local"}/note, no password needed.`} checked={g.enabled}
           onChange={(v) => patch({ guest: { enabled: v } })} />
@@ -1122,15 +1173,11 @@ function RestartGroup(props: { next: string | null; last: { at: number; ok: bool
   );
 }
 
-function DevicePage() {
+// ------------------------------------------------------------------ Backup --
+function BackupPage() {
   const back = useBack();
-  const [d, setD] = useState<any>(null);
-  const [confirm, setConfirm] = useState<null | "restart" | "shutdown">(null);
   const [restoring, setRestoring] = useState(false);
   const file = useRef<HTMLInputElement>(null);
-  useEffect(() => { api.device().then(setD); const t = setInterval(() => api.device().then(setD), 10000); return () => clearInterval(t); }, []);
-  const up = d ? `${Math.floor(d.uptime_s / 86400)}d ${Math.floor((d.uptime_s % 86400) / 3600)}h` : "";
-  const hot = d?.temperature_c != null && d.temperature_c >= 75;
   const restore = async () => {
     const f = file.current?.files?.[0];
     if (!f) return;
@@ -1140,6 +1187,28 @@ function DevicePage() {
     try { const r = await upload<{ restored: string[] }>("/api/backup", fd); toast(`Restored: ${r.restored.join(", ")}`); settings.value = await api.settings(); }
     catch (e) { toast((e as Error).message); } finally { setRestoring(false); if (file.current) file.current.value = ""; }
   };
+  return (
+    <>
+      <Topbar title="Backup" back={back} />
+      <div class="glass grp">
+        <a class="lrow" href="/api/backup" download>Download a backup</a>
+        <label class="lrow" for="restore" style="cursor:pointer">{restoring ? "Restoring…" : "Restore from a backup"}</label>
+      </div>
+      <input ref={file} id="restore" type="file" accept=".zip,application/zip" class="sr-only" onChange={restore} />
+      <p class="dim tiny" style="margin:8px 6px">Backups hold settings, schedules, templates, lists and uploaded fonts. Passwords and connection secrets are never included.</p>
+      <UsbBackupGroup />
+    </>
+  );
+}
+
+// ------------------------------------------------------------------ Device --
+function DevicePage() {
+  const back = useBack();
+  const [d, setD] = useState<any>(null);
+  const [confirm, setConfirm] = useState<null | "restart" | "shutdown">(null);
+  useEffect(() => { api.device().then(setD); const t = setInterval(() => api.device().then(setD), 10000); return () => clearInterval(t); }, []);
+  const up = d ? `${Math.floor(d.uptime_s / 86400)}d ${Math.floor((d.uptime_s % 86400) / 3600)}h` : "";
+  const hot = d?.temperature_c != null && d.temperature_c >= 75;
   return (
     <>
       <Topbar title="Device" back={back} />
@@ -1158,14 +1227,6 @@ function DevicePage() {
         </dl>
       </div>
       <p class="dim tiny" style="margin:8px 6px">Updates are installed from your computer with deploy.ps1.</p>
-      <h2 class="section">Backup</h2>
-      <div class="glass grp">
-        <a class="lrow" href="/api/backup" download>Download a backup</a>
-        <label class="lrow" for="restore" style="cursor:pointer">{restoring ? "Restoring…" : "Restore from a backup"}</label>
-      </div>
-      <input ref={file} id="restore" type="file" accept=".zip,application/zip" class="sr-only" onChange={restore} />
-      <p class="dim tiny" style="margin:8px 6px">Backups hold settings, schedules, templates, lists and uploaded fonts. Passwords and connection secrets are never included.</p>
-      <UsbBackupGroup />
       <RestartGroup next={d?.restart?.next ?? null} last={d?.restart?.last ?? null} />
       <h2 class="section">Power</h2>
       <div class="glass grp">
@@ -1183,21 +1244,36 @@ function DevicePage() {
   );
 }
 
+// Groups, in this order on Settings: what gets printed and how; where content comes from;
+// messages from other people; time; the parts wired to the Pi; and the system itself.
+const quietMeta = () => { const sc = settings.value?.schedules; return sc ? (sc.holiday_mode ? "Holiday mode" : sc.quiet_hours?.enabled ? `Quiet ${sc.quiet_hours.start}–${sc.quiet_hours.end}` : "") : ""; };
+const onOff = (on: boolean | undefined, text: string) => (on === false ? "Off" : text);
 export const SETTINGS_PAGES: SettingsPage[] = [
-  { id: "printer", Icon: IconPrinter, title: "Printer", group: "Printing", Component: PrinterPage, meta: () => `About ${printer.value?.paper_percent ?? 100}% paper` },
+  // Printing
+  { id: "printer", Icon: IconPrinter, title: "Printer", group: "Printing", Component: PrinterPage, meta: () => { const p = settings.value?.printer; return p ? `${String(p.speed).replace(/^./, (c: string) => c.toUpperCase())} speed` : ""; } },
+  { id: "paper", Icon: IconRoll, title: "Paper roll", group: "Printing", Component: PaperPage, meta: () => `About ${printer.value?.paper_percent ?? 100}% left` },
   { id: "fonts", Icon: IconFont, title: "Fonts", group: "Printing", Component: FontsPage },
-  { id: "button", Icon: IconBulb, title: "Button & light", group: "Printing", Component: ButtonPage },
-  { id: "schedules", Icon: IconClock, title: "Schedules", group: "Printing", Component: SchedulePrefs, meta: () => (settings.value?.schedules?.holiday_mode ? "Holiday mode" : settings.value?.schedules?.quiet_hours?.enabled ? `Quiet ${settings.value.schedules.quiet_hours.start}–${settings.value.schedules.quiet_hours.end}` : "") },
   { id: "history", Icon: IconHistory, title: "History", group: "Printing", Component: HistoryPrefs, meta: () => { const h = settings.value?.history; return h ? (h.max_days ? `${h.max_days} days` : "Forever") : ""; } },
-  { id: "fortunes", Icon: IconStar, title: "Fortunes", group: "Printing", Component: FortunesPage },
-  { id: "weather", Icon: IconCloud, title: "Weather", group: "Connections", Component: WeatherPage, meta: () => settings.value?.weather?.place || "Not set" },
-  { id: "google", Icon: IconCalendar, title: "Google", group: "Connections", Component: GooglePage, meta: googleMeta },
-  { id: "remote", Icon: IconMail, title: "Remote messages", group: "Connections", Component: RemotePage },
-  { id: "access", Icon: IconLock, title: "Access", group: "Access", Component: AccessPage, meta: () => (inboxWaiting.value ? `${inboxWaiting.value} waiting` : "") },
-  { id: "wifi", Icon: IconWifi, title: "Wi-Fi", group: "Device", Component: WifiPage, meta: () => wifi.value?.ssid ?? "" },
-  { id: "device", Icon: IconDevice, title: "Device", group: "Device", Component: DevicePage },
-  { id: "fan", Icon: IconFan, title: "Fan", group: "Device", Component: FanPage, meta: () => (settings.value?.fan?.enabled ? (settings.value.fan.mode === "always" ? "Always on" : `From ${settings.value.fan.start_temp} °C`) : "Off") },
-  { id: "strip", Icon: IconStrip, title: "LED strip", group: "Device", Component: StripPage, meta: () => (settings.value?.neopixel?.enabled ? `${(settings.value.neopixel.strips ?? []).reduce((a: number, x: any) => a + (x.count || 0), 0)} LEDs` : "Off") },
-  { id: "time", Icon: IconClock, title: "Date & time", group: "Device", Component: TimePage, meta: () => settings.value?.schedules?.timezone?.replace(/_/g, " ") ?? "" },
-  { id: "display", Icon: IconEye, title: "Display", group: "Device", Component: DisplayPage },
+  // What it prints
+  { id: "weather", Icon: IconCloud, title: "Weather", group: "What it prints", Component: WeatherPage, meta: () => settings.value?.weather?.place || "Not set" },
+  { id: "google", Icon: IconCalendar, title: "Google Calendar & Tasks", group: "What it prints", Component: GooglePage, meta: googleMeta },
+  { id: "fortunes", Icon: IconStar, title: "Fortunes", group: "What it prints", Component: FortunesPage },
+  // Messages
+  { id: "inbox", Icon: IconInbox, title: "Waiting for your OK", group: "Messages", Component: InboxPage, meta: () => (inboxWaiting.value ? `${inboxWaiting.value} waiting` : "None") },
+  { id: "guest", Icon: IconNote, title: "Guest page", group: "Messages", Component: GuestPage, meta: () => (settings.value?.guest?.enabled ? (settings.value.guest.mode === "print" ? "Prints straight away" : "Waits for your OK") : "Off") },
+  { id: "remote", Icon: IconMail, title: "Remote messages", group: "Messages", Component: RemotePage },
+  // Time & schedules
+  { id: "schedules", Icon: IconAlarm, title: "Schedules", group: "Time & schedules", Component: SchedulePrefs, meta: quietMeta },
+  { id: "time", Icon: IconClock, title: "Date & time", group: "Time & schedules", Component: TimePage, meta: () => settings.value?.schedules?.timezone?.replace(/_/g, " ") ?? "" },
+  // Hardware
+  { id: "button", Icon: IconButton, title: "Button", group: "Hardware", Component: ButtonPage, meta: () => onOff(settings.value?.button?.enabled, `GPIO${settings.value?.button?.pin ?? 17}`) },
+  { id: "light", Icon: IconBulb, title: "Panel light", group: "Hardware", Component: LightPage, meta: () => onOff(settings.value?.led?.enabled, `GPIO${settings.value?.led?.pin ?? 18}`) },
+  { id: "fan", Icon: IconFan, title: "Fan", group: "Hardware", Component: FanPage, meta: () => (settings.value?.fan?.enabled ? (settings.value.fan.mode === "always" ? "Always on" : `From ${settings.value.fan.start_temp} °C`) : "Off") },
+  { id: "strip", Icon: IconStrip, title: "LED strip", group: "Hardware", Component: StripPage, meta: () => (settings.value?.neopixel?.enabled ? `${(settings.value.neopixel.strips ?? []).reduce((a: number, x: any) => a + (x.count || 0), 0)} LEDs` : "Off") },
+  // System
+  { id: "wifi", Icon: IconWifi, title: "Wi-Fi", group: "System", Component: WifiPage, meta: () => wifi.value?.ssid ?? "" },
+  { id: "access", Icon: IconLock, title: "Passwords & access", group: "System", Component: AccessPage },
+  { id: "backup", Icon: IconBackup, title: "Backup", group: "System", Component: BackupPage, meta: () => (settings.value?.backup?.usb_enabled ? "USB on" : "") },
+  { id: "device", Icon: IconDevice, title: "Device", group: "System", Component: DevicePage, meta: () => (settings.value?.restart?.enabled ? "Restarts on a schedule" : "") },
+  { id: "display", Icon: IconEye, title: "Display", group: "System", Component: DisplayPage },
 ];

@@ -108,7 +108,7 @@ class Sources:
         """(forecast, minutes stale or None)."""
         w = self.svc.app_settings.get("weather")
         if w.get("lat") is None:
-            self._fail("weather", "No place set. Add one in Settings › Connections › Weather.")
+            self._fail("weather", "No place set. Add one in Settings › Weather.")
             return None, None
         try:
             f = await self.weather_provider.forecast(w["lat"], w["lon"], w.get("place") or "Here", w.get("units", "C"))
@@ -197,7 +197,7 @@ class Sources:
             return {"type": "slip", "template": "unavailable",
                     "data": {"source": "GOOGLE CALENDAR", "title": "Google isn't connected",
                              "now": now.replace(tzinfo=None).isoformat(),
-                             "text": "Sign in in Settings › Connections › Google."}}
+                             "text": "Sign in in Settings › Google Calendar & Tasks."}}
         ev, errs = evs or await self.events()
         upcoming: list[Event] = []
         if not ev:

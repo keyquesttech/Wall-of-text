@@ -2,7 +2,7 @@
 
 Priority (highest first): reset armed (fast triple blink, handled by the
 button) > setup network up > error/offline > paper out > printing >
-message waiting > idle. Each event maps to a pattern in Settings › LED.
+message waiting > idle. Each event maps to a pattern in Settings › Panel light.
 """
 from __future__ import annotations
 

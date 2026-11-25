@@ -38,7 +38,7 @@ export function Aside() {
       {inboxWaiting.value > 0 && (
         <>
           <h2 class="section">Waiting for your OK</h2>
-          <div class="glass grp"><a class="lrow" href="/settings/access"><span class="grow">{inboxWaiting.value} message{inboxWaiting.value === 1 ? "" : "s"}</span><span class="meta">Review</span></a></div>
+          <div class="glass grp"><a class="lrow" href="/settings/inbox"><span class="grow">{inboxWaiting.value} message{inboxWaiting.value === 1 ? "" : "s"}</span><span class="meta">Review</span></a></div>
         </>
       )}
       <h2 class="section">Recently printed</h2>

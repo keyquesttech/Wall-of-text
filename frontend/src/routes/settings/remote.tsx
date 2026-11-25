@@ -1,4 +1,4 @@
-// Settings › Connections › Remote messages (BUILD_PLAN 9.2). DESIGN REVIEW: new screen.
+// Settings › Messages › Remote messages (BUILD_PLAN 9.2). DESIGN REVIEW: new screen.
 import { useEffect, useState } from "preact/hooks";
 import { get, send } from "../../lib/api";
 import { IconPlus, IconTrash } from "../../components/icons";

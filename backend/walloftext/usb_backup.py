@@ -1,4 +1,4 @@
-"""Scheduled backups to a USB drive (Settings › Backup).
+"""Scheduled backups to a USB drive (Settings › Backup › Backup to USB).
 
 The same zip as Settings › Backup › Download (settings, schedules, templates, lists, fonts; never
 passwords or secrets) is written to `WallOfText-backups/` on the first USB drive found. The drive

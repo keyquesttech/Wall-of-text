@@ -1,5 +1,15 @@
 # Progress
 
+## 25 Nov 2026 (later): Settings regrouped
+- Six groups instead of four, each page one job (SETTINGS_PAGES in `routes/settings/pages.tsx`):
+  **Printing** (Printer, Paper roll, Fonts, History) · **What it prints** (Weather, Google Calendar
+  & Tasks, Fortunes) · **Messages** (Waiting for your OK, Guest page, Remote messages) ·
+  **Time & schedules** (Schedules, Date & time) · **Hardware** (Button, Panel light, Fan, LED strip)
+  · **System** (Wi-Fi, Passwords & access, Backup, Device, Display).
+- Split: Printer → Printer + Paper roll; Button & light → Button + Panel light; Access → Passwords &
+  access + Waiting for your OK + Guest page; Device → Backup + Device. Old addresses still open
+  (printer, button, access, device, calendars, tasks). Rows show a useful value (GPIO, "Off", paper).
+
 ## 25 Nov 2026: GPIO devices in Settings (button, light, fan, LED strips)
 - `hw/manager.py` owns the button, panel light, fan and LED strips and rebuilds a device when
   its settings change (no restart). Pins are BCM GPIO numbers, checked for clashes and for the

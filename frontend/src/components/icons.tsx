@@ -59,3 +59,8 @@ export const IconFont = (p: P) => (<svg {...base} {...p}><path d="M4 20l6-16h1l6
 export const IconEye = (p: P) => (<svg {...base} {...p}><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>);
 export const IconFan = (p: P) => (<svg {...base} {...p}><circle cx="12" cy="12" r="1.8" /><path d="M12 10.2c0-3 .8-6.2 3.4-6.2 2.3 0 2.6 3.2.4 5.3l-2.1 1.6M13.8 12c3 0 6.2.8 6.2 3.4 0 2.3-3.2 2.6-5.3.4l-1.6-2.1M12 13.8c0 3-.8 6.2-3.4 6.2-2.3 0-2.6-3.2-.4-5.3l2.1-1.6M10.2 12c-3 0-6.2-.8-6.2-3.4 0-2.3 3.2-2.6 5.3-.4l1.6 2.1" /></svg>);
 export const IconStrip = (p: P) => (<svg {...base} {...p}><rect x="2" y="9" width="20" height="6" rx="2" /><circle cx="6" cy="12" r="1" /><circle cx="10" cy="12" r="1" /><circle cx="14" cy="12" r="1" /><circle cx="18" cy="12" r="1" /></svg>);
+export const IconRoll = (p: P) => (<svg {...base} {...p}><circle cx="8" cy="9" r="5" /><circle cx="8" cy="9" r="1.5" /><path d="M8 14h11v6l-1.5-1-1.5 1-1.5-1-1.5 1-1.5-1-1.5 1V14" /></svg>);
+export const IconInbox = (p: P) => (<svg {...base} {...p}><path d="M4 13l2.5-8h11L20 13v6H4z" /><path d="M4 13h4.5l1 2h5l1-2H20" /></svg>);
+export const IconNote = (p: P) => (<svg {...base} {...p}><path d="M5 4h14v11l-5 5H5z" /><path d="M14 20v-5h5M9 9h6M9 12.5h4" /></svg>);
+export const IconButton = (p: P) => (<svg {...base} {...p}><ellipse cx="12" cy="15" rx="8" ry="3.5" /><path d="M6 13.5V11c0-2 2.7-3.5 6-3.5s6 1.5 6 3.5v2.5" /><path d="M12 3v2" /></svg>);
+export const IconBackup = (p: P) => (<svg {...base} {...p}><path d="M12 4v10M8 10l4 4 4-4" /><path d="M4 15v4h16v-4" /></svg>);

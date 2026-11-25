@@ -20,8 +20,8 @@ from ..store.db import Store
 
 log = logging.getLogger(__name__)
 
-DEFAULT_ROLL_M = 10.0  # a common 58 mm roll; set the real length in Settings › Printer › Paper
-NOMINAL_MM_PER_ROW = 0.125  # 203 dpi = 8 dot rows per mm; Settings › Printer › Calibrate refines it
+DEFAULT_ROLL_M = 10.0  # a common 58 mm roll; set the real length in Settings › Paper roll
+NOMINAL_MM_PER_ROW = 0.125  # 203 dpi = 8 dot rows per mm; Settings › Paper roll › Calibrate refines it
 FEED_ROWS = 24 * 3
 
 

@@ -166,7 +166,7 @@ def calibration(data: dict, now: datetime) -> list:
     return [
         Header("PRINTER", dt_label(now)),
         Band(Text("CALIBRATE LENGTH", T.T_L, align="center"), (8, 8, 8, 8)),
-        Text("Enter the gap in Settings › Printer › Paper.", T.T_S, align="center"),
+        Text("Enter the gap in Settings › Paper roll.", T.T_S, align="center"),
         Custom(CAL_ROWS + 3, draw),
     ]
 
