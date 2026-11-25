@@ -1,5 +1,22 @@
 # Progress
 
+## 25 Nov 2026: GPIO devices in Settings (button, light, fan, LED strips)
+- `hw/manager.py` owns the button, panel light, fan and LED strips and rebuilds a device when
+  its settings change (no restart). Pins are BCM GPIO numbers, checked for clashes and for the
+  I2C/serial pins (`hw/pins.py`); a device that can't start shows a sentence instead.
+- Button & light: each can be switched off, and its GPIO chosen (defaults 17 and 18).
+- Fan (`hw/fan.py`, Settings › Fan): any GPIO, software PWM (100 Hz to 10 kHz), "By temperature"
+  (start temp → min speed, ramps to max speed at the full-speed temp, 3 °C hysteresis, a short
+  full-power kick from rest) or "Always on" (max speed). Live speed, Pi temperature, Test button.
+- LED strips (`hw/neopixel.py`, Settings › LED strip): WS2812 on SPI (GPIO10, or GPIO20 for a
+  second strip), 3 SPI bits per WS2812 bit at 2.4 MHz, up to 450 LEDs each, colour order,
+  brightness, quiet-hours brightness, speed, and per status (idle, printing, message waiting,
+  paper out, error, Wi-Fi setup) an effect (solid, breathe, blink, chase, wipe, rainbow, sparkle,
+  print progress) with up to 3 colours. Live preview on the page; Try shows an effect for 6 s.
+- SPI is off by default on Raspberry Pi OS: `sudo bash deploy/enable_spi.sh` (`--two` for SPI1)
+  adds the overlays and fixes the core clock, then reboot. install.sh adds the service user to
+  the `spi` group.
+
 ## 24 Nov 2026 (late): List, scheduled restarts
 - **List** (was "Shopping list"): Create › List shows the "As printed" preview, and printing it
   removes the printed items once the slip is out (ticked items and later additions stay; a failed

@@ -12,8 +12,9 @@ from .auth.passwords import PasswordFile
 from .auth.sessions import LoginLimiter, SessionStore
 from .config import Settings
 from .events import EventBus
-from .hw.button import GestureDetector, GpioButton, MockButton
-from .hw.led import GpioLed, Led, MockLed
+from .hw.button import GestureDetector
+from .hw.led import Led
+from .hw.manager import Hardware, SwitchableLed
 from .hw.led_controller import LedController
 from .hw.system import MockSystemInfo, SystemInfo
 from .net.nm import FakeNetworkManager, NmcliClient
@@ -46,7 +47,8 @@ class Services:
     fonts: FontRegistry = None
     renderer: Renderer = None
     queue: PrintQueue = None
-    button: object = None
+    button: object = None  # kept for older code; the live one is hw.button
+    hw: Hardware = None
     loop: asyncio.AbstractEventLoop | None = None
     extras: dict = field(default_factory=dict)
     led_ctl: LedController = None
@@ -127,12 +129,7 @@ def build(settings: Settings | None = None, nm=None) -> Services:
             nm.simulate_boot_autoconnect()
     printer = EscposUsbPrinter(settings.printer_device) if real else MockPrinter(settings.mock_printer_dir)
     system = SystemInfo() if real else MockSystemInfo()
-    led: Led
-    try:
-        led = GpioLed(settings.led_pin) if real else MockLed()
-    except Exception as exc:  # no GPIO access: keep running
-        log.warning("LED unavailable: %s", exc)
-        led = MockLed()
+    led = SwitchableLed()  # the real LED (if any) is plugged in by Hardware below
 
     wifi = WifiManager(nm=nm, settings=settings, ap_password=lambda: passwords.state.setup_wifi_password)
     app_settings = AppSettings(store)
@@ -147,14 +144,12 @@ def build(settings: Settings | None = None, nm=None) -> Services:
     events.listeners.append(svc.led_ctl.on_event)
     app_settings.listeners.append(lambda merged: events.publish("settings", merged))
     detector = GestureDetector(svc.on_gesture, svc.on_reset_armed)
-    if real:
-        try:
-            svc.button = GpioButton(settings.button_pin, detector)
-        except Exception as exc:
-            log.warning("button unavailable: %s", exc)
-            svc.button = MockButton(detector)
-    else:
-        svc.button = MockButton(detector)
+    # Button, panel light, fan and LED strips: built from Settings, rebuilt when they change
+    svc.hw = Hardware(svc, real, detector)
+    svc.hw.led = led
+    svc.hw.apply(force=True)
+    svc.button = svc.hw.button
+    events.listeners.append(svc.hw.on_event)
 
     from .scheduler.engine import Scheduler
     from .sources.hub import Sources

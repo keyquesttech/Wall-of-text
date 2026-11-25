@@ -57,3 +57,5 @@ export const IconBulb = (p: P) => (<svg {...base} {...p}><path d="M9 18h6M10 21h
 export const IconLink = (p: P) => (<svg {...base} {...p}><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>);
 export const IconFont = (p: P) => (<svg {...base} {...p}><path d="M4 20l6-16h1l6 16M7 14h7" /></svg>);
 export const IconEye = (p: P) => (<svg {...base} {...p}><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></svg>);
+export const IconFan = (p: P) => (<svg {...base} {...p}><circle cx="12" cy="12" r="1.8" /><path d="M12 10.2c0-3 .8-6.2 3.4-6.2 2.3 0 2.6 3.2.4 5.3l-2.1 1.6M13.8 12c3 0 6.2.8 6.2 3.4 0 2.3-3.2 2.6-5.3.4l-1.6-2.1M12 13.8c0 3-.8 6.2-3.4 6.2-2.3 0-2.6-3.2-.4-5.3l2.1-1.6M10.2 12c-3 0-6.2-.8-6.2-3.4 0-2.3 3.2-2.6 5.3-.4l1.6 2.1" /></svg>);
+export const IconStrip = (p: P) => (<svg {...base} {...p}><rect x="2" y="9" width="20" height="6" rx="2" /><circle cx="6" cy="12" r="1" /><circle cx="10" cy="12" r="1" /><circle cx="14" cy="12" r="1" /><circle cx="18" cy="12" r="1" /></svg>);

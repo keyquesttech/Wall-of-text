@@ -89,6 +89,42 @@ async def set_time(body: TimeBody, request: Request):
     return await asyncio.to_thread(_time_state, svc)
 
 
+# ---------------------------------------------------------------- hardware --
+@router.get("/hw")
+async def hw_status(request: Request):
+    """Button, panel light, fan and LED strips: on/off, problems, live fan speed and strip colours."""
+    return await asyncio.to_thread(request.app.state.svc.hw.status)
+
+
+@router.post("/hw/retry")
+async def hw_retry(request: Request):
+    hw = request.app.state.svc.hw
+    await asyncio.to_thread(hw.apply, True)
+    return await asyncio.to_thread(hw.status)
+
+
+@router.post("/hw/fan/test")
+async def fan_test(request: Request):
+    hw = request.app.state.svc.hw
+    if not hw.fan:
+        return JSONResponse({"error": "off", "message": "Switch the fan on first."}, status_code=409)
+    hw.fan.test(5)
+    return {"ok": True}
+
+
+class TryBody(BaseModel):
+    event: str = Field(pattern="^(idle|printing|message_waiting|paper_out|error|setup)$")
+
+
+@router.post("/hw/neopixel/try")
+async def neopixel_try(body: TryBody, request: Request):
+    hw = request.app.state.svc.hw
+    if not hw.neo:
+        return JSONResponse({"error": "off", "message": "Switch the LED strip on first."}, status_code=409)
+    hw.neo.try_event(body.event, 6)
+    return {"ok": True}
+
+
 @router.post("/print/setup-slip")
 async def print_setup_slip(request: Request):
     svc = request.app.state.svc

@@ -21,7 +21,7 @@ class NetStateBody(BaseModel):
 
 @router.post("/button")
 async def button(body: ButtonBody, request: Request):
-    request.app.state.svc.button.fire(body.gesture)
+    request.app.state.svc.hw.button.fire(body.gesture)
     return {"ok": True}
 
 

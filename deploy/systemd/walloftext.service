@@ -11,7 +11,7 @@ WatchdogSec=60
 TimeoutStartSec=90
 User=walloftext
 Group=walloftext
-SupplementaryGroups=netdev gpio lp video dialout
+SupplementaryGroups=netdev gpio lp video dialout spi
 Environment=WOT_HW=real
 Environment=WOT_PORT=80
 Environment=WOT_PASSWORD_FILE=/etc/walloftext/passwords.txt

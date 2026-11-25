@@ -79,3 +79,14 @@ density command the probe found (`printer/drivers.py`).
   plain HTTP, so it needs the Pi to be on).
 - Android: Chrome offers a shortcut, not a full install (needs HTTPS).
 - If `walloftext.local` doesn't open on an older Android phone, use the IP shown in Settings › Wi-Fi.
+
+## Fan and LED strips (optional)
+
+- **Fan:** drive it through a logic-level MOSFET or NPN transistor with a flyback diode, gate/base
+  on the chosen GPIO (default GPIO12, header pin 32). Settings › Fan › Test runs it at full speed
+  for 5 s. If it won't start at low speed, raise the minimum speed.
+- **LED strip:** run `sudo bash deploy/enable_spi.sh` once (add `--two` for a second strip) and
+  reboot. Data in → GPIO10 (header pin 19); strip 2 → GPIO20 (pin 38). Power the strip from its own
+  5 V supply and join the grounds. Settings › LED strip › Try each status, and check the colour
+  order (most strips are GRB).
+

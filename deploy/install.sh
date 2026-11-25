@@ -110,7 +110,11 @@ if [[ ! -f $PWFILE ]]; then
 fi
 
 say "System files"
+# LED strips are driven over SPI: the service user needs the spi group (SPI itself is switched
+# on separately with deploy/enable_spi.sh, because it needs a restart)
+getent group spi >/dev/null && usermod -aG spi $SVC_USER
 install -m 0644 $APP/deploy/systemd/walloftext.service /etc/systemd/system/walloftext.service
+if ! getent group spi >/dev/null; then sed -i 's/ spi$//; s/ spi / /' /etc/systemd/system/walloftext.service; fi
 install -d /etc/NetworkManager/dnsmasq-shared.d
 install -m 0644 $APP/deploy/nm/wot-captive.conf /etc/NetworkManager/dnsmasq-shared.d/wot-captive.conf
 install -m 0644 $APP/deploy/polkit/50-walloftext.rules /etc/polkit-1/rules.d/50-walloftext.rules

@@ -82,9 +82,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
         await svc.extras["scheduler"].stop()
         await svc.extras["remote"].stop()
         svc.queue.stop()
-        if svc.button:
-            svc.button.close()
-        svc.led.close()
+        svc.hw.close()
 
     app = FastAPI(title="Wall of Text", version=__version__, lifespan=lifespan,
                   docs_url="/api/docs" if s.is_mock else None, redoc_url=None)

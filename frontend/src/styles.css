@@ -294,6 +294,13 @@ draw-surface, canvas.draw { touch-action: none; display: block; width: 100%; bac
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; text-align: right; overflow-wrap: anywhere; color: var(--hi); }
 .card { padding: 16px; }
+/* LED strip settings: live strip preview and colour swatches */
+.ledrow { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+.ledrow i { width: 12px; height: 12px; border-radius: 50%; background: #000; border: 1px solid rgba(201, 205, 212, .18); }
+.swatch { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.swatch input[type=color] { width: 44px; height: 44px; padding: 0; border: 1px solid var(--edge); border-radius: 12px; background: none; cursor: pointer; }
+.swatch input[type=color]::-webkit-color-swatch-wrapper { padding: 4px; }
+.swatch input[type=color]::-webkit-color-swatch { border: 0; border-radius: 8px; }
 .steps { margin: 0; padding-left: 22px; line-height: 1.5; color: var(--silver); }
 .steps li + li { margin-top: 6px; }
 .btn-green.disabled, a.btn-green[aria-disabled="true"] { opacity: .45; pointer-events: none; }

@@ -23,7 +23,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-pi = ["gpiozero>=2", "lgpio>=0.2"]
+pi = ["gpiozero>=2", "lgpio>=0.2", "spidev>=3.6"]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "playwright>=1.40", "cairosvg>=2.7"]
 
 [project.scripts]

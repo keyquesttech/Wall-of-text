@@ -24,10 +24,23 @@ DEFAULTS: dict[str, Any] = {
     "weather": {"place": "", "lat": None, "lon": None, "units": "C"},
     # Google Calendar and Tasks (sources/google.py). Empty = the main calendar / the first task list.
     "google": {"calendars": [], "task_lists": []},  # calendars: [{id, name}], task_lists: [id]
-    "button": {"single": "reprint_last", "double": "weather_now", "long": "agenda_today"},
-    "led": {"brightness": 60,
+    # GPIO numbers are BCM (GPIO17 = header pin 11). Each device can be switched off.
+    "button": {"enabled": True, "pin": 17, "single": "reprint_last", "double": "weather_now", "long": "agenda_today"},
+    "led": {"enabled": True, "pin": 18, "brightness": 60,
             "patterns": {"idle": "off", "printing": "blink", "message_waiting": "slow_pulse",
                          "paper_out": "solid", "error": "blink"}},
+    # Auxiliary fan (hw/fan.py): "temperature" ramps min→max speed from start_temp to full_temp; "always" = max
+    "fan": {"enabled": False, "pin": 12, "mode": "temperature", "start_temp": 55, "full_temp": 70,
+            "min_speed": 30, "max_speed": 100, "frequency": 1000, "invert": False},
+    # WS2812 strips (hw/neopixel.py) on an SPI data pin: GPIO10 or GPIO20
+    "neopixel": {"enabled": False, "strips": [{"pin": 10, "count": 30, "reverse": False}], "order": "GRB",
+                 "brightness": 40, "quiet_brightness": 10, "speed": 50,
+                 "events": {"idle": {"effect": "off", "colors": ["#39FF88"]},
+                            "printing": {"effect": "progress", "colors": ["#39FF88", "#0A3A1E"]},
+                            "message_waiting": {"effect": "breathe", "colors": ["#FF2E9A"]},
+                            "paper_out": {"effect": "blink", "colors": ["#FF2E9A", "#000000"]},
+                            "error": {"effect": "blink", "colors": ["#FF8A00", "#000000"]},
+                            "setup": {"effect": "chase", "colors": ["#3B82F6", "#FFFFFF"]}}},
     "guest": {"enabled": False, "mode": "approve",  # approve | print
               "max_chars": 280, "rate_per_10min": 5},
     "remote": {"max_chars": 600, "max_lines": 40, "rate_per_hour": 10, "ack_email": False},
