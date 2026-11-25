@@ -12,7 +12,9 @@ const MODES: Record<string, string> = { online: "Connected", connecting: "Connec
 export function Settings() {
   const { params } = useRoute();
   // Calendars and Google Tasks used to be separate pages; both live on the Google page now.
-  const page = ["calendars", "tasks"].includes(params.page ?? "") ? "google" : params.page || "";
+  // pages that moved: Calendars and Tasks → Google; Remote messages → Email (Telegram has its own page)
+  const moved: Record<string, string> = { calendars: "google", tasks: "google", remote: "email" };
+  const page = moved[params.page ?? ""] ?? (params.page || "");
   const P = SETTINGS_PAGES.find((p) => p.id === page);
   if (P) return <P.Component />;
   return <SettingsIndex />;

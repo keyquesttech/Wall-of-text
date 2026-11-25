@@ -55,7 +55,7 @@ density command the probe found (`printer/drivers.py`).
 
 - Weather: Settings › Weather, type your town.
 - Google Calendar and Tasks: follow [GOOGLE_SETUP.md](GOOGLE_SETUP.md), then pick calendars and task lists in Settings › Google.
-- Remote messages: follow [REMOTE_SETUP.md](REMOTE_SETUP.md) (Gmail app password, Telegram bot).
+- Email and Telegram: follow [REMOTE_SETUP.md](REMOTE_SETUP.md) (Gmail app password, Telegram bot).
   Done when an allowed email and an allowed Telegram message print within ~90 s, a stranger's
   doesn't, the bot replies "Printed", and quiet hours hold messages.
 

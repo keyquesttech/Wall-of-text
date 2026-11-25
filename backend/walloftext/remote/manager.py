@@ -1,5 +1,5 @@
 """Runs every enabled channel: poll, hand to the pipeline, back off on failure
-(60 s doubling to 15 min), report state for Settings › Remote messages."""
+(60 s doubling to 15 min), report state for Settings › Email and Settings › Telegram."""
 from __future__ import annotations
 
 import asyncio

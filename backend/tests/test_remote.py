@@ -122,9 +122,10 @@ def test_wait_for_my_ok_goes_to_shared_list(c):
     assert j["source"] == "Remote"
 
 
-def test_sms_senders_default_to_approval(c):
-    s = add_sender(c, channel="sms", value="+44 7700 900123")
-    assert s["approval"] == "approve" and s["identifiers"][0]["value"] == "+447700900123"
+def test_senders_print_straight_away_by_default_and_sms_is_gone(c):
+    assert add_sender(c)["approval"] == "print"
+    r = c.post("/api/remote/senders", json={"name": "Pat", "identifiers": [{"channel": "sms", "value": "+447700900123"}]})
+    assert r.status_code == 422
 
 
 def test_quiet_hours_hold_then_release(c):

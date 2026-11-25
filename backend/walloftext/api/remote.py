@@ -134,14 +134,18 @@ async def senders(request: Request):
     return {"items": _mgr(request).pipeline.senders.list()}
 
 
-@router.post("/senders", status_code=201)
-async def add_sender(body: SenderBody, request: Request):
-    channels = ("email", "telegram", "sms") + (("mock",) if request.app.state.svc.settings.is_mock else ())
+def _bad_identifiers(body: SenderBody, request: Request) -> JSONResponse | None:
+    channels = ("email", "telegram") + (("mock",) if request.app.state.svc.settings.is_mock else ())
     for i in body.identifiers or []:
         if i.get("channel") not in channels or not i.get("value", "").strip():
-            return JSONResponse({"error": "invalid", "message": "Each sender needs an email address, Telegram ID or phone number."},
+            return JSONResponse({"error": "invalid", "message": "Each sender needs an email address or a Telegram ID."},
                                 status_code=422)
-    return _mgr(request).pipeline.senders.save(body.model_dump(exclude_none=True))
+    return None
+
+
+@router.post("/senders", status_code=201)
+async def add_sender(body: SenderBody, request: Request):
+    return _bad_identifiers(body, request) or _mgr(request).pipeline.senders.save(body.model_dump(exclude_none=True))
 
 
 @router.patch("/senders/{sid}")
@@ -149,7 +153,7 @@ async def patch_sender(sid: str, body: SenderBody, request: Request):
     s = _mgr(request).pipeline.senders
     if not s.get(sid):
         return JSONResponse({"error": "not_found"}, status_code=404)
-    return s.save(body.model_dump(exclude_none=True), sid)
+    return _bad_identifiers(body, request) or s.save(body.model_dump(exclude_none=True), sid)
 
 
 @router.delete("/senders/{sid}")

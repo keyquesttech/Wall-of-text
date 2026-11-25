@@ -17,8 +17,8 @@ class Attachment:
 
 @dataclass
 class InboundMessage:
-    channel: str  # "email" | "telegram" | "sms" | "mock"
-    sender_id: str  # email address (lowercase), Telegram numeric user id, phone number
+    channel: str  # "email" | "telegram" | "mock"
+    sender_id: str  # email address (lowercase) or Telegram numeric user id
     sender_name: str
     body: str
     external_id: str  # never printed twice

@@ -1,5 +1,11 @@
 # Progress
 
+## 25 Nov 2026 (late night): Email and Telegram pages, SMS dropped
+- Settings › Remote messages is gone. **Email** and **Telegram** each have one page with the
+  connection, the people allowed on that channel, and (Telegram) the bot. `/settings/remote` opens Email.
+- SMS removed everywhere: no "Text message" row, no "Phone" option for people, and the API only
+  accepts email addresses and Telegram IDs. New senders print straight away unless set to wait.
+
 ## 25 Nov 2026 (night): Telegram bot commands
 - `remote/bot.py` + Settings › Telegram. Built-in commands: /help, /settings (buttons to set
   your style and size), /templates (tap one: its text comes back as a block that copies with one

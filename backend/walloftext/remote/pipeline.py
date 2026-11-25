@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-CHANNEL_LABEL = {"email": "Email", "telegram": "Telegram", "sms": "SMS", "mock": "Test"}
+CHANNEL_LABEL = {"email": "Email", "telegram": "Telegram", "mock": "Test"}
 
 
 class Senders:
@@ -46,8 +46,6 @@ class Senders:
         v = value.strip()
         if channel == "email":
             return v.lower()
-        if channel == "sms":
-            return "".join(ch for ch in v if ch.isdigit() or ch == "+")
         return v
 
     def save(self, data: dict, sid: str | None = None) -> dict:
@@ -55,8 +53,7 @@ class Senders:
                for i in data.get("identifiers", []) if i.get("value", "").strip()]
         cur = self.get(sid) if sid else None
         name = (data.get("name") or (cur or {}).get("name") or "Someone")[:40]
-        default_approval = "approve" if any(i["channel"] == "sms" for i in ids) else "print"
-        approval = data.get("approval") or (cur or {}).get("approval") or default_approval
+        approval = data.get("approval") or (cur or {}).get("approval") or "print"
         c = self.svc.store.conn()
         if cur:
             c.execute("UPDATE remote_senders SET name=?, identifiers=?, approval=? WHERE id=?",

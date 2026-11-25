@@ -8,7 +8,7 @@ import { inboxWaiting, printer, settings, wifi } from "../../lib/state";
 import { IconBulb, IconCalendar, IconClock, IconCloud, IconDevice, IconEye, IconFont, IconHistory, IconLock, IconMail, IconPlus, IconPrinter, IconStar, IconTrash, IconFan, IconStrip, IconRoll, IconInbox, IconNote, IconButton, IconBackup, IconAlarm, IconBot, IconWifi } from "../../components/icons";
 import { Banner, Chevron, Seg, Sheet, timeAgo, toast, Toggle, ToggleRow, Topbar } from "../../components/ui";
 import { AccessPage, useBack, WifiPage } from "../Settings";
-import { RemotePage, TelegramConnection, TelegramRemove } from "./remote";
+import { EmailPage, TelegramConnection, TelegramRemove } from "./remote";
 
 export interface SettingsPage {
   id: string;
@@ -1178,7 +1178,7 @@ function InboxPage() {
         ))}
       </div>}
       <p class="dim tiny" style="margin:8px 6px">Guest notes (when the guest page waits for your OK) and remote messages from senders you haven't allowed to print straight away land here.
-        Set them up in <a href="/settings/guest" style="color:var(--green);text-decoration:underline">Guest page</a> and <a href="/settings/remote" style="color:var(--green);text-decoration:underline">Remote messages</a>.</p>
+        Set them up in <a href="/settings/guest" style="color:var(--green);text-decoration:underline">Guest page</a>, <a href="/settings/email" style="color:var(--green);text-decoration:underline">Email</a> and <a href="/settings/telegram" style="color:var(--green);text-decoration:underline">Telegram</a>.</p>
     </>
   );
 }
@@ -1412,7 +1412,7 @@ export const SETTINGS_PAGES: SettingsPage[] = [
   // Messages
   { id: "inbox", Icon: IconInbox, title: "Waiting for your OK", group: "Messages", Component: InboxPage, meta: () => (inboxWaiting.value ? `${inboxWaiting.value} waiting` : "None") },
   { id: "guest", Icon: IconNote, title: "Guest page", group: "Messages", Component: GuestPage, meta: () => (settings.value?.guest?.enabled ? (settings.value.guest.mode === "print" ? "Prints straight away" : "Waits for your OK") : "Off") },
-  { id: "remote", Icon: IconMail, title: "Remote messages", group: "Messages", Component: RemotePage, meta: () => "Email, allowed senders" },
+  { id: "email", Icon: IconMail, title: "Email", group: "Messages", Component: EmailPage },
   { id: "telegram", Icon: IconBot, title: "Telegram", group: "Messages", Component: TelegramPage },
   // Time & schedules
   { id: "schedules", Icon: IconAlarm, title: "Schedules", group: "Time & schedules", Component: SchedulePrefs, meta: quietMeta },

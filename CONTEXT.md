@@ -58,7 +58,7 @@ for a dated log `docs/PROGRESS.md`.
   conditions), weather/calendar/Tasks/countdown sources, routines.
 - **Phase 5** all Settings groups, guest page, shared "Waiting for your OK" list, backup/restore. Google sign-in inside the app (`docs/GOOGLE_SETUP.md`).
 - **Phase 6** remote messages: email (IMAP app password) and Telegram bot, allowed senders,
-  spoof check, never printed twice, approval, rate limits. SMS not built (paid). Setup steps:
+  spoof check, never printed twice, approval, rate limits. SMS dropped. Setup steps:
   `docs/REMOTE_SETUP.md`.
 - **Phase 7** Draw, Image, Templates (8 built-in), shared shopping list, quick-action chips, paper saver.
 - **Phase 8** tablet/desktop layouts, accessibility (axe clean), watchdog (verified on the Pi),

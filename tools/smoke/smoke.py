@@ -115,7 +115,7 @@ def run(viewport, tag):
         page.click(".sheetf button.btn-pink:has-text('Save schedule')")
         expect(page.locator(".toastf")).to_contain_text("Scheduled for tomorrow")
         page.goto(args.base + "/schedules")
-        page.locator(".scard button.row").first.click()
+        page.locator(".scard button.row:has-text('Daily fortune')").first.click()  # by name: order depends on the hour
         page.wait_for_url("**/schedules/*")
         expect(page.locator("#sname")).to_have_value("Daily fortune")
         expect(page.locator(".receipt.img img")).to_be_visible(timeout=10000)
@@ -126,7 +126,7 @@ def run(viewport, tag):
         page.wait_for_timeout(400)
         shot(page, f"{tag}-21-schedules")
         # every settings page renders without errors
-        for sp in ["printer", "paper", "fonts", "history", "weather", "google", "fortunes", "inbox", "guest", "remote", "telegram",
+        for sp in ["printer", "paper", "fonts", "history", "weather", "google", "fortunes", "inbox", "guest", "email", "telegram",
                    "schedules", "time", "button", "light", "fan", "strip", "wifi", "access", "backup", "device", "display"]:
             page.goto(args.base + "/settings/" + sp)
             expect(page.locator("h1")).not_to_have_text("Settings")  # a real page, not the index
@@ -148,7 +148,7 @@ def run(viewport, tag):
         page.click("button:has-text('Print it')")
         expect(page.locator("text=Nothing waiting.").first).to_be_visible()
         # Remote: add a sender, push a message through the mock inbox, see it in History › Remote
-        page.goto(args.base + "/settings/remote")
+        page.goto(args.base + "/settings/email")
         page.click("text=Add a person")
         page.fill("#sn", "Sam")
         page.fill("input[aria-label='Address or ID']", "sam@example.com")

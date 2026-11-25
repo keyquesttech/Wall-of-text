@@ -26,7 +26,7 @@ Version 1.1 · 19 Nov 2026 · Companion to `design-handoff/HANDOFF.md` (UI spec)
 | Weather | Open-Meteo (free, no key), behind a provider interface |
 | Calendar and Google Tasks | Google Calendar API and Google Tasks API, one Google sign-in done inside the app (section 9, `docs/GOOGLE_SETUP.md`). Changed 24 Nov 2026 from private iCal links and a token made on the PC |
 | Site password | One plain-text file on the Pi, default `root`, changeable in the GUI or by editing the file (section 10) |
-| Remote messages | Email (IMAP) and Telegram bot in v1, both free; real SMS optional and paid (section 9.2) |
+| Remote messages | Email (IMAP) and Telegram bot, both free (section 9.2). SMS was dropped (25 Nov 2026) |
 
 ## 2. The SD card: what "first boot" assumes
 
@@ -424,7 +424,7 @@ Change any of these before or during the phase that needs them.
 | 10 | Button approves waiting items | No |
 | 11 | Light mode | Not built in v1 |
 | 12 | LED colour | Single colour, as designed |
-| 13 | Remote channels | Email and Telegram in v1. SMS is optional and paid |
+| 13 | Remote channels | Email and Telegram. SMS dropped (25 Nov 2026) |
 | 14 | Unknown senders | Dropped and counted, never printed |
 | 15 | Setup slip | Network name, address and Wi-Fi QR; no readable password |
 
