@@ -418,6 +418,75 @@ const STRIP_EVENTS: [string, string][] = [["idle", "Idle"], ["printing", "Printi
 const EFFECT_COLOURS: Record<string, number> = { off: 0, solid: 1, breathe: 1, blink: 2, chase: 3, wipe: 3, rainbow: 0, sparkle: 3, progress: 2 };
 const COLOUR_HINT: Record<string, string[]> = { blink: ["On", "Off"], progress: ["Done", "To go"], sparkle: ["Sparkle", "Base", "Sparkle 2"] };
 
+// ------------------------------------------------------------ colour editor --
+const PRESETS: [string, string][] = [["#FF0000", "Red"], ["#FF6A00", "Orange"], ["#FFC400", "Yellow"], ["#00FF00", "Green"],
+  ["#39FF88", "Mint"], ["#00FFFF", "Cyan"], ["#0040FF", "Blue"], ["#8A00FF", "Purple"], ["#FF2E9A", "Pink"],
+  ["#FFFFFF", "White"], ["#FFB46B", "Warm white"], ["#000000", "Off"]];
+const toHex = (r: number, g: number, b: number) => "#" + [r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v || 0))).toString(16).padStart(2, "0")).join("").toUpperCase();
+const fromHex = (h: string): [number, number, number] | null => {
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(h.trim());
+  if (!m) return null;
+  const x = m[1].length === 3 ? m[1].split("").map((c) => c + c).join("") : m[1];
+  return [parseInt(x.slice(0, 2), 16), parseInt(x.slice(2, 4), 16), parseInt(x.slice(4, 6), 16)];
+};
+
+/** Pick a colour: presets, the colour wheel, a hex code or red/green/blue numbers. Nothing is
+ *  saved until Save; "Show on strip" lights the real strip with it meanwhile. */
+function ColourSheet(props: { title: string; value: string; onSave: (hex: string) => void; onClose: () => void }) {
+  const [rgb, setRgb] = useState<[number, number, number]>(fromHex(props.value) ?? [255, 255, 255]);
+  const [hexText, setHexText] = useState(props.value.toUpperCase());
+  const [onStrip, setOnStrip] = useState(false);
+  const hex = toHex(...rgb);
+  const set = (next: [number, number, number], fromText = false) => {
+    setRgb(next);
+    if (!fromText) setHexText(toHex(...next));
+    if (onStrip) send("POST", "/api/hw/neopixel/color", { color: toHex(...next), seconds: 30 }).catch(() => {});
+  };
+  const close = () => { if (onStrip) send("POST", "/api/hw/neopixel/color", { color: null }).catch(() => {}); props.onClose(); };
+  const hexOk = !!fromHex(hexText);
+  return (
+    <Sheet open onClose={close} title="Colour" tint="tg">
+      <p class="cap" style="margin:-6px 4px 10px">{props.title}</p>
+      <div class="colourpreview" style={{ background: hex }} aria-hidden="true" />
+      <div class="presets" role="group" aria-label="Ready-made colours">
+        {PRESETS.map(([h, name]) => (
+          <button class={`preset ${h === hex ? "on" : ""}`} aria-label={name} aria-pressed={h === hex} title={name} onClick={() => set(fromHex(h)!)}>
+            <i style={{ background: h }} />
+          </button>
+        ))}
+      </div>
+      <div class="glass grp">
+        <div class="lrow">
+          <label for="cwheel" class="grow">Colour wheel</label>
+          <input id="cwheel" type="color" class="wheelpick" value={hex.toLowerCase()} onInput={(e) => set(fromHex((e.target as HTMLInputElement).value)!)} />
+        </div>
+        <div class="lrow">
+          <label for="chex" class="grow">Hex code</label>
+          <input id="chex" class="input mono" style="width:130px" value={hexText} maxLength={7} spellcheck={false} autoCapitalize="characters"
+            aria-invalid={!hexOk} onInput={(e) => { const t = (e.target as HTMLInputElement).value; setHexText(t.startsWith("#") ? t : `#${t}`); const v = fromHex(t); if (v) set(v, true); }} />
+        </div>
+        {(["Red", "Green", "Blue"] as const).map((name, idx) => (
+          <div class="lrow col">
+            <div class="row" style="justify-content:space-between">
+              <label for={`c${name}`}>{name}</label>
+              <input id={`c${name}`} type="number" class="input num" style="width:86px;min-height:40px" min={0} max={255} inputMode="numeric" value={rgb[idx]}
+                onInput={(e) => { const v = Number((e.target as HTMLInputElement).value); if (v >= 0 && v <= 255) { const n = [...rgb] as [number, number, number]; n[idx] = v; set(n); } }} />
+            </div>
+            <input type="range" min={0} max={255} value={rgb[idx]} aria-label={`${name} amount`} class={`chan ${name.toLowerCase()}`}
+              onInput={(e) => { const n = [...rgb] as [number, number, number]; n[idx] = Number((e.target as HTMLInputElement).value); set(n); }} />
+          </div>
+        ))}
+        <ToggleRow label="Show on strip" sub="Light the real strip with this colour while you choose." checked={onStrip}
+          onChange={(v) => { setOnStrip(v); send("POST", "/api/hw/neopixel/color", { color: v ? hex : null, seconds: 30 }).catch((e) => { toast(e.message); setOnStrip(false); }); }} />
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn grow" onClick={close}>Cancel</button>
+        <button class="btn-green grow" disabled={!hexOk} onClick={() => { if (onStrip) send("POST", "/api/hw/neopixel/color", { color: null }).catch(() => {}); props.onSave(hex); }}>Save</button>
+      </div>
+    </Sheet>
+  );
+}
+
 /** Find the strip's colour order: show red, then green, and ask what each looks like. */
 function ColourOrderTest() {
   const [, patch] = useSettings();
@@ -456,6 +525,7 @@ function ColourOrderTest() {
 function StripPage() {
   const back = useBack();
   const [s, patch] = useSettings();
+  const [editing, setEditing] = useState<{ ev: string; label: string; hint: string; i: number; k: number; cols: string[]; value: string } | null>(null);
   const n = s?.neopixel;
   const [hw, reload] = useHw(!!n?.enabled);
   if (!s) return null;
@@ -543,13 +613,16 @@ function StripPage() {
                 {k > 0 && (
                   <div class="lrow" style="gap:14px;flex-wrap:wrap">
                     <span style="flex:none">Colours</span>
-                    {cols.slice(0, k).map((c, i) => (
-                      <label class="swatch">
-                        <input type="color" value={c} aria-label={`${label}: ${COLOUR_HINT[e.effect]?.[i] ?? `colour ${i + 1}`}`}
-                          onChange={(x) => { const next = cols.slice(0, k); next[i] = (x.target as HTMLInputElement).value; setEvent(ev, { colors: next }); }} />
-                        <span class="cap">{COLOUR_HINT[e.effect]?.[i] ?? (k > 1 ? `${i + 1}` : "")}</span>
-                      </label>
-                    ))}
+                    {cols.slice(0, k).map((c, i) => {
+                      const hint = COLOUR_HINT[e.effect]?.[i] ?? (k > 1 ? `Colour ${i + 1}` : "Colour");
+                      return (
+                        <button class="swatchbtn" aria-label={`${label}: ${hint}, ${c.toUpperCase()}. Change`}
+                          onClick={() => setEditing({ ev, label, hint, i, k, cols, value: c })}>
+                          <i style={{ background: c }} />
+                          <span><span class="cap">{hint}</span><span class="mono">{c.toUpperCase()}</span></span>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -557,6 +630,10 @@ function StripPage() {
           })}
           <p class="dim tiny" style="margin:8px 6px">Print progress fills the strip as a print comes out. Wi-Fi setup takes over whenever the printer is in setup mode.</p>
         </>
+      )}
+      {editing && (
+        <ColourSheet title={`${editing.label} · ${editing.hint}`} value={editing.value} onClose={() => setEditing(null)}
+          onSave={(hex) => { const next = editing.cols.slice(0, editing.k); next[editing.i] = hex; setEvent(editing.ev, { colors: next }); setEditing(null); toast("Colour saved"); }} />
       )}
     </>
   );
