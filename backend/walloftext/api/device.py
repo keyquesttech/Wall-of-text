@@ -125,6 +125,43 @@ async def neopixel_try(body: TryBody, request: Request):
     return {"ok": True}
 
 
+class ColorBody(BaseModel):
+    color: str | None = Field(default=None, pattern="^#[0-9a-fA-F]{6}$")  # None ends the test
+    seconds: float = Field(default=30, ge=1, le=120)
+
+
+@router.post("/hw/neopixel/color")
+async def neopixel_color(body: ColorBody, request: Request):
+    """Colour-order test: the whole strip in one colour for a while."""
+    from ..hw.neopixel import hex_rgb
+    hw = request.app.state.svc.hw
+    if not hw.neo:
+        return JSONResponse({"error": "off", "message": "Switch the LED strip on first."}, status_code=409)
+    hw.neo.show_color(hex_rgb(body.color) if body.color else None, body.seconds)
+    return {"ok": True}
+
+
+class OrderTestBody(BaseModel):
+    saw_red: str = Field(pattern="^[RGB]$")
+    saw_green: str = Field(pattern="^[RGB]$")
+
+
+@router.post("/hw/neopixel/order")
+async def neopixel_order(body: OrderTestBody, request: Request):
+    """Set the colour order from what was seen when red and then green were shown."""
+    from ..hw.neopixel import order_from_test
+    svc = request.app.state.svc
+    current = svc.app_settings.get("neopixel").get("order", "GRB")
+    try:
+        order = order_from_test(current, body.saw_red, body.saw_green)
+    except ValueError:
+        return JSONResponse({"error": "bad", "message": "Red and green can't look the same. Try again."}, status_code=422)
+    svc.app_settings.patch({"neopixel": {"order": order}})
+    if svc.hw.neo:
+        svc.hw.neo.show_color(None)
+    return {"order": order}
+
+
 @router.post("/print/setup-slip")
 async def print_setup_slip(request: Request):
     svc = request.app.state.svc

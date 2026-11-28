@@ -47,6 +47,20 @@ def hex_rgb(h: str) -> tuple[int, int, int]:
         return 0, 0, 0
 
 
+def order_from_test(current: str, saw_red: str, saw_green: str) -> str:
+    """The strip's real colour order, from what was seen when red and then green were sent with
+    the `current` order. Each answer is "R", "G" or "B". The intended colour X goes into byte
+    position current.index(X); the strip shows its own colour for that position."""
+    current = current.upper()
+    if sorted(current) != ["B", "G", "R"] or saw_red == saw_green or {saw_red, saw_green} - {"R", "G", "B"}:
+        raise ValueError("bad answers")
+    real = [""] * 3
+    real[current.index("R")] = saw_red
+    real[current.index("G")] = saw_green
+    real[current.index("B")] = ({"R", "G", "B"} - {saw_red, saw_green}).pop()
+    return "".join(real)
+
+
 def encode(pixels: np.ndarray, order: str = "GRB") -> bytes:
     """(n, 3) RGB uint8 → the SPI byte stream, in the strip's colour order."""
     idx = ["RGB".index(c) for c in order.upper() if c in "RGB"][:3] or [1, 0, 2]
@@ -164,6 +178,7 @@ class NeoPixelController:
         self.event = "idle"
         self.progress = 0.0
         self.preview: tuple[str, float] | None = None  # (event, until): the settings page's Try button
+        self.test_color: tuple[tuple[int, int, int], float] | None = None  # (rgb, until): colour-order test
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self._quiet_cache = (0.0, False)
@@ -187,6 +202,10 @@ class NeoPixelController:
     def frame(self, t: float | None = None) -> list[list[tuple[int, int, int]]]:
         t = self.clock() if t is None else t
         c = self.cfg()
+        if self.test_color and self.clock() < self.test_color[1]:
+            # the colour-order test: one plain colour, bright enough to tell apart
+            k = max(0.3, max(0, min(100, int(c.get("brightness", 40)))) / 100)
+            return [[_scale(self.test_color[0], k)] * s.count for s in self.strips]
         ev, e = self.current()
         bright = max(0, min(100, int(c.get("brightness", 40)))) / 100
         previewing = bool(self.preview and self.clock() < self.preview[1])
@@ -219,6 +238,9 @@ class NeoPixelController:
 
     def try_event(self, event: str, seconds: float = 6) -> None:
         self.preview = (event, self.clock() + seconds)
+
+    def show_color(self, rgb: tuple[int, int, int] | None, seconds: float = 30) -> None:
+        self.test_color = (rgb, self.clock() + seconds) if rgb else None
 
     def start(self) -> None:
         def loop():

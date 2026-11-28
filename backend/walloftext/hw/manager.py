@@ -97,7 +97,7 @@ class Hardware:
         if group == "led":
             return {k: c.get(k) for k in ("enabled", "pin")}
         if group == "fan":
-            return {k: c.get(k) for k in ("enabled", "pin", "frequency", "invert")}
+            return {k: c.get(k) for k in ("enabled", "pin", "frequency", "invert", "control")}
         return {"enabled": c.get("enabled"), "order": c.get("order"),
                 "strips": [{k: s.get(k) for k in ("pin", "count")} for s in c.get("strips") or []]}
 
@@ -146,8 +146,9 @@ class Hardware:
             self.errors["fan"] = bad["fan"]
             return
         pin, freq, inv = int(c.get("pin", 12)), int(c.get("frequency", 1000)), bool(c.get("invert"))
+        pwm = c.get("control", "pwm") != "onoff"
         try:
-            out = GpioFan(pin, freq, inv) if self.real else FanOutput(pin, freq, inv)
+            out = GpioFan(pin, freq, inv, pwm) if self.real else FanOutput(pin, freq, inv, pwm)
         except Exception as exc:
             log.warning("fan unavailable: %s", exc)
             self.errors["fan"] = f"Can't use GPIO{pin}: {exc}"[:160]
@@ -192,6 +193,8 @@ class Hardware:
         if name == "settings":
             try:
                 self.apply()
+                if self.fan:
+                    self.fan.step()  # a new mode or temperature takes effect now, not at the next check
             except Exception:
                 log.exception("hardware apply failed")
         if self.neo and name in ("printer", "wifi", "inbox", "progress", "settings"):

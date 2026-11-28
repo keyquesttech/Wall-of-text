@@ -125,3 +125,62 @@ def test_fan_and_strip_through_the_api(client):
     client.patch("/api/settings", json={"neopixel": {"enabled": False}, "fan": {"enabled": False}})
     st = client.get("/api/hw").json()
     assert not st["neopixel"]["on"] and not st["fan"]["on"]
+
+
+def test_fan_on_off_without_pwm():
+    t = {"now": 0.0}
+    temp = {"c": 52.0}
+    out = FanOutput(12, pwm=False)
+    cfg = {"start_temp": 50, "full_temp": 70, "min_speed": 30, "max_speed": 60}
+    fc = FanController(out, lambda: cfg, lambda: temp["c"], clock=lambda: t["now"])
+    fc.step()
+    assert out.value == 1.0 and fc.speed == 100 and out.level() == "high (on)"  # fully on, never part-way
+    temp["c"] = 48  # within the 3 °C hysteresis: stays on
+    fc.step()
+    assert out.value == 1.0
+    temp["c"] = 46
+    fc.step()
+    assert out.value == 0 and out.level() == "low (off)"
+    inv = FanOutput(12, pwm=False, invert=True)
+    inv.set(1)
+    assert inv.level() == "low (on)"  # relay boards that switch on when the pin is low
+
+
+def test_fan_control_switch_through_the_api(client):
+    client.patch("/api/settings", json={"fan": {"enabled": True, "pin": 12, "mode": "always", "control": "onoff", "max_speed": 40}})
+    st = client.get("/api/hw").json()["fan"]
+    assert st["on"] and st["pwm"] is False and st["speed"] == 100 and st["output"] == "high (on)"
+    client.patch("/api/settings", json={"fan": {"control": "pwm"}})
+    for _ in range(40):  # first a 1 s full-power kick to start it from rest, then 40 %
+        st = client.get("/api/hw").json()["fan"]
+        if st["output"] == "PWM 40%":
+            break
+        time.sleep(0.1)
+    assert st["pwm"] is True and st["speed"] == 40 and st["output"] == "PWM 40%"
+
+
+def test_colour_order_from_what_you_saw():
+    from walloftext.hw.neopixel import order_from_test
+    # green showed as blue (red was fine) with the default GRB → the strip is BRG
+    assert order_from_test("GRB", "R", "B") == "BRG"
+    # sending with the order we found shows the right colours
+    for real in ("RGB", "GRB", "BRG", "RBG", "GBR", "BGR"):
+        for cur in ("RGB", "GRB", "BRG", "RBG", "GBR", "BGR"):
+            seen = lambda x: real[cur.index(x)]  # noqa: E731 - what a strip with order `real` shows
+            assert order_from_test(cur, seen("R"), seen("G")) == real
+    with pytest.raises(ValueError):
+        order_from_test("GRB", "R", "R")
+
+
+def test_colour_order_api(client):
+    client.patch("/api/settings", json={"neopixel": {"enabled": True, "order": "GRB", "strips": [{"pin": 10, "count": 4}]}})
+    assert client.post("/api/hw/neopixel/color", json={"color": "#00ff00"}).json()["ok"]
+    for _ in range(40):
+        f = client.get("/api/hw").json()["neopixel"]["live"]["frames"][0]
+        if f[0] != "#000000" and f[0][3:5] != "00":
+            break
+        time.sleep(0.05)
+    assert f[0][1:3] == "00" and f[0][5:7] == "00"  # green only
+    assert client.post("/api/hw/neopixel/order", json={"saw_red": "R", "saw_green": "B"}).json() == {"order": "BRG"}
+    assert client.get("/api/settings").json()["neopixel"]["order"] == "BRG"
+    assert client.post("/api/hw/neopixel/order", json={"saw_red": "G", "saw_green": "G"}).status_code == 422

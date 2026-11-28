@@ -1,5 +1,13 @@
 # Progress
 
+## 28 Nov 2026: fan on/off control, LED strip colour test
+- Fan: "Control" choice, Speed (PWM) or On / off (no PWM: the pin is just high or low, for relay
+  modules and fans that don't like PWM). The page shows what the pin outputs (high/low/PWM n%) and
+  setting changes apply at once. On the Pi, GPIO12 was a steady high while the fan didn't spin, so
+  the wiring (direct to GPIO, or an active-low relay needing Inverted output) is the likely cause.
+- LED strip: "Test colours" shows red, then green, asks what you see, and sets the colour order
+  (`order_from_test`). Fixes e.g. green showing as blue (strip is BRG, not GRB).
+
 ## 25 Nov 2026 (late night): Email and Telegram pages, SMS dropped
 - Settings › Remote messages is gone. **Email** and **Telegram** each have one page with the
   connection, the people allowed on that channel, and (Telegram) the bot. `/settings/remote` opens Email.

@@ -6,6 +6,11 @@ Modes:
   minimum speed (the slowest it reliably spins) and ramps to the maximum speed at the
   full-speed temperature. It stops again 3 °C below the start temperature (no flapping).
 A stopped fan is kicked at full power for a moment so it starts from rest at a low speed.
+
+Control:
+* "pwm": speed control with software PWM (min/max speed, frequency).
+* "onoff": no PWM. The pin is simply on or off (full speed or stopped), for relay modules,
+  fans that don't like PWM, and simple transistor switches. Same modes and temperatures.
 """
 from __future__ import annotations
 
@@ -39,29 +44,44 @@ def target_speed(cfg: dict, temp: float | None, running: bool) -> float:
 
 
 class FanOutput:
-    """0-1 duty cycle on a pin. Mock keeps the value for the settings page and tests."""
+    """0-1 duty cycle on a pin (or just on/off without PWM). Mock keeps the value for the
+    settings page and tests."""
 
-    def __init__(self, pin: int, frequency: int = 1000, invert: bool = False):
-        self.pin, self.frequency, self.invert = pin, frequency, invert
+    def __init__(self, pin: int, frequency: int = 1000, invert: bool = False, pwm: bool = True):
+        self.pin, self.frequency, self.invert, self.pwm = pin, frequency, invert, pwm
         self.value = 0.0
 
     def set(self, duty: float) -> None:
-        self.value = max(0.0, min(1.0, duty))
+        duty = max(0.0, min(1.0, duty))
+        self.value = duty if self.pwm else (1.0 if duty > 0 else 0.0)
+
+    def level(self) -> str:
+        """What the pin is doing, for the settings page: high, low or PWM n%."""
+        if self.pwm and 0 < self.value < 1:
+            return f"PWM {round(self.value * 100)}%" + (" (inverted)" if self.invert else "")
+        on = self.value > 0
+        return ("high" if on != self.invert else "low") + f" ({'on' if on else 'off'})"
 
     def close(self) -> None:
         self.value = 0.0
 
 
 class GpioFan(FanOutput):
-    def __init__(self, pin: int, frequency: int = 1000, invert: bool = False):
-        super().__init__(pin, frequency, invert)
-        from gpiozero import PWMOutputDevice  # type: ignore
-
-        self._dev = PWMOutputDevice(pin, active_high=not invert, initial_value=0, frequency=frequency)
+    def __init__(self, pin: int, frequency: int = 1000, invert: bool = False, pwm: bool = True):
+        super().__init__(pin, frequency, invert, pwm)
+        if pwm:
+            from gpiozero import PWMOutputDevice  # type: ignore
+            self._dev = PWMOutputDevice(pin, active_high=not invert, initial_value=0, frequency=frequency)
+        else:
+            from gpiozero import DigitalOutputDevice  # type: ignore
+            self._dev = DigitalOutputDevice(pin, active_high=not invert, initial_value=False)
 
     def set(self, duty: float) -> None:
         super().set(duty)
-        self._dev.value = self.value
+        if self.pwm:
+            self._dev.value = self.value
+        else:
+            self._dev.value = 1 if self.value > 0 else 0
 
     def close(self) -> None:
         try:
@@ -89,6 +109,8 @@ class FanController:
         self.last_temp = self.temp()
         c = self.cfg()
         want = 100.0 if now < self._test_until else target_speed(c, self.last_temp, self.speed > 0)
+        if not self.out.pwm and want > 0:
+            want = 100.0  # on/off: any demand means fully on
         if want > 0 and self.speed == 0 and want < 100:
             self._kick_until = now + KICK_S  # from rest: full power briefly so it starts
         self.speed = want
@@ -116,4 +138,5 @@ class FanController:
 
     def status(self) -> dict:
         return {"speed": round(self.speed), "temperature_c": self.last_temp,
-                "testing": self.clock() < self._test_until}
+                "testing": self.clock() < self._test_until, "pwm": self.out.pwm, "pin": self.out.pin,
+                "output": self.out.level()}

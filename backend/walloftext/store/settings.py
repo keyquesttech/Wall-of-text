@@ -31,7 +31,8 @@ DEFAULTS: dict[str, Any] = {
                          "paper_out": "solid", "error": "blink"}},
     # Auxiliary fan (hw/fan.py): "temperature" ramps min→max speed from start_temp to full_temp; "always" = max
     "fan": {"enabled": False, "pin": 12, "mode": "temperature", "start_temp": 55, "full_temp": 70,
-            "min_speed": 30, "max_speed": 100, "frequency": 1000, "invert": False},
+            "min_speed": 30, "max_speed": 100, "frequency": 1000, "invert": False,
+            "control": "pwm"},  # "pwm" (speed control) | "onoff" (no PWM: relay, simple switch)
     # WS2812 strips (hw/neopixel.py) on an SPI data pin: GPIO10 or GPIO20
     "neopixel": {"enabled": False, "strips": [{"pin": 10, "count": 30, "reverse": False}], "order": "GRB",
                  "brightness": 40, "quiet_brightness": 10, "speed": 50,

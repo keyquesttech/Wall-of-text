@@ -187,7 +187,7 @@ const pinLabel = (g: number) => `GPIO${g} · pin ${HEADER[g] ?? "?"}`;
 interface HwStatus {
   real: boolean; spi: string[]; temperature_c: number | null; problems: Record<string, string>;
   button: { on: boolean; error?: string }; led: { on: boolean; error?: string };
-  fan: { on: boolean; error?: string; speed?: number; temperature_c?: number | null; testing?: boolean };
+  fan: { on: boolean; error?: string; speed?: number; temperature_c?: number | null; testing?: boolean; pwm?: boolean; output?: string };
   neopixel: { on: boolean; error?: string; strip_errors: Record<string, string>; live: { event: string; progress: number; frames: string[][] } | null };
 }
 /** Hardware status, polled while the page is open (fast while something animates). */
@@ -352,17 +352,27 @@ function FanPage() {
             <div class="glass card row" style="gap:16px">
               <span class="ico g"><IconFan class="i" /></span>
               <div class="grow">
-                <div class="h3 num">{hw.fan.speed ?? 0}%{hw.fan.testing ? " · test" : ""}</div>
-                <div class="cap">Pi at {hw.fan.temperature_c != null ? `${hw.fan.temperature_c.toFixed(1)} °C` : "—"}</div>
+                <div class="h3 num">{hw.fan.pwm === false ? (hw.fan.speed ? "On" : "Off") : `${hw.fan.speed ?? 0}%`}{hw.fan.testing ? " · test" : ""}</div>
+                <div class="cap">Pi at {hw.fan.temperature_c != null ? `${hw.fan.temperature_c.toFixed(1)} °C` : "—"} · GPIO{f.pin} {hw.fan.output}</div>
               </div>
               <button class="btn small" onClick={() => send("POST", "/api/hw/fan/test").then(() => { toast("Full speed for 5 seconds"); reload(); }).catch((e) => toast(e.message))}>Test</button>
             </div>
           )}
+          <h2 class="section">Control</h2>
+          <div class="glass card stack">
+            <Seg label="Fan control" value={f.control ?? "pwm"} onChange={(v) => patch({ fan: { control: v } })}
+              options={[{ value: "pwm", label: "Speed (PWM)" }, { value: "onoff", label: "On / off" }]} />
+            <p class="cap" style="margin:0">{(f.control ?? "pwm") === "onoff"
+              ? "No PWM: the pin is just on or off, so the fan runs at full speed or stops. Use this for a relay module, a fan that doesn't like PWM, or a simple transistor switch."
+              : "PWM sets the speed by switching the pin on and off quickly. Needs a transistor or MOSFET that can switch that fast."}</p>
+          </div>
           <h2 class="section">How it runs</h2>
           <div class="glass card stack">
             <Seg label="Fan mode" value={f.mode} onChange={(v) => patch({ fan: { mode: v } })}
               options={[{ value: "temperature", label: "By temperature" }, { value: "always", label: "Always on" }]} />
-            <p class="cap" style="margin:0">{f.mode === "always" ? `Runs at ${f.max_speed}% all the time.`
+            <p class="cap" style="margin:0">{(f.control ?? "pwm") === "onoff"
+              ? (f.mode === "always" ? "On all the time." : `On from ${f.start_temp} °C. Off again below ${f.start_temp - 3} °C.`)
+              : f.mode === "always" ? `Runs at ${f.max_speed}% all the time.`
               : `Off below ${f.start_temp} °C. Starts at ${f.min_speed}% at ${f.start_temp} °C and speeds up to ${f.max_speed}% at ${f.full_temp} °C. Stops again below ${f.start_temp - 3} °C.`}</p>
           </div>
           <div class="glass grp" style="margin-top:12px">
@@ -370,11 +380,11 @@ function FanPage() {
               <>
                 <div class="lrow"><label for="fst" class="grow">Starts at</label>
                   <input id="fst" type="number" class="input" style="width:90px" min={30} max={80} value={f.start_temp} onChange={num("start_temp", 30, 80)} /><span class="dim">°C</span></div>
-                <div class="lrow"><label for="fft" class="grow">Full speed at</label>
-                  <input id="fft" type="number" class="input" style="width:90px" min={f.start_temp + 1} max={85} value={f.full_temp} onChange={num("full_temp", f.start_temp + 1, 85)} /><span class="dim">°C</span></div>
+                {(f.control ?? "pwm") === "pwm" && <div class="lrow"><label for="fft" class="grow">Full speed at</label>
+                  <input id="fft" type="number" class="input" style="width:90px" min={f.start_temp + 1} max={85} value={f.full_temp} onChange={num("full_temp", f.start_temp + 1, 85)} /><span class="dim">°C</span></div>}
               </>
             )}
-            <div class="lrow col">
+            {(f.control ?? "pwm") === "pwm" && <><div class="lrow col">
               <label for="fmin" class="row" style="justify-content:space-between"><span>Minimum speed</span><span class="num">{f.min_speed}%</span></label>
               <input id="fmin" type="range" min={0} max={100} step={5} value={f.min_speed} onChange={num("min_speed", 0, Math.min(100, f.max_speed))} />
               <span class="cap">The slowest it reliably spins. A stopped fan gets a short full-power kick first.</span>
@@ -382,18 +392,18 @@ function FanPage() {
             <div class="lrow col">
               <label for="fmax" class="row" style="justify-content:space-between"><span>Maximum speed</span><span class="num">{f.max_speed}%</span></label>
               <input id="fmax" type="range" min={10} max={100} step={5} value={f.max_speed} onChange={num("max_speed", Math.max(10, f.min_speed), 100)} />
-            </div>
+            </div></>}
           </div>
           <h2 class="section">Wiring details</h2>
           <div class="glass grp">
-            <div class="lrow"><label for="ffreq" class="grow">PWM frequency</label>
+            {(f.control ?? "pwm") === "pwm" && <div class="lrow"><label for="ffreq" class="grow">PWM frequency</label>
               <select id="ffreq" class="input" style="width:auto" value={String(f.frequency)} onChange={(e) => patch({ fan: { frequency: Number((e.target as HTMLSelectElement).value) } })}>
                 {[100, 500, 1000, 5000, 10000].map((v) => <option value={String(v)}>{v >= 1000 ? `${v / 1000} kHz` : `${v} Hz`}</option>)}
-              </select></div>
-            <ToggleRow label="Inverted output" sub="For drivers where low means on (some PNP or P-channel boards)." checked={!!f.invert}
+              </select></div>}
+            <ToggleRow label="Inverted output" sub="Turn on if the fan runs when it should be off: many relay modules, and PNP or P-channel boards, switch on when the pin is low." checked={!!f.invert}
               onChange={(v) => patch({ fan: { invert: v } })} />
           </div>
-          <p class="dim tiny" style="margin:8px 6px">Never connect a fan straight to a GPIO pin: drive it through a transistor or MOSFET with a flyback diode. If it whines, try a higher frequency; if it won't start slowly, raise the minimum speed.</p>
+          <p class="dim tiny" style="margin:8px 6px">A GPIO pin gives only 3.3 V and a few milliamps, which can't run a fan by itself. Connect the fan through a transistor or MOSFET (with a flyback diode) or a relay module, powered from 5 V, and press Test: the readout above shows whether the pin is high or low. With PWM, if it whines try a higher frequency; if it won't start slowly, raise the minimum speed.</p>
         </>
       )}
     </>
@@ -407,6 +417,41 @@ const STRIP_EVENTS: [string, string][] = [["idle", "Idle"], ["printing", "Printi
   ["paper_out", "Paper out"], ["error", "Printer error / offline"], ["setup", "Wi-Fi setup"]];
 const EFFECT_COLOURS: Record<string, number> = { off: 0, solid: 1, breathe: 1, blink: 2, chase: 3, wipe: 3, rainbow: 0, sparkle: 3, progress: 2 };
 const COLOUR_HINT: Record<string, string[]> = { blink: ["On", "Off"], progress: ["Done", "To go"], sparkle: ["Sparkle", "Base", "Sparkle 2"] };
+
+/** Find the strip's colour order: show red, then green, and ask what each looks like. */
+function ColourOrderTest() {
+  const [, patch] = useSettings();
+  const [step, setStep] = useState<0 | 1 | 2>(0);
+  const [red, setRed] = useState("");
+  const show = (color: string | null) => send("POST", "/api/hw/neopixel/color", { color, seconds: 60 });
+  const start = () => show("#ff0000").then(() => setStep(1)).catch((e) => toast(e.message));
+  const stop = () => { show(null).catch(() => {}); setStep(0); };
+  const answer = async (seen: string) => {
+    if (step === 1) { setRed(seen); await show("#00ff00"); setStep(2); return; }
+    try {
+      const r = await send<{ order: string }>("POST", "/api/hw/neopixel/order", { saw_red: red, saw_green: seen });
+      await patch({});
+      toast(`Colour order set to ${r.order}`);
+    } catch (e) { toast((e as Error).message); }
+    setStep(0);
+  };
+  if (step === 0) {
+    return <div class="lrow"><span class="grow cap">Colours wrong? Green showing as blue, for example.</span><button class="btn small" onClick={start}>Test colours</button></div>;
+  }
+  return (
+    <div class="lrow col">
+      <span><b>{step === 1 ? "Step 1 of 2" : "Step 2 of 2"}:</b> the strip should be {step === 1 ? "red" : "green"} now. What colour do you actually see?</span>
+      <div class="row" style="flex-wrap:wrap">
+        {([["R", "Red", "#ff3b3b"], ["G", "Green", "#39ff88"], ["B", "Blue", "#4d8dff"]] as const).map(([k, label, c]) => (
+          <button class="btn small grow" onClick={() => answer(k)} disabled={step === 2 && k === red}>
+            <span aria-hidden="true" style={{ width: "14px", height: "14px", borderRadius: "50%", background: c, display: "inline-block" }} />{label}
+          </button>
+        ))}
+      </div>
+      <button class="btn btn-ghost small" onClick={stop}>Cancel</button>
+    </div>
+  );
+}
 
 function StripPage() {
   const back = useBack();
@@ -476,6 +521,7 @@ function StripPage() {
               <select id="nord" class="input" style="width:auto" value={n.order} onChange={(e) => patch({ neopixel: { order: (e.target as HTMLSelectElement).value } })}>
                 {["GRB", "RGB", "BRG", "RBG", "GBR", "BGR"].map((o) => <option value={o}>{o}{o === "GRB" ? " (most strips)" : ""}</option>)}
               </select></div>
+            <ColourOrderTest />
           </div>
 
           <h2 class="section">What it shows</h2>
