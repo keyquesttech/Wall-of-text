@@ -39,6 +39,12 @@ for _b in range(256):
     _LUT[_b] = [(bits >> 16) & 0xFF, (bits >> 8) & 0xFF, bits & 0xFF]
 
 
+# LEDs give out light in proportion to the value they're sent, while colours picked on a screen
+# assume the eye's curve. Without this, a mixed colour like #39FF88 lights its red and blue far
+# too much and looks white-ish instead of green. Standard NeoPixel gamma (2.6).
+GAMMA = np.array([round(((i / 255) ** 2.6) * 255) for i in range(256)], dtype=np.uint8)
+
+
 def hex_rgb(h: str) -> tuple[int, int, int]:
     h = (h or "#000000").lstrip("#")
     try:
@@ -59,6 +65,13 @@ def order_from_test(current: str, saw_red: str, saw_green: str) -> str:
     real[current.index("G")] = saw_green
     real[current.index("B")] = ({"R", "G", "B"} - {saw_red, saw_green}).pop()
     return "".join(real)
+
+
+def led_values(pixels: list[tuple[int, int, int]], brightness: float = 1.0) -> np.ndarray:
+    """What is sent to the LEDs: gamma-corrected colour first (so it stays the colour you picked),
+    then brightness (so the brightness slider still feels even)."""
+    arr = GAMMA[np.array(pixels, dtype=np.uint8).reshape(-1, 3)].astype(np.float32)
+    return np.clip(np.round(arr * max(0.0, min(1.0, brightness))), 0, 255).astype(np.uint8)
 
 
 def encode(pixels: np.ndarray, order: str = "GRB") -> bytes:
@@ -127,14 +140,16 @@ def render(effect: str, colors: list[tuple[int, int, int]], n: int, t: float,
 
 
 class Strip:
-    """Mock strip: keeps the last frame so the settings page can show it."""
+    """Mock strip: keeps the last frame (as picked, at brightness) so the settings page can show it."""
 
     def __init__(self, pin: int, count: int, order: str = "GRB"):
         self.pin, self.count, self.order = pin, min(int(count), MAX_LEDS), order
         self.frame: list[tuple[int, int, int]] = [(0, 0, 0)] * self.count
+        self.last: tuple | None = None
 
-    def show(self, pixels: list[tuple[int, int, int]]) -> None:
-        self.frame = pixels
+    def show(self, pixels: list[tuple[int, int, int]], brightness: float = 1.0) -> None:
+        self.last = (pixels, brightness)
+        self.frame = [_scale(p, brightness) for p in pixels]
 
     def close(self) -> None:
         self.frame = [(0, 0, 0)] * self.count
@@ -157,9 +172,9 @@ class SpiStrip(Strip):
         self._spi.max_speed_hz = SPI_HZ
         self._spi.mode = 0
 
-    def show(self, pixels: list[tuple[int, int, int]]) -> None:
-        super().show(pixels)
-        self._spi.writebytes2(encode(np.array(pixels, dtype=np.uint8).reshape(-1, 3), self.order))
+    def show(self, pixels: list[tuple[int, int, int]], brightness: float = 1.0) -> None:
+        super().show(pixels, brightness)
+        self._spi.writebytes2(encode(led_values(pixels, brightness), self.order))
 
     def close(self) -> None:
         try:
@@ -199,33 +214,35 @@ class NeoPixelController:
         c = self.cfg()
         return ev, (c.get("events") or {}).get(ev) or {"effect": "off", "colors": []}
 
-    def frame(self, t: float | None = None) -> list[list[tuple[int, int, int]]]:
+    def frame(self, t: float | None = None) -> tuple[list[list[tuple[int, int, int]]], float]:
+        """(one frame per strip at full brightness, the brightness to show it at)."""
         t = self.clock() if t is None else t
         c = self.cfg()
         if self.test_color and self.clock() < self.test_color[1]:
             # the colour-order test: one plain colour, bright enough to tell apart
             k = max(0.3, max(0, min(100, int(c.get("brightness", 40)))) / 100)
-            return [[_scale(self.test_color[0], k)] * s.count for s in self.strips]
+            return [[self.test_color[0]] * s.count for s in self.strips], k
         ev, e = self.current()
         bright = max(0, min(100, int(c.get("brightness", 40)))) / 100
         previewing = bool(self.preview and self.clock() < self.preview[1])
         if self._is_quiet() and not previewing:
             bright *= max(0, min(100, int(c.get("quiet_brightness", 10)))) / 100
-        colors = [_scale(hex_rgb(x), bright) for x in (e.get("colors") or ["#ffffff"])][:3]
+        colors = [hex_rgb(x) for x in (e.get("colors") or ["#ffffff"])][:3]
         scfg = c.get("strips") or []
         out = []
         for i, s in enumerate(self.strips):
             px = render(e.get("effect", "off"), colors, s.count, t, float(c.get("speed", 50)), self.progress, seed=i)
             reverse = bool(scfg[i].get("reverse")) if i < len(scfg) else False
             out.append(px[::-1] if reverse else px)
-        return out
+        return out, bright
 
     def tick(self) -> None:
-        for s, px in zip(self.strips, self.frame()):
-            if px == s.frame:
+        frames, k = self.frame()
+        for s, px in zip(self.strips, frames):
+            if (px, k) == s.last:
                 continue  # nothing changed: don't resend
             try:
-                s.show(px)
+                s.show(px, k)
             except Exception:
                 log.exception("LED strip write failed")
 

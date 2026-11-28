@@ -184,3 +184,14 @@ def test_colour_order_api(client):
     assert client.post("/api/hw/neopixel/order", json={"saw_red": "R", "saw_green": "B"}).json() == {"order": "BRG"}
     assert client.get("/api/settings").json()["neopixel"]["order"] == "BRG"
     assert client.post("/api/hw/neopixel/order", json={"saw_red": "G", "saw_green": "G"}).status_code == 422
+
+
+def test_strip_colours_are_gamma_corrected_but_preview_is_not():
+    from walloftext.hw.neopixel import led_values, Strip
+    g = led_values([hex_rgb("#39FF88")])[0]
+    assert g[1] == 255 and g[0] <= 6 and g[2] <= 55  # a strong green, not mint/white
+    assert led_values([(255, 255, 255)], 0.5).tolist() == [[128, 128, 128]]  # brightness stays linear
+    assert led_values([(0, 0, 0)]).tolist() == [[0, 0, 0]]
+    s = Strip(10, 2)
+    s.show([hex_rgb("#39FF88")] * 2, 1.0)
+    assert s.frame[0] == (0x39, 0xFF, 0x88)  # the page shows the colour as picked

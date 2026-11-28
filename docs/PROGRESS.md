@@ -1,5 +1,12 @@
 # Progress
 
+## 28 Nov 2026 (later): LED strip gamma, token kept out of logs
+- LED strips: colours are gamma-corrected (2.6) before they're sent, then brightness is applied,
+  so mixed colours (e.g. #39FF88) look like the colour picked instead of white-ish. The settings
+  page preview still shows the picked colour. (SPI timing checked: core clock fixed at 500 MHz.)
+- httpx request URLs (which hold the Telegram bot token) are no longer logged; a formatter blanks
+  bot tokens in any log line or traceback.
+
 ## 28 Nov 2026: fan on/off control, LED strip colour test
 - Fan: "Control" choice, Speed (PWM) or On / off (no PWM: the pin is just high or low, for relay
   modules and fans that don't like PWM). The page shows what the pin outputs (high/low/PWM n%) and
