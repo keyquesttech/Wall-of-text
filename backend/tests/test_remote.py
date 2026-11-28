@@ -386,3 +386,24 @@ async def test_manager_backoff(c):
     m = RemoteManager(c.svc, c.svc.extras["remote"].pipeline, {"x": Broken()})
     with pytest.raises(ChannelError):
         await m.poll_once("x")
+
+
+def test_bot_token_never_reaches_the_log():
+    import io
+    import logging
+
+    from walloftext.app import RedactingFormatter
+    buf = io.StringIO()
+    h = logging.StreamHandler(buf)
+    h.setFormatter(RedactingFormatter("%(message)s"))
+    lg = logging.getLogger("redact-test")
+    lg.addHandler(h)
+    lg.propagate = False
+    tok = "123456789:" + "A" * 35
+    lg.warning("POST https://api.telegram.org/bot%s/getUpdates", tok)
+    try:
+        raise RuntimeError(f"failed for bot{tok}/getFile")
+    except RuntimeError:
+        lg.exception("boom")
+    out = buf.getvalue()
+    assert tok not in out and "bot<token>/getUpdates" in out and "bot<token>/getFile" in out

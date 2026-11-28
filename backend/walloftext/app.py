@@ -254,10 +254,24 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
     return app
 
 
+class RedactingFormatter(logging.Formatter):
+    """Never let a secret reach the log: Telegram bot tokens (they sit in API URLs) are blanked."""
+
+    _TOKEN = __import__("re").compile(r"(bot)?\d{6,12}:[A-Za-z0-9_-]{30,}")
+
+    def format(self, record: logging.LogRecord) -> str:
+        return self._TOKEN.sub(lambda m: (m.group(1) or "") + "<token>", super().format(record))
+
+
 def main() -> None:
     import uvicorn
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    # httpx logs every request URL at INFO, and Telegram puts the bot token in the URL: never log it
+    for noisy in ("httpx", "httpcore"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
+    for h in logging.getLogger().handlers:  # and blank a token out of anything else, tracebacks too
+        h.setFormatter(RedactingFormatter(h.formatter._fmt if h.formatter else None))
     s = Settings()
     uvicorn.run(create_app(s), host="0.0.0.0", port=s.port, log_level="info",
                 access_log=False)  # access logs off: never log /api/wifi/* bodies or tokens
